@@ -1,7 +1,5 @@
 /*    This file is part of the Gudhi Library. The Gudhi library
- *    (Geometric Understanding in Higher Dimensions) is a generic C++
- *    library for computational topology.
- *
+ *    (Geometric Understanding in Higher Dimensions) is a generic C++ *    library for computational topology.  *
  *    Author(s):       Vincent Rouvreau
  *
  *    Copyright (C) 2014  INRIA Sophia Antipolis-Méditerranée (France)
@@ -226,6 +224,7 @@ int main(int argc, char * const argv[]) {
     std::cout << "   - (2,1,0) NOT INSERTED" << std::endl;
   }
 
+
   // ++ GENERAL VARIABLE SET
   simplexTree.set_filtration(FOURTH_FILTRATION_VALUE); // Max filtration value
   simplexTree.set_dimension(2); // Max dimension = 2 -> (2,1,0)
@@ -299,5 +298,24 @@ int main(int argc, char * const argv[]) {
     std::cout << "***+ YES IT IS!\n";
   else
     std::cout << "***- NO IT ISN'T\n";
+    
+    
+    std::cout << "********************************************************************" << std::endl;
+    // TEST COFACE ALGORITHM
+    std::cout << "COFACE ALGORITHM" << std::endl;
+    std::vector<Vertex_handle> v;
+    v.push_back(1);
+    std::cout << "Cofaces of 1 : " << std::endl;
+    auto cofaces = simplexTree.coface(v);
+    for (int i = 0; i < cofaces.size(); ++i)
+    {
+        std::cout << "(";
+        auto j = cofaces[i].begin();
+        std::cout << j->first;
+        for (auto j = cofaces[i].begin() + 1; j != cofaces[i].end(); ++j)
+            std::cout << "," << j->first;
+        std::cout << ")" << std::endl;
+    }
+    
   return 0;
 }
