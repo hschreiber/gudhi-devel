@@ -25,12 +25,12 @@ namespace Gudhi {
 
 /* Edge tag for Boost PropertyGraph. */
 struct edge_filtration_t {
-  typedef boost::edge_property_tag kind;
+	typedef boost::edge_property_tag kind;
 };
 
 /* Vertex tag for Boost PropertyGraph. */
 struct vertex_filtration_t {
-  typedef boost::vertex_property_tag kind;
+	typedef boost::vertex_property_tag kind;
 };
 
 /** \brief Proximity_graph contains the vertices and edges with their filtration values in order to store the result
@@ -57,46 +57,46 @@ using Proximity_graph = typename boost::adjacency_list < boost::vecS, boost::vec
  * `Point` is a point from the `ForwardPointRange`, and that returns a `Filtration_value`.
  */
 template< typename SimplicialComplexForProximityGraph
-          , typename ForwardPointRange
-          , typename Distance >
+		  , typename ForwardPointRange
+		  , typename Distance >
 Proximity_graph<SimplicialComplexForProximityGraph> compute_proximity_graph(
-    const ForwardPointRange& points,
-    typename SimplicialComplexForProximityGraph::Filtration_value threshold,
-    Distance distance) {
-  using Vertex_handle = typename SimplicialComplexForProximityGraph::Vertex_handle;
-  using Filtration_value = typename SimplicialComplexForProximityGraph::Filtration_value;
+		const ForwardPointRange& points,
+		typename SimplicialComplexForProximityGraph::Filtration_value threshold,
+		Distance distance) {
+	using Vertex_handle = typename SimplicialComplexForProximityGraph::Vertex_handle;
+	using Filtration_value = typename SimplicialComplexForProximityGraph::Filtration_value;
 
-  std::vector<std::pair< Vertex_handle, Vertex_handle >> edges;
-  std::vector< Filtration_value > edges_fil;
-  std::map< Vertex_handle, Filtration_value > vertices;
+	std::vector<std::pair< Vertex_handle, Vertex_handle >> edges;
+	std::vector< Filtration_value > edges_fil;
+	std::map< Vertex_handle, Filtration_value > vertices;
 
-  Vertex_handle idx_u, idx_v;
-  Filtration_value fil;
-  idx_u = 0;
-  for (auto it_u = points.begin(); it_u != points.end(); ++it_u) {
-    idx_v = idx_u + 1;
-    for (auto it_v = it_u + 1; it_v != points.end(); ++it_v, ++idx_v) {
-      fil = distance(*it_u, *it_v);
-      if (fil <= threshold) {
-        edges.emplace_back(idx_u, idx_v);
-        edges_fil.push_back(fil);
-      }
-    }
-    ++idx_u;
-  }
+	Vertex_handle idx_u, idx_v;
+	Filtration_value fil;
+	idx_u = 0;
+	for (auto it_u = points.begin(); it_u != points.end(); ++it_u) {
+		idx_v = idx_u + 1;
+		for (auto it_v = it_u + 1; it_v != points.end(); ++it_v, ++idx_v) {
+			fil = distance(*it_u, *it_v);
+			if (fil <= threshold) {
+				edges.emplace_back(idx_u, idx_v);
+				edges_fil.push_back(fil);
+			}
+		}
+		++idx_u;
+	}
 
-  // Points are labeled from 0 to idx_u-1
-  Proximity_graph<SimplicialComplexForProximityGraph> skel_graph(edges.begin(), edges.end(), edges_fil.begin(), idx_u);
+	// Points are labeled from 0 to idx_u-1
+	Proximity_graph<SimplicialComplexForProximityGraph> skel_graph(edges.begin(), edges.end(), edges_fil.begin(), idx_u);
 
-  auto vertex_prop = boost::get(vertex_filtration_t(), skel_graph);
+	auto vertex_prop = boost::get(vertex_filtration_t(), skel_graph);
 
-  typename boost::graph_traits<Proximity_graph<SimplicialComplexForProximityGraph>>::vertex_iterator vi, vi_end;
-  for (std::tie(vi, vi_end) = boost::vertices(skel_graph);
-       vi != vi_end; ++vi) {
-    boost::put(vertex_prop, *vi, 0.);
-  }
+	typename boost::graph_traits<Proximity_graph<SimplicialComplexForProximityGraph>>::vertex_iterator vi, vi_end;
+	for (std::tie(vi, vi_end) = boost::vertices(skel_graph);
+		 vi != vi_end; ++vi) {
+		boost::put(vertex_prop, *vi, 0.);
+	}
 
-  return skel_graph;
+	return skel_graph;
 }
 
 }  // namespace Gudhi
