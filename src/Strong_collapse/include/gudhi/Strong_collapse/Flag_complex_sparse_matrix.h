@@ -337,26 +337,29 @@ private:
 
 public:
 	/** \brief Flag_complex_sparse_matrix default constructor.
-   *
-   * It constructs an empty sparse matrix.
-   *
-   * @param[in] num_vertices Number of vertices.
-   */
+	 *
+	 * It constructs an empty sparse matrix.
+	 *
+	 * @param[in] num_vertices Number of vertices.
+	 */
 	Flag_complex_sparse_matrix(std::size_t num_vertices) {
 		init();
 		// Initializing sparse_matrix_, This is a row-major sparse matrix.
 		sparse_matrix_ = Sparse_row_matrix(
 					expansion_limit_ * num_vertices,
 					expansion_limit_ * num_vertices);
+		std::cout << "num_vertices: " << num_vertices << "\n";
+		for (Vertex v = 0; v < num_vertices; ++v) insert_vertex(v, 0);
+		std::cout << "end init\n";
 	}
 
 	/** \brief Flag_complex_sparse_matrix constructor from the edge graph.
-   *
-   * It constructs a sparse matrix filled with the edge graph filtration values and compress it.
-   *
-   * @param[in] num_vertices Number of vertices.
-   * @param[in] edge_t The edge graph.
-   */
+	 *
+	 * It constructs a sparse matrix filled with the edge graph filtration values and compress it.
+	 *
+	 * @param[in] num_vertices Number of vertices.
+	 * @param[in] edge_t The edge graph.
+	 */
 	Flag_complex_sparse_matrix(const std::size_t num_vertices, const Filtered_sorted_edge_list& edge_t) {
 		init();
 		// Initializing sparse_matrix_, This is a row-major sparse matrix.
@@ -364,17 +367,20 @@ public:
 					expansion_limit_ * num_vertices,
 					expansion_limit_ * num_vertices);
 
+		std::cout << "num_vertices: " << num_vertices << "\n";
+		for (Vertex v = 0; v < num_vertices; ++v) insert_vertex(v, 0);
 		for (std::size_t bgn_idx = 0; bgn_idx < edge_t.size(); bgn_idx++) {
 			insert_new_edges(std::get<1>(edge_t.at(bgn_idx)), std::get<2>(edge_t.at(bgn_idx)), 1);
 		}
+		std::cout << "end init2\n";
 		sparse_matrix_.makeCompressed();
 	}
 
 	//!	Function for performing strong collapse.
 	/*!
-	calls sparse_strong_collapse(), and
-	Then, it compacts the reduction_map_ by calling the function fully_compact().
-  */
+	 calls sparse_strong_collapse(), and
+	 Then, it compacts the reduction_map_ by calling the function fully_compact().
+	 */
 	void strong_collapse() {
 		sparse_strong_collapse();
 		// Now we complete the Reduction Map
@@ -428,6 +434,7 @@ public:
 			row_iterator_.push(rows_);
 			vertex_to_row_.insert(std::make_pair(vertex, rows_));
 			row_to_vertex_.insert(std::make_pair(rows_, vertex));
+			std::cout << "emplace: " << vertex << "\n";
 			vertices_.emplace(vertex);
 			rows_++;
 		}
@@ -505,6 +512,7 @@ public:
 
 	// Returns the contracted edge. along with the contracted vertex in the begining of the list at {u,u} or {v,v}
 	void active_strong_expansion(const Vertex& v, const Vertex& w, Filtration_value filt_val) {
+		std::cout << "collapse: " << v << ", " << w << "\n";
 		if (membership(v) && membership(w) && v != w) {
 			auto active_list_v_w = active_relative_neighbors(v, w);
 			auto active_list_w_v = active_relative_neighbors(w, v);
@@ -513,11 +521,13 @@ public:
 					active_list_v_w.size()) {
 				// simulate the contraction of w by expanding the star of v
 				for (auto& x : active_list_w_v) {
+					std::cout << "insert edge: " << v << ", " << x << "\n";
 					active_edge_insertion(v, x, filt_val);
 				}
 				swap_rows(v, w);
 			} else {
 				for (auto& y : active_list_v_w) {
+					std::cout << "insert edge: " << w << ", " << y << "\n";
 					active_edge_insertion(w, y, filt_val);
 				}
 			}
