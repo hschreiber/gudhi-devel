@@ -1,15 +1,14 @@
-cmake_minimum_required(VERSION 2.6)
 project(Tower_to_filtration_tests)
 
-include(GUDHI_test_coverage)
+include(GUDHI_boost_test)
 
 # Do not forget to copy test files in current binary dir
 file(COPY "test_tower.txt" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
 
 add_executable(Tower_to_filtration_test_tower_converter test_tower_converter.cpp)
 target_link_libraries(Tower_to_filtration_test_tower_converter ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
-gudhi_add_coverage_test(Tower_to_filtration_test_tower_converter)
+gudhi_add_boost_test(Tower_to_filtration_test_tower_converter)
 
 add_executable(Tower_to_filtration_test_persistence test_persistence.cpp)
 target_link_libraries(Tower_to_filtration_test_persistence ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
-gudhi_add_coverage_test(Tower_to_filtration_test_persistence)
+gudhi_add_boost_test(Tower_to_filtration_test_persistence)

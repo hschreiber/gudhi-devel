@@ -40,9 +40,9 @@ namespace tower_to_filtration {
  * @brief Enumeration of the types of operations.
  */
 enum operationType : int {
-    INCLUSION,      /**< Elementary inclusion. */
-    CONTRACTION,    /**< Elementary contraction. */
-    COMMENT         /**< Comment or similar to be ignored (e.g. useful when reading a file). */
+	INCLUSION,      /**< Elementary inclusion. */
+	CONTRACTION,    /**< Elementary contraction. */
+	COMMENT         /**< Comment or similar to be ignored (e.g. useful when reading a file). */
 };
 
 template<class ComplexStructure>
@@ -59,45 +59,45 @@ template<class ComplexStructure>
  */
 operationType read_operation(std::string &line, std::vector<typename ComplexStructure::vertex> *vertices, double *timestamp)
 {
-    operationType type;
-    vertices->clear();
-    typename ComplexStructure::vertex num;
+	operationType type;
+	vertices->clear();
+	typename ComplexStructure::vertex num;
 
-    size_t next = line.find_first_not_of(' ', 0);
-    size_t current = next;
-    next = line.find_first_of(' ', current);
-    if (next == std::string::npos) return COMMENT;
-    if (line.substr(current, next - current) == "i") type = INCLUSION;
-    else if (line.substr(current, next - current) == "c") type = CONTRACTION;
-    else if (line.substr(current, next - current) == "#") return COMMENT;
-    else {
-	*timestamp = stod(line.substr(current, next - current));
-	next = line.find_first_not_of(' ', next + 1);
-        current = next;
+	size_t next = line.find_first_not_of(' ', 0);
+	size_t current = next;
 	next = line.find_first_of(' ', current);
-        if (next == std::string::npos) {
-            std::cout << "Operation syntaxe error in file.\n";
-            exit(0);
-        }
+	if (next == std::string::npos) return COMMENT;
 	if (line.substr(current, next - current) == "i") type = INCLUSION;
 	else if (line.substr(current, next - current) == "c") type = CONTRACTION;
 	else if (line.substr(current, next - current) == "#") return COMMENT;
-        else {
-            std::cout << "Operation syntaxe error in file.\n";
-            exit(0);
-        }
-    }
+	else {
+		*timestamp = stod(line.substr(current, next - current));
+		next = line.find_first_not_of(' ', next + 1);
+		current = next;
+		next = line.find_first_of(' ', current);
+		if (next == std::string::npos) {
+			std::cout << "Operation syntaxe error in file.\n";
+			exit(0);
+		}
+		if (line.substr(current, next - current) == "i") type = INCLUSION;
+		else if (line.substr(current, next - current) == "c") type = CONTRACTION;
+		else if (line.substr(current, next - current) == "#") return COMMENT;
+		else {
+			std::cout << "Operation syntaxe error in file.\n";
+			exit(0);
+		}
+	}
 
-    next = line.find_first_not_of(' ', next + 1);
-    while (next != std::string::npos){
-        current = next;
-	next = line.find_first_of(' ', current);
-	num = stod(line.substr(current, next - current));
-        vertices->push_back(num);
-	if (next != std::string::npos) next = line.find_first_not_of(' ', next + 1);
-    }
+	next = line.find_first_not_of(' ', next + 1);
+	while (next != std::string::npos){
+		current = next;
+		next = line.find_first_of(' ', current);
+		num = stod(line.substr(current, next - current));
+		vertices->push_back(num);
+		if (next != std::string::npos) next = line.find_first_not_of(' ', next + 1);
+	}
 
-    return type;
+	return type;
 }
 
 template<class ComplexStructure>
@@ -109,32 +109,32 @@ template<class ComplexStructure>
  */
 std::ifstream& operator>>(std::ifstream& file, Tower_converter<ComplexStructure>& tc)
 {
-    std::string line;
+	std::string line;
 
-    if (file.is_open()){
-	std::vector<typename ComplexStructure::vertex> vertices;
-        double timestamp = -1;
-        double defaultTimestamp = 0;
-        while (getline(file, line, '\n')){
-	    operationType type = read_operation<ComplexStructure>(line, &vertices, &timestamp);
-            if (timestamp != -1) defaultTimestamp = timestamp;
+	if (file.is_open()){
+		std::vector<typename ComplexStructure::vertex> vertices;
+		double timestamp = -1;
+		double defaultTimestamp = 0;
+		while (getline(file, line, '\n')){
+			operationType type = read_operation<ComplexStructure>(line, &vertices, &timestamp);
+			if (timestamp != -1) defaultTimestamp = timestamp;
 
-	    if (type == INCLUSION){
-		if (tc.add_insertion(vertices, defaultTimestamp)) defaultTimestamp++;
-	    } else if (type == CONTRACTION) {
-                tc.add_contraction(vertices.at(0), vertices.at(1), defaultTimestamp);
-                defaultTimestamp++;
-            }
+			if (type == INCLUSION){
+				if (tc.add_insertion(vertices, defaultTimestamp)) defaultTimestamp++;
+			} else if (type == CONTRACTION) {
+				tc.add_contraction(vertices.at(0), vertices.at(1), defaultTimestamp);
+				defaultTimestamp++;
+			}
 
-            timestamp = -1;
-        }
-        file.close();
-    } else {
-        std::cout << "Unable to open input file.\n";
-        file.setstate(std::ios::failbit);
-    }
+			timestamp = -1;
+		}
+		file.close();
+	} else {
+		std::cout << "Unable to open input file.\n";
+		file.setstate(std::ios::failbit);
+	}
 
-    return file;
+	return file;
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -146,33 +146,33 @@ template<class ComplexStructure, class ColumnType>
  */
 std::ifstream& operator>>(std::ifstream& file, Persistence<ComplexStructure,ColumnType>& pers)
 {
-    std::string line;
+	std::string line;
 
-    if (file.is_open()){
-	std::vector<typename ComplexStructure::vertex> vertices;
-        double timestamp = -1;
-        double defaultTimestamp = 0;
-        while (getline(file, line, '\n')){
-	    operationType type = read_operation<ComplexStructure>(line, &vertices, &timestamp);
-            if (timestamp != -1) defaultTimestamp = timestamp;
+	if (file.is_open()){
+		std::vector<typename ComplexStructure::vertex> vertices;
+		double timestamp = -1;
+		double defaultTimestamp = 0;
+		while (getline(file, line, '\n')){
+			operationType type = read_operation<ComplexStructure>(line, &vertices, &timestamp);
+			if (timestamp != -1) defaultTimestamp = timestamp;
 
-	    if (type == INCLUSION){
-		if (pers.add_insertion(vertices, defaultTimestamp)) defaultTimestamp++;
-	    } else if (type == CONTRACTION) {
-                pers.add_contraction(vertices.at(0), vertices.at(1), defaultTimestamp);
-                defaultTimestamp++;
-            }
+			if (type == INCLUSION){
+				if (pers.add_insertion(vertices, defaultTimestamp)) defaultTimestamp++;
+			} else if (type == CONTRACTION) {
+				pers.add_contraction(vertices.at(0), vertices.at(1), defaultTimestamp);
+				defaultTimestamp++;
+			}
 
-            timestamp = -1;
-        }
-        pers.finalize_reduction();
-        file.close();
-    } else {
-        std::cout << "Unable to open input file.\n";
-        file.setstate(std::ios::failbit);
-    }
+			timestamp = -1;
+		}
+		pers.finalize_reduction();
+		file.close();
+	} else {
+		std::cout << "Unable to open input file.\n";
+		file.setstate(std::ios::failbit);
+	}
 
-    return file;
+	return file;
 }
 
 }
