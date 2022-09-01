@@ -39,8 +39,8 @@ using vertex = Hash_complex::vertex;
 
 std::ofstream *outputFile;		/**< Pointer to output file. */
 
-void write_tc_results_to_file_as_vertices(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp);	/**< Example 1 of callback function for Tower_converter. */
-void write_tc_results_to_file_as_faces(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp);		/**< Example 2 of callback function for Tower_converter. */
+void write_tc_results_to_file_as_vertices(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp);	/**< Example 1 of callback function for Tower_converter. */
+void write_tc_results_to_file_as_faces(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp);		/**< Example 2 of callback function for Tower_converter. */
 
 int main(int argc, char *argv[])
 {
@@ -123,21 +123,20 @@ int main(int argc, char *argv[])
 	outputFile->close();
 }
 
-void write_tc_results_to_file_as_vertices(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp){
-	int dim = complex->get_dimension(simplex);
+void write_tc_results_to_file_as_vertices(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp){
+	int dim = complex.get_dimension(simplex);
 	*outputFile << std::setprecision(std::numeric_limits<double>::digits10 + 1) << dim << " ";
-	for (Hash_complex::vertex v : complex->get_vertices(simplex)){
+	for (Hash_complex::vertex v : complex.get_vertices(simplex)){
 		*outputFile << v << " ";
 	}
 	*outputFile << timestamp << std::endl;
 }
 
-void write_tc_results_to_file_as_faces(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp){
-	int dim = complex->get_dimension(simplex);
+void write_tc_results_to_file_as_faces(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp){
+	int dim = complex.get_dimension(simplex);
 	*outputFile << std::setprecision(std::numeric_limits<double>::digits10 + 1) << dim << " ";
 	if (dim > 0){
-		std::vector<Hash_complex::index> boundary;
-		complex->get_boundary(simplex, &boundary);
+		std::vector<Hash_complex::index> boundary = complex.get_boundary(simplex);
 		for (unsigned int i = 0; i < boundary.size(); i++){
 			*outputFile << boundary.at(i) << " ";
 		}

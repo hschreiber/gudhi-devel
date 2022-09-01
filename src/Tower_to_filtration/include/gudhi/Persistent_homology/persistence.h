@@ -62,7 +62,6 @@ public:
 	typedef void (*process_persistence_pair)(int dim, double birth, double death);
 
 	Persistence(size_type reductionInterval, process_persistence_pair outputFunction);
-	~Persistence();
 
 	/**
 	 * @brief Represents the boundary matrix from which the persistence barcode is computed.
@@ -71,7 +70,6 @@ public:
 	{
 	public:
 		Boundary_matrix(process_persistence_pair outputFunction);
-		~Boundary_matrix();
 
 		void insert_column(index insertionNumber, std::vector<index> &boundary, double timestamp);
 		void insert_vertex(index insertionNumber, double timestamp);
@@ -84,10 +82,10 @@ public:
 		int get_max_dim() const;
 
 	private:
-		std::unordered_map<index, ColumnType*> *columns_;						/**< Columns of the matrix. The key is the column number. */
-		std::unordered_map<index, index> *latest_;								/**< Pivot to column map. */
-		std::unordered_map<index, std::pair<bool, bool>*> *isActivePositive_;	/**< Indicates if a column is active (first value) and/or is positive. */
-		std::unordered_map<double, double> *timestamps_;						/**< Column number to filtration value map. */
+		std::unordered_map<index, ColumnType> columns_;							/**< Columns of the matrix. The key is the column number. */
+		std::unordered_map<index, index> latest_;								/**< Pivot to column map. */
+		std::unordered_map<index, std::pair<bool, bool> > isActivePositive_;	/**< Indicates if a column is active (first value) and/or is positive. */
+		std::unordered_map<double, double> timestamps_;							/**< Column number to filtration value map. */
 		index lastInsertNumber_;												/**< Identifier of the latest inserted simplex (as column). */
 		int maxDim_;															/**< Maximal dimension of an inserted simplex. */
 		process_persistence_pair outputFunction_;								/**< Output function. */
@@ -103,8 +101,8 @@ public:
 	void finalize_reduction();
 
 private:
-	Tower_converter<ComplexStructure> *converter_;	/**< Pointer to @ref Gudhi::tower_to_filtration::Tower_converter<ComplexStructure> */
-	Boundary_matrix *matrix_;						/**< Boundary matrix. */
+	Tower_converter<ComplexStructure> converter_;	/**< Pointer to @ref Gudhi::tower_to_filtration::Tower_converter<ComplexStructure> */
+	Boundary_matrix matrix_;						/**< Boundary matrix. */
 	size_type reductionInterval_;					/**< Number of steps between each matrix processing. */
 	size_type lastReduction_;						/**< Number of steps since the last matrix processing. */
 
@@ -117,23 +115,9 @@ template<class ComplexStructure, class ColumnType>
  * @param reductionInterval number of steps between each matrix processing. The higher the interval, the faster the computing, but the bigger the space consumption.
  * @param outputFunction pointer to a callback function which process the persistence pairs' output stream.
  */
-Persistence<ComplexStructure, ColumnType>::Persistence(size_type reductionInterval, process_persistence_pair outputFunction) : reductionInterval_(reductionInterval), lastReduction_(-1)
-{
-	converter_ = new Tower_converter<ComplexStructure>();
-	matrix_ = new Boundary_matrix(outputFunction);
-	if (reductionInterval_ < 1) reductionInterval_ = 1;
-}
-
-template<class ComplexStructure, class ColumnType>
-/**
- * @brief Destructor
- */
-Persistence<ComplexStructure, ColumnType>::~Persistence()
-{
-	finalize_reduction();
-	delete converter_;
-	delete matrix_;
-}
+Persistence<ComplexStructure, ColumnType>::Persistence(size_type reductionInterval, process_persistence_pair outputFunction)
+	: matrix_(outputFunction), reductionInterval_(reductionInterval < 1 ? 1 : reductionInterval), lastReduction_(-1)
+{}
 
 template<class ComplexStructure, class ColumnType>
 /**
@@ -147,12 +131,12 @@ bool Persistence<ComplexStructure, ColumnType>::add_insertion(simplex_base &simp
 	std::vector<index> boundary;
 	index insertionNum;
 
-	if (!converter_->add_insertion(simplex, timestamp, &boundary, &insertionNum)) return false;
+	if (!converter_.add_insertion(simplex, timestamp, boundary, insertionNum)) return false;
 	if (simplex.size() == 1) {
-		matrix_->insert_vertex(insertionNum, timestamp);
+		matrix_.insert_vertex(insertionNum, timestamp);
 		return true;
 	}
-	matrix_->insert_column(insertionNum, boundary, timestamp);
+	matrix_.insert_column(insertionNum, boundary, timestamp);
 
 	if (fmod(insertionNum, reductionInterval_) == 0) {
 		compute_partial_persistence();
@@ -164,17 +148,17 @@ bool Persistence<ComplexStructure, ColumnType>::add_insertion(simplex_base &simp
 template<class ComplexStructure, class ColumnType>
 bool Persistence<ComplexStructure, ColumnType>::add_faces_insertions(simplex_base &simplex, double timestamp)
 {
-	std::vector<std::vector<index>*> boundaries;
+	std::vector<std::vector<index> > boundaries;
 	std::vector<index> insertionNumbers;
 	int c = 0;
 
-	bool res = converter_->add_faces_insertions(simplex, timestamp, &boundaries, &insertionNumbers);
+	bool res = converter_.add_faces_insertions(simplex, timestamp, boundaries, insertionNumbers);
 
-	for (std::vector<index>* added : boundaries){
-		if (added->size() == 0) {
-			matrix_->insert_vertex(insertionNumbers.at(c), timestamp);
+	for (std::vector<index>& added : boundaries){
+		if (added.size() == 0) {
+			matrix_.insert_vertex(insertionNumbers.at(c), timestamp);
 		} else {
-			matrix_->insert_column(insertionNumbers.at(c), *added, timestamp);
+			matrix_.insert_column(insertionNumbers.at(c), added, timestamp);
 
 			if (fmod(insertionNumbers.at(c), reductionInterval_) == 0) {
 				compute_partial_persistence();
@@ -197,17 +181,17 @@ template<class ComplexStructure, class ColumnType>
  */
 bool Persistence<ComplexStructure, ColumnType>::add_insertions_via_edge_expansion(vertex u, vertex v, double timestamp, int maxExpDim)
 {
-	std::vector<std::vector<index>*> boundaries;
+	std::vector<std::vector<index> > boundaries;
 	std::vector<index> insertionNumbers;
 	int c = 0;
 
-	bool res = converter_->add_insertions_via_edge_expansion(u, v, timestamp, maxExpDim, &boundaries, &insertionNumbers);
+	bool res = converter_.add_insertions_via_edge_expansion(u, v, timestamp, maxExpDim, boundaries, insertionNumbers);
 
-	for (std::vector<index>* boundary : boundaries){
-		if (boundary->size() == 0) {
-			matrix_->insert_vertex(insertionNumbers.at(c), timestamp);
+	for (std::vector<index>& boundary : boundaries){
+		if (boundary.size() == 0) {
+			matrix_.insert_vertex(insertionNumbers.at(c), timestamp);
 		} else {
-			matrix_->insert_column(insertionNumbers.at(c), *boundary, timestamp);
+			matrix_.insert_column(insertionNumbers.at(c), boundary, timestamp);
 
 			if (fmod(insertionNumbers.at(c), reductionInterval_) == 0) {
 				compute_partial_persistence();
@@ -230,18 +214,17 @@ template<class ComplexStructure, class ColumnType>
  */
 void Persistence<ComplexStructure, ColumnType>::add_contraction(vertex v, vertex u, double timestamp)
 {
-	std::vector<std::vector<index>*> boundaries;
+	std::vector<std::vector<index> > boundaries;
 	std::vector<index> insertionNumbers;
 	bool reduce = false;
 
-	index first = converter_->add_contraction(v, u, timestamp, &boundaries, &insertionNumbers);
+	index first = converter_.add_contraction(v, u, timestamp, boundaries, insertionNumbers);
 
-	for (typename std::vector<std::vector<index>*>::size_type i = 0; i < boundaries.size(); i++){
-		matrix_->insert_column(first + i, *(boundaries.at(i)), timestamp);
-		delete boundaries.at(i);
+	for (typename std::vector<std::vector<index> >::size_type i = 0; i < boundaries.size(); i++){
+		matrix_.insert_column(first + i, boundaries.at(i), timestamp);
 		if (fmod((first + i), reductionInterval_) == 0) reduce = true;
 	}
-	matrix_->mark_inactive(insertionNumbers);
+	matrix_.mark_inactive(insertionNumbers);
 
 	if (reduce) compute_partial_persistence();
 }
@@ -252,8 +235,8 @@ template<class ComplexStructure, class ColumnType>
  */
 inline void Persistence<ComplexStructure, ColumnType>::finalize_reduction()
 {
-	if (lastReduction_ != matrix_->get_last_insert_number()) matrix_->reduce(lastReduction_ + 1);
-	lastReduction_ = matrix_->get_last_insert_number();
+	if (lastReduction_ != matrix_.get_last_insert_number()) matrix_.reduce(lastReduction_ + 1);
+	lastReduction_ = matrix_.get_last_insert_number();
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -262,9 +245,9 @@ template<class ComplexStructure, class ColumnType>
  */
 inline void Persistence<ComplexStructure, ColumnType>::compute_partial_persistence()
 {
-	matrix_->reduce(lastReduction_ + 1);
-	matrix_->clear_out();
-	lastReduction_ = matrix_->get_last_insert_number();
+	matrix_.reduce(lastReduction_ + 1);
+	matrix_.clear_out();
+	lastReduction_ = matrix_.get_last_insert_number();
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -272,31 +255,9 @@ template<class ComplexStructure, class ColumnType>
  * @brief Constructor
  * @param outputFunction pointer to a callback function which process the persistence pairs' output stream.
  */
-Persistence<ComplexStructure, ColumnType>::Boundary_matrix::Boundary_matrix(process_persistence_pair outputFunction) : lastInsertNumber_(-1), maxDim_(-1), outputFunction_(outputFunction)
-{
-	columns_ = new std::unordered_map<index, ColumnType*>();
-	latest_ = new std::unordered_map<index, index>();
-	isActivePositive_ = new std::unordered_map<index, std::pair<bool, bool>*>();
-	timestamps_ = new std::unordered_map<double, double>();
-}
-
-template<class ComplexStructure, class ColumnType>
-/**
- * @brief Destructor.
- */
-Persistence<ComplexStructure, ColumnType>::Boundary_matrix::~Boundary_matrix()
-{
-	for (auto it = columns_->begin(); it != columns_->end(); it++){
-		delete it->second;
-	}
-	delete columns_;
-	delete latest_;
-	for (auto it = isActivePositive_->begin(); it != isActivePositive_->end(); it++){
-		delete it->second;
-	}
-	delete isActivePositive_;
-	delete timestamps_;
-}
+Persistence<ComplexStructure, ColumnType>::Boundary_matrix::Boundary_matrix(process_persistence_pair outputFunction)
+	: lastInsertNumber_(-1), maxDim_(-1), outputFunction_(outputFunction)
+{}
 
 template<class ComplexStructure, class ColumnType>
 /**
@@ -307,18 +268,18 @@ template<class ComplexStructure, class ColumnType>
  */
 void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::insert_column(index insertionNumber, std::vector<index> &boundary, double timestamp)
 {
-	ColumnType *col = new ColumnType(boundary.size() - 1);
-	isActivePositive_->emplace(insertionNumber, new std::pair<bool, bool>(true, true));
+	ColumnType col(boundary.size() - 1);
+	isActivePositive_.emplace(insertionNumber, std::pair<bool,bool>(true, true));
 
-	for (int i = 0; i < (int)boundary.size(); i++){
-		col->push_back(boundary.at(i));
+	for (int i = 0; i < static_cast<int>(boundary.size()); i++){
+		col.push_back(boundary.at(i));
 	}
 
-	columns_->emplace(insertionNumber, col);
+	columns_.emplace(insertionNumber, col);
 
 	lastInsertNumber_ = insertionNumber;
-	if (maxDim_ < (int)boundary.size() - 1) maxDim_ = boundary.size() - 1;
-	timestamps_->emplace(insertionNumber, timestamp);
+	if (maxDim_ < static_cast<int>(boundary.size()) - 1) maxDim_ = boundary.size() - 1;
+	timestamps_.emplace(insertionNumber, timestamp);
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -329,8 +290,8 @@ template<class ComplexStructure, class ColumnType>
  */
 inline void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::insert_vertex(index insertionNumber, double timestamp)
 {
-	isActivePositive_->emplace(insertionNumber, new std::pair<bool, bool>(true, true));
-	timestamps_->emplace(insertionNumber, timestamp);
+	isActivePositive_.emplace(insertionNumber, std::pair<bool,bool>(true, true));
+	timestamps_.emplace(insertionNumber, timestamp);
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -342,18 +303,18 @@ void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::reduce(size_typ
 {
 	for (int d = maxDim_; d > 0; d--){
 		for (size_type i = start; i <= lastInsertNumber_; i++){
-			if (columns_->find(i) != columns_->end() && columns_->at(i)->get_dim() == d){
-				ColumnType *curr = columns_->at(i);
-				index pivot = curr->get_pivot();
+			if (columns_.find(i) != columns_.end() && columns_.at(i).get_dim() == d){
+				ColumnType &curr = columns_.at(i);
+				index pivot = curr.get_pivot();
 
-				while (pivot != -1 && latest_->find(pivot) != latest_->end()){
-					curr->add(*(columns_->at(latest_->at(pivot))));
-					pivot = curr->get_pivot();
+				while (pivot != -1 && latest_.find(pivot) != latest_.end()){
+					curr.add(columns_.at(latest_.at(pivot)));
+					pivot = curr.get_pivot();
 				}
 
 				if (pivot != -1){
-					isActivePositive_->at(i)->second = false;
-					latest_->emplace(pivot, i);
+					isActivePositive_.at(i).second = false;
+					latest_.emplace(pivot, i);
 					clear_column(pivot);
 					stream_persistence_pair(d - 1, pivot, i);
 				} else {
@@ -373,41 +334,38 @@ void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::clear_out()
 	index r;
 	index c;
 
-	for (auto it = columns_->begin(); it != columns_->end(); it++){
+	for (auto it = columns_.begin(); it != columns_.end(); it++){
 		c = it->first;
-		ColumnType *column = columns_->at(c);
-		r = column->get_pivot();
-		if (isActivePositive_->at(r)->first){
-			column->clean(latest_, isActivePositive_, columns_);
+		ColumnType &column = columns_.at(c);
+		r = column.get_pivot();
+		if (isActivePositive_.at(r).first){
+			column.clean(latest_, isActivePositive_, columns_);
 		}
 	}
 
-	for (auto it = columns_->begin(), next_it = columns_->begin(); it != columns_->end(); it = next_it)
+	for (auto it = columns_.begin(), next_it = columns_.begin(); it != columns_.end(); it = next_it)
 	{
 		next_it = it; ++next_it;
 		c = it->first;
-		r = columns_->at(c)->get_pivot();
-		if (!isActivePositive_->at(r)->first)
+		r = columns_.at(c).get_pivot();
+		if (!isActivePositive_.at(r).first)
 		{
-			latest_->erase(r);
-			delete isActivePositive_->at(r);
-			isActivePositive_->erase(r);
+			latest_.erase(r);
+			isActivePositive_.erase(r);
 			clear_column(c);
-			if (!isActivePositive_->at(c)->first) {
-				delete isActivePositive_->at(c);
-				isActivePositive_->erase(c);
+			if (!isActivePositive_.at(c).first) {
+				isActivePositive_.erase(c);
 			}
 		}
 	}
 
-	for (auto it = isActivePositive_->begin(), next_it = isActivePositive_->begin(); it != isActivePositive_->end(); it = next_it)
+	for (auto it = isActivePositive_.begin(), next_it = isActivePositive_.begin(); it != isActivePositive_.end(); it = next_it)
 	{
 		next_it = it; ++next_it;
 		c = it->first;
-		if (columns_->find(c) == columns_->end() && !it->second->second && !it->second->first)
+		if (columns_.find(c) == columns_.end() && !it->second.second && !it->second.first)
 		{
-			delete isActivePositive_->at(c);
-			isActivePositive_->erase(c);
+			isActivePositive_.erase(c);
 		}
 	}
 }
@@ -420,7 +378,7 @@ template<class ComplexStructure, class ColumnType>
 inline void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::mark_inactive(std::vector<index> &insertionNumbers)
 {
 	for (typename std::vector<index>::size_type i = 0; i < insertionNumbers.size(); i++){
-		isActivePositive_->at(insertionNumbers.at(i))->first = false;
+		isActivePositive_.at(insertionNumbers.at(i)).first = false;
 	}
 }
 
@@ -431,7 +389,7 @@ template<class ComplexStructure, class ColumnType>
  */
 inline void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::mark_inactive(index insertionNumber)
 {
-	isActivePositive_->at(insertionNumber)->first = false;
+	isActivePositive_.at(insertionNumber).first = false;
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -461,9 +419,8 @@ template<class ComplexStructure, class ColumnType>
  */
 inline void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::clear_column(index columnIndex)
 {
-	if (columns_->find(columnIndex) == columns_->end()) return;
-	delete columns_->at(columnIndex);
-	columns_->erase(columnIndex);
+	if (columns_.find(columnIndex) == columns_.end()) return;
+	columns_.erase(columnIndex);
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -475,9 +432,9 @@ template<class ComplexStructure, class ColumnType>
  */
 inline void Persistence<ComplexStructure, ColumnType>::Boundary_matrix::stream_persistence_pair(int dim, double birth, double death)
 {
-	if (outputFunction_ != nullptr && timestamps_->at(birth) != timestamps_->at(death)) outputFunction_(dim, timestamps_->at(birth), timestamps_->at(death));
-	timestamps_->erase(birth);
-	timestamps_->erase(death);
+	if (outputFunction_ != nullptr && timestamps_.at(birth) != timestamps_.at(death)) outputFunction_(dim, timestamps_.at(birth), timestamps_.at(death));
+	timestamps_.erase(birth);
+	timestamps_.erase(death);
 }
 
 }

@@ -21,9 +21,11 @@
  */
 
 #include <iostream>
+#include <string>
 #include "gudhi/tower_converter.h"
 #include "gudhi/hash_complex.h"
 #include "gudhi/tc_reading_utilities.h"
+#include "gudhi/Persistent_homology/list_column.h"
 
 using namespace Gudhi::tower_to_filtration;	//module namespace
 
@@ -37,8 +39,13 @@ void print_usage(){
 
 std::ofstream *outputFile;		/**< Pointer to output file. */
 
-void write_tc_results_to_file_as_vertices(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp);	/**< Example 1 of callback function for Tower_converter. */
-void write_tc_results_to_file_as_faces(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp);		/**< Example 2 of callback function for Tower_converter. */
+void write_tc_results_to_file_as_vertices(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp);	/**< Example 1 of callback function for Tower_converter. */
+void write_tc_results_to_file_as_faces(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp);		/**< Example 2 of callback function for Tower_converter. */
+
+void print_persistence_pair(int dim, double birth, double death)
+{
+	*outputFile << std::setprecision(std::numeric_limits<double>::digits10 + 1) << dim << " " << birth << " " << death << std::endl;
+}
 
 int main(int argc, char *argv[])
 {
@@ -65,29 +72,31 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	Tower_converter<Hash_complex> tc(write_tc_results_to_file_as_vertices);	// output callback function ; another example: write_tc_results_to_file_as_faces.
-	file >> tc;		// >> function in gudhi/tc_reading_utilities.h, see documentation for input file format.
+//	Tower_converter<Hash_complex> tc(write_tc_results_to_file_as_vertices);	// output callback function ; another example: write_tc_results_to_file_as_faces.
+//	file >> tc;		// >> function in gudhi/tc_reading_utilities.h, see documentation for input file format.
+
+	Persistence<Hash_complex, List_column> pers(5, print_persistence_pair);
+	file >> pers;
 
 	file.close();
 	outputFile->close();
 	return 0;
 }
 
-void write_tc_results_to_file_as_vertices(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp){
-	int dim = complex->get_dimension(simplex);
+void write_tc_results_to_file_as_vertices(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp){
+	int dim = complex.get_dimension(simplex);
 	*outputFile << std::setprecision(std::numeric_limits<double>::digits10 + 1) << dim << " ";
-	for (Hash_complex::vertex v : complex->get_vertices(simplex)){
+	for (Hash_complex::vertex v : complex.get_vertices(simplex)){
 		*outputFile << v << " ";
 	}
 	*outputFile << timestamp << std::endl;
 }
 
-void write_tc_results_to_file_as_faces(Hash_complex *complex, Hash_complex::simplex_handle &simplex, double timestamp){
-	int dim = complex->get_dimension(simplex);
+void write_tc_results_to_file_as_faces(Hash_complex &complex, Hash_complex::simplex_handle &simplex, double timestamp){
+	int dim = complex.get_dimension(simplex);
 	*outputFile << std::setprecision(std::numeric_limits<double>::digits10 + 1) << dim << " ";
 	if (dim > 0){
-		std::vector<Hash_complex::index> boundary;
-		complex->get_boundary(simplex, &boundary);
+		std::vector<Hash_complex::index> boundary = complex.get_boundary(simplex);
 		for (unsigned int i = 0; i < boundary.size(); i++){
 			*outputFile << boundary.at(i) << " ";
 		}

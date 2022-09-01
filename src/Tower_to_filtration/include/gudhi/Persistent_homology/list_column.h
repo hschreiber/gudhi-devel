@@ -48,52 +48,51 @@ public:
 	using coefficient_type = long long;
 
 	List_column(int dim);
-	~List_column();
 
 	void add(List_column &columnToAdd);
 	/**
 	 * @brief Erase a cell from the column.
 	 * @param pos position of the cell to be deleted.
 	 */
-	void erase(std::list<coefficient_type>::iterator &pos){ column_->erase(pos); }
+	void erase(std::list<coefficient_type>::iterator &pos){ column_.erase(pos); }
 	/**
 	 * @brief Return an iterator of the column pointing at the begining.
 	 * @return An iterator of the column pointing at the begining.
 	 */
-	std::list<coefficient_type>::iterator get_begin_iterator(){ return column_->begin(); }
+	std::list<coefficient_type>::iterator get_begin_iterator(){ return column_.begin(); }
 	/**
 	 * @brief Return an reverse iterator of the column pointing at the end.
 	 * @return An reverse iterator of the column pointing at the end.
 	 */
-	std::list<coefficient_type>::reverse_iterator get_reverse_begin_iterator(){ return column_->rbegin(); }
+	std::list<coefficient_type>::reverse_iterator get_reverse_begin_iterator(){ return column_.rbegin(); }
 	/**
 	 * @brief Return an iterator of the column pointing after the end.
 	 * @return An iterator of the column pointing after the end.
 	 */
-	std::list<coefficient_type>::iterator get_end_iterator(){ return column_->end(); }
+	std::list<coefficient_type>::iterator get_end_iterator(){ return column_.end(); }
 	/**
 	 * @brief Return an reverse iterator of the column pointing before the begining.
 	 * @return An reverse iterator of the column pointing before the begining.
 	 */
-	std::list<coefficient_type>::reverse_iterator get_reverse_end_iterator(){ return column_->rend(); }
+	std::list<coefficient_type>::reverse_iterator get_reverse_end_iterator(){ return column_.rend(); }
 	/**
 	 * @brief Returns the number of nonzero values in the column.
 	 * @return The number of nonzero values in the column.
 	 */
-	std::list<coefficient_type>::size_type get_size(){ return column_->size(); }
+	std::list<coefficient_type>::size_type get_size(){ return column_.size(); }
 	/**
 	 * @brief Returns the stored dimension.
 	 * @return The dimension.
 	 */
 	int get_dim() const{ return dim_; }
 	coefficient_type get_pivot();
-	void clean(std::unordered_map<coefficient_type, coefficient_type> *latest, std::unordered_map<coefficient_type, std::pair<bool, bool> *> *isActivePositive,
-			   std::unordered_map<coefficient_type, List_column *> *columns);
+	void clean(std::unordered_map<coefficient_type, coefficient_type> &latest, std::unordered_map<coefficient_type, std::pair<bool, bool> > &isActivePositive,
+			   std::unordered_map<coefficient_type, List_column > &columns);
 	void push_back(coefficient_type cell);
 
 private:
 	int dim_;								/**< Dimension of the column. */
-	std::list<coefficient_type> *column_;	/**< Data container of the column. */
+	std::list<coefficient_type> column_;	/**< Data container of the column. */
 };
 
 /**
@@ -101,17 +100,7 @@ private:
  * @param dim dimension to be stored as the column dimension.
  */
 inline List_column::List_column(int dim) : dim_(dim)
-{
-	column_ = new std::list<coefficient_type>();
-}
-
-/**
- * @brief Destructor
- */
-inline List_column::~List_column()
-{
-	delete column_;
-}
+{}
 
 /**
  * @brief Replaces the column values by the sum of this column and @p columnToAdd.
@@ -119,20 +108,20 @@ inline List_column::~List_column()
  */
 inline void List_column::add(List_column &columnToAdd)
 {
-	std::list<coefficient_type>::iterator itToAdd = columnToAdd.get_begin_iterator(), itTarget = column_->begin();
-	while (itToAdd != columnToAdd.get_end_iterator() && itTarget != column_->end()){
+	std::list<coefficient_type>::iterator itToAdd = columnToAdd.get_begin_iterator(), itTarget = column_.begin();
+	while (itToAdd != columnToAdd.get_end_iterator() && itTarget != column_.end()){
 		if (*itToAdd == *itTarget){
-			column_->erase(itTarget++);
+			column_.erase(itTarget++);
 			itToAdd++;
 		} else if (*itToAdd < *itTarget){
-			column_->insert(itTarget, *itToAdd);
+			column_.insert(itTarget, *itToAdd);
 			itToAdd++;
 		} else {
 			itTarget++;
 		}
 	}
 	while (itToAdd != columnToAdd.get_end_iterator()){
-		column_->push_back(*itToAdd);
+		column_.push_back(*itToAdd);
 		itToAdd++;
 	}
 }
@@ -142,8 +131,8 @@ inline void List_column::add(List_column &columnToAdd)
  * @return The pivot of the column.
  */
 inline List_column::coefficient_type List_column::get_pivot(){
-	if (column_->empty()) return -1;
-	return column_->back();
+	if (column_.empty()) return -1;
+	return column_.back();
 }
 
 /**
@@ -152,20 +141,21 @@ inline List_column::coefficient_type List_column::get_pivot(){
  * @param isActivePositive private member of @ref Gudhi::tower_to_filtration::Persistence::Boundary_matrix.
  * @param columns private member of @ref Gudhi::tower_to_filtration::Persistence::Boundary_matrix.
  */
-inline void List_column::clean(std::unordered_map<coefficient_type, coefficient_type> *latest, std::unordered_map<coefficient_type, std::pair<bool, bool> *> *isActivePositive,
-							   std::unordered_map<coefficient_type, List_column *> *columns)
+inline void List_column::clean(std::unordered_map<coefficient_type, coefficient_type> &latest,
+							   std::unordered_map<coefficient_type, std::pair<bool, bool> > &isActivePositive,
+							   std::unordered_map<coefficient_type, List_column> &columns)
 {
 	std::list<coefficient_type>::reverse_iterator it;
 	std::list<coefficient_type>::iterator it2;
-	it = column_->rbegin();
+	it = column_.rbegin();
 	it++;
-	while (it != column_->rend()){
-		if (latest->find(*it) != latest->end() && !isActivePositive->at(*it)->first){
-			add(*(columns->at(latest->at(*(it--)))));
-		} else if (!isActivePositive->at(*it)->second && !isActivePositive->at(*it)->first) {
+	while (it != column_.rend()){
+		if (latest.find(*it) != latest.end() && !isActivePositive.at(*it).first){
+			add(columns.at(latest.at(*(it--))));
+		} else if (!isActivePositive.at(*it).second && !isActivePositive.at(*it).first) {
 			it2 = (++it).base();
 			it--; it--;
-			column_->erase(it2);
+			column_.erase(it2);
 		}
 		it++;
 	}
@@ -177,7 +167,7 @@ inline void List_column::clean(std::unordered_map<coefficient_type, coefficient_
  */
 inline void List_column::push_back(coefficient_type cell)
 {
-	column_->push_back(cell);
+	column_.push_back(cell);
 }
 
 }

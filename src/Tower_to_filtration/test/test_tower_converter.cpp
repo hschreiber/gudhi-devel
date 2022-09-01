@@ -37,26 +37,24 @@ typedef boost::mpl::list<Hash_complex,Simplex_tree> complex_types;
 std::stringstream ss;
 
 template<class ComplexType>
-void write_tc(ComplexType *complex, typename ComplexType::simplex_handle &simplex, double timestamp)	/**< Callback function for Tower_converter. */
+void write_tc(ComplexType &complex, typename ComplexType::simplex_handle &simplex, double timestamp)	/**< Callback function for Tower_converter. */
 {
-	int dim = complex->get_dimension(simplex);
+	int dim = complex.get_dimension(simplex);
 	ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << dim << " ";
-	for (typename ComplexType::vertex v : complex->get_vertices(simplex)){
+	for (typename ComplexType::vertex v : complex.get_vertices(simplex)){
 		ss << v << " ";
 	}
 	ss << timestamp << std::endl;
 }
 
 template<class ComplexType>
-void write_tc_faces(ComplexType *complex, typename ComplexType::simplex_handle &simplex, double timestamp)	/**< Callback function for Tower_converter. */
+void write_tc_faces(ComplexType &complex, typename ComplexType::simplex_handle &simplex, double timestamp)	/**< Callback function for Tower_converter. */
 {
-	int dim = complex->get_dimension(simplex);
+	int dim = complex.get_dimension(simplex);
 	ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << dim << " ";
 	if (dim > 0){
-		std::vector<typename ComplexType::simplex_handle> boundary;
-		complex->get_boundary(simplex, &boundary);
-		for (unsigned int i = 0; i < boundary.size(); i++){
-			ss << complex->get_key(boundary.at(i)) << " ";
+		for (typename ComplexType::simplex_handle handle : complex.get_boundary(simplex)){
+			ss << complex.get_key(handle) << " ";
 		}
 	}
 	ss << timestamp << std::endl;
@@ -66,16 +64,16 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_test, ComplexType, complex_types)
 {
 	Tower_converter<ComplexType> no_output_tc;
 
-	ComplexType *complex = no_output_tc.get_complex();
-	BOOST_CHECK(complex->get_size() == 0);
+	const ComplexType &complex = no_output_tc.get_complex();
+	BOOST_CHECK(complex.get_size() == 0);
 
 	BOOST_CHECK(no_output_tc.get_filtration_size() == 0);
 	BOOST_CHECK(no_output_tc.get_tower_width() == 0);
 
 	Tower_converter<ComplexType> file_tc(write_tc);
 
-	complex = file_tc.get_complex();
-	BOOST_CHECK(complex->get_size() == 0);	//if file not found/open, complex will not be defined and test fails
+	const ComplexType &complex2 = file_tc.get_complex();
+	BOOST_CHECK(complex2.get_size() == 0);	//if file not found/open, complex will not be defined and test fails
 
 	BOOST_CHECK(file_tc.get_filtration_size() == 0);
 	BOOST_CHECK(file_tc.get_tower_width() == 0);
@@ -102,7 +100,7 @@ bool test_output_stream_first_line(int *dim, int *filtrationValue, std::vector<v
 BOOST_AUTO_TEST_CASE_TEMPLATE(insertion_test, ComplexType, complex_types)
 {
 	Tower_converter<ComplexType> tc(write_tc);
-	ComplexType *complex = tc.get_complex();
+	const ComplexType &complex = tc.get_complex();
 
 	std::vector<typename ComplexType::vertex> simplex;
 	std::vector<typename ComplexType::index> simplexBoundary;
@@ -112,9 +110,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insertion_test, ComplexType, complex_types)
 	std::vector<typename ComplexType::vertex> vertices;
 
 	simplex.push_back(0);
-	BOOST_CHECK(tc.add_insertion(simplex, 0, &simplexBoundary, &simplexInsertionNumber));
+	BOOST_CHECK(tc.add_insertion(simplex, 0, simplexBoundary, simplexInsertionNumber));
 	BOOST_CHECK(simplexBoundary.size() == 0);
-	BOOST_CHECK(complex->get_size() == 1);
+	BOOST_CHECK(complex.get_size() == 1);
 	test_output_stream_first_line(&dim, &filtrationValue, &vertices);
 	BOOST_CHECK(dim == 0);
 	BOOST_CHECK(vertices.size() == 1);
@@ -126,9 +124,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insertion_test, ComplexType, complex_types)
 
 	simplex.at(0) = 1;
 	simplexBoundary.clear();
-	BOOST_CHECK(tc.add_insertion(simplex, 1, &simplexBoundary, &simplexInsertionNumber));
+	BOOST_CHECK(tc.add_insertion(simplex, 1, simplexBoundary, simplexInsertionNumber));
 	BOOST_CHECK(simplexBoundary.size() == 0);
-	BOOST_CHECK(complex->get_size() == 2);
+	BOOST_CHECK(complex.get_size() == 2);
 	test_output_stream_first_line(&dim, &filtrationValue, &vertices);
 	BOOST_CHECK(dim == 0);
 	BOOST_CHECK(vertices.size() == 1);
@@ -141,11 +139,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insertion_test, ComplexType, complex_types)
 	simplex.at(0) = 0;
 	simplex.push_back(1);
 	simplexBoundary.clear();
-	BOOST_CHECK(tc.add_insertion(simplex, 2, &simplexBoundary, &simplexInsertionNumber));
+	BOOST_CHECK(tc.add_insertion(simplex, 2, simplexBoundary, simplexInsertionNumber));
 	BOOST_CHECK(simplexBoundary.size() == 2);
 	BOOST_CHECK(simplexBoundary.at(0) == 0);
 	BOOST_CHECK(simplexBoundary.at(1) == 1);
-	BOOST_CHECK(complex->get_size() == 3);
+	BOOST_CHECK(complex.get_size() == 3);
 	test_output_stream_first_line(&dim, &filtrationValue, &vertices);
 	BOOST_CHECK(dim == 1);
 	BOOST_CHECK(vertices.size() == 2);
@@ -166,7 +164,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insertion_test, ComplexType, complex_types)
 	simplexBoundary.clear();
 	simplex.clear();
 	Tower_converter<ComplexType> tc_faces(write_tc_faces);
-	complex = tc_faces.get_complex();
+	const ComplexType &complex2 = tc_faces.get_complex();
 
 	simplex.push_back(0);
 	BOOST_CHECK(tc_faces.add_insertion(simplex, 0));
@@ -177,11 +175,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insertion_test, ComplexType, complex_types)
 
 	simplex.at(0) = 0;
 	simplex.push_back(1);
-	BOOST_CHECK(tc_faces.add_insertion(simplex, 2, &simplexBoundary, &simplexInsertionNumber));
+	BOOST_CHECK(tc_faces.add_insertion(simplex, 2, simplexBoundary, simplexInsertionNumber));
 	BOOST_CHECK(simplexBoundary.size() == 2);
 	BOOST_CHECK(simplexBoundary.at(0) == 0);
 	BOOST_CHECK(simplexBoundary.at(1) == 1);
-	BOOST_CHECK(complex->get_size() == 3);
+	BOOST_CHECK(complex2.get_size() == 3);
 	test_output_stream_first_line(&dim, &filtrationValue, &vertices);
 	BOOST_CHECK(dim == 1);
 	BOOST_CHECK(vertices.size() == 2);
@@ -195,13 +193,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insertion_test, ComplexType, complex_types)
 BOOST_AUTO_TEST_CASE_TEMPLATE(contraction_test, ComplexType, complex_types)
 {
 	Tower_converter<ComplexType> tc(write_tc);
-	ComplexType *complex = tc.get_complex();
+	const ComplexType &complex = tc.get_complex();
 
 	std::vector<typename ComplexType::vertex> simplex;
 	int dim;
 	int filtrationValue;
 	std::vector<typename ComplexType::vertex> vertices;
-	std::vector<std::vector<typename ComplexType::index>*> addedBoundaries;
+	std::vector<std::vector<typename ComplexType::index> > addedBoundaries;
 	std::vector<typename ComplexType::index> removedIndices;
 
 	simplex.push_back(0);
@@ -219,11 +217,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(contraction_test, ComplexType, complex_types)
 	ss.str(std::string());
 	ss.clear();
 
-	typename ComplexType::index first = tc.add_contraction(1, 2, 5, &addedBoundaries, &removedIndices);
+	typename ComplexType::index first = tc.add_contraction(1, 2, 5, addedBoundaries, removedIndices);
 	BOOST_CHECK(first != -1);
 	BOOST_CHECK(addedBoundaries.size() == 2);
 	BOOST_CHECK(removedIndices.size() == 4);
-	BOOST_CHECK(complex->get_size() == 3);
+	BOOST_CHECK(complex.get_size() == 3);
 	test_output_stream_first_line(&dim, &filtrationValue, &vertices);
 	BOOST_CHECK(dim == 1);
 	BOOST_CHECK(vertices.size() == 2);
@@ -241,11 +239,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(contraction_test, ComplexType, complex_types)
 	ss.str(std::string());
 	ss.clear();
 	simplex.clear();
-	for (std::vector<typename ComplexType::index>* v : addedBoundaries) delete v;
 	addedBoundaries.clear();
 	removedIndices.clear();
 	Tower_converter<ComplexType> tc_faces(write_tc_faces);
-	complex = tc_faces.get_complex();
+	const ComplexType &complex2 = tc_faces.get_complex();
 
 	simplex.push_back(0);
 	tc_faces.add_insertion(simplex, 0);
@@ -262,11 +259,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(contraction_test, ComplexType, complex_types)
 	ss.str(std::string());
 	ss.clear();
 
-	first = tc_faces.add_contraction(1, 2, 5, &addedBoundaries, &removedIndices);
+	first = tc_faces.add_contraction(1, 2, 5, addedBoundaries, removedIndices);
 	BOOST_CHECK(first != -1);
 	BOOST_CHECK(addedBoundaries.size() == 2);
 	BOOST_CHECK(removedIndices.size() == 4);
-	BOOST_CHECK(complex->get_size() == 3);
+	BOOST_CHECK(complex2.get_size() == 3);
 	test_output_stream_first_line(&dim, &filtrationValue, &vertices);
 	BOOST_CHECK(dim == 1);
 	BOOST_CHECK(vertices.size() == 2);
