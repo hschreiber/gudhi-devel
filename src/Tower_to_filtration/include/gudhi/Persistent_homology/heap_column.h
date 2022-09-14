@@ -63,7 +63,8 @@ public:
 	 * @return The dimension.
 	 */
 	int get_dim() const { return dim_; }
-	void clean(std::unordered_map<coefficient_type, coefficient_type> &latest, std::unordered_map<coefficient_type, std::pair<bool, bool> > &isActivePositive,
+	void clean(std::unordered_map<coefficient_type, coefficient_type> &latest,
+			   std::unordered_map<coefficient_type, std::pair<bool, bool> > &isActivePositive,
 			   std::unordered_map<coefficient_type, Heap_column> &columns);
 	void push_back(coefficient_type value);
 	coefficient_type at(size_type index);
@@ -74,7 +75,7 @@ private:
 	std::vector<coefficient_type> temp_column_;		/**< Temporary data container of the column. */
 	size_type insertsSinceLastPrune_;				/**< Number of insertion since the last time the heap was pruned. */
 
-	void prune();
+	void _prune();
 };
 
 /**
@@ -103,7 +104,7 @@ inline void Heap_column::add(Heap_column &columnToAdd)
 	}
 	insertsSinceLastPrune_ += size;
 
-	if (2 * insertsSinceLastPrune_ > (size_type)column_.size()) prune();
+	if (2 * insertsSinceLastPrune_ > (size_type)column_.size()) _prune();
 }
 
 /**
@@ -191,7 +192,7 @@ inline Heap_column::coefficient_type Heap_column::pop_pivot()
  */
 inline Heap_column::size_type Heap_column::get_size()
 {
-	prune();
+	_prune();
 	return column_.size();
 }
 
@@ -224,7 +225,7 @@ inline void Heap_column::clean(std::unordered_map<coefficient_type, coefficient_
 /**
  * @brief Prunes the heap representation of the column, i.e. removes duplications which appears when adding two columns.
  */
-inline void Heap_column::prune()
+inline void Heap_column::_prune()
 {
 	if (insertsSinceLastPrune_ == 0) return;
 

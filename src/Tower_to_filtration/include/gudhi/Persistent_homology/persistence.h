@@ -106,7 +106,7 @@ private:
 	size_type reductionInterval_;					/**< Number of steps between each matrix processing. */
 	size_type lastReduction_;						/**< Number of steps since the last matrix processing. */
 
-	void compute_partial_persistence();
+	void _compute_partial_persistence();
 };
 
 template<class ComplexStructure, class ColumnType>
@@ -139,7 +139,7 @@ bool Persistence<ComplexStructure, ColumnType>::add_insertion(simplex_base &simp
 	matrix_.insert_column(insertionNum, boundary, timestamp);
 
 	if (fmod(insertionNum, reductionInterval_) == 0) {
-		compute_partial_persistence();
+		_compute_partial_persistence();
 	}
 
 	return true;
@@ -161,7 +161,7 @@ bool Persistence<ComplexStructure, ColumnType>::add_faces_insertions(simplex_bas
 			matrix_.insert_column(insertionNumbers.at(c), added, timestamp);
 
 			if (fmod(insertionNumbers.at(c), reductionInterval_) == 0) {
-				compute_partial_persistence();
+				_compute_partial_persistence();
 			}
 		}
 		++c;
@@ -194,7 +194,7 @@ bool Persistence<ComplexStructure, ColumnType>::add_insertions_via_edge_expansio
 			matrix_.insert_column(insertionNumbers.at(c), boundary, timestamp);
 
 			if (fmod(insertionNumbers.at(c), reductionInterval_) == 0) {
-				compute_partial_persistence();
+				_compute_partial_persistence();
 			}
 		}
 		++c;
@@ -226,7 +226,7 @@ void Persistence<ComplexStructure, ColumnType>::add_contraction(vertex v, vertex
 	}
 	matrix_.mark_inactive(insertionNumbers);
 
-	if (reduce) compute_partial_persistence();
+	if (reduce) _compute_partial_persistence();
 }
 
 template<class ComplexStructure, class ColumnType>
@@ -243,7 +243,7 @@ template<class ComplexStructure, class ColumnType>
 /**
  * @brief Starts matrix reduction and clearing.
  */
-inline void Persistence<ComplexStructure, ColumnType>::compute_partial_persistence()
+inline void Persistence<ComplexStructure, ColumnType>::_compute_partial_persistence()
 {
 	matrix_.reduce(lastReduction_ + 1);
 	matrix_.clear_out();

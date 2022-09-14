@@ -86,7 +86,8 @@ public:
 	 */
 	int get_dim() const{ return dim_; }
 	coefficient_type get_pivot();
-	void clean(std::unordered_map<coefficient_type, coefficient_type> &latest, std::unordered_map<coefficient_type, std::pair<bool, bool> > &isActivePositive,
+	void clean(std::unordered_map<coefficient_type, coefficient_type> &latest,
+			   std::unordered_map<coefficient_type, std::pair<bool, bool> > &isActivePositive,
 			   std::unordered_map<coefficient_type, List_column > &columns);
 	void push_back(coefficient_type cell);
 

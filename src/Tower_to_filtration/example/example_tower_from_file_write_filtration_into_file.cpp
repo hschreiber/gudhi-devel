@@ -72,11 +72,11 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-//	Tower_converter<Hash_complex> tc(write_tc_results_to_file_as_vertices);	// output callback function ; another example: write_tc_results_to_file_as_faces.
-//	file >> tc;		// >> function in gudhi/tc_reading_utilities.h, see documentation for input file format.
+	Tower_converter<Hash_complex> tc(write_tc_results_to_file_as_vertices);	// output callback function ; another example: write_tc_results_to_file_as_faces.
+	file >> tc;		// >> function in gudhi/tc_reading_utilities.h, see documentation for input file format.
 
-	Persistence<Hash_complex, List_column> pers(5, print_persistence_pair);
-	file >> pers;
+//	Persistence<Hash_complex, List_column> pers(5, print_persistence_pair);
+//	file >> pers;
 
 	file.close();
 	outputFile->close();
