@@ -136,6 +136,14 @@ inline Chain_representative_cycles<Master_matrix>::Chain_representative_cycles(
 template <class Master_matrix>
 inline void Chain_representative_cycles<Master_matrix>::update_representative_cycles()
 {
+  auto get_entry = [](auto itTarget){
+    if constexpr (std::is_pointer_v<typename decltype(itTarget)::value_type>){
+      return *itTarget;
+    } else {
+      return &*itTarget;
+    }
+  };
+
   birthToCycle_.clear();
   birthToCycle_.resize(_matrix()->get_number_of_columns(), -1);
   representativeCycles_.clear();
@@ -147,8 +155,8 @@ inline void Chain_representative_cycles<Master_matrix>::update_representative_cy
     auto& col = _matrix()->get_column(_matrix()->get_column_with_pivot(i));
     if (!col.is_paired() || i < col.get_paired_chain_index()) {
       Cycle cycle;
-      for (auto& c : col) {
-        cycle.push_back(c.get_row_index());
+      for (auto it = col.begin(); it != col.end(); ++it) {
+        cycle.push_back(get_entry(it)->get_row_index());
       }
       if constexpr (std::is_same_v<typename Master_matrix::Column, typename Master_matrix::Matrix_heap_column> ||
                     std::is_same_v<typename Master_matrix::Column, typename Master_matrix::Matrix_unordered_set_column>)

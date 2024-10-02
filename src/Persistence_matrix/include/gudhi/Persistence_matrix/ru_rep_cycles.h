@@ -135,6 +135,14 @@ inline RU_representative_cycles<Master_matrix>::RU_representative_cycles(
 template <class Master_matrix>
 inline void RU_representative_cycles<Master_matrix>::update_representative_cycles() 
 {
+  auto get_entry = [](auto itTarget){
+    if constexpr (std::is_pointer_v<typename decltype(itTarget)::value_type>){
+      return *itTarget;
+    } else {
+      return &*itTarget;
+    }
+  };
+
   if constexpr (Master_matrix::Option_list::has_vine_update) {
     birthToCycle_.clear();
     birthToCycle_.resize(_matrix()->reducedMatrixR_.get_number_of_columns(), -1);
@@ -148,8 +156,9 @@ inline void RU_representative_cycles<Master_matrix>::update_representative_cycle
     representativeCycles_.clear();
     representativeCycles_.resize(c);
     for (Index i = 0; i < _matrix()->mirrorMatrixU_.get_number_of_columns(); i++) {
-      for (const auto& entry : _matrix()->mirrorMatrixU_.get_column(i)) {
-        auto idx = birthToCycle_[entry.get_row_index()];
+      auto& col = _matrix()->mirrorMatrixU_.get_column(i);
+      for (auto it = col.begin(); it != col.end(); ++it) {
+        auto idx = birthToCycle_[get_entry(it)->get_row_index()];
         if (idx != static_cast<Index>(-1)) {
           representativeCycles_[idx].push_back(i);
         }
@@ -161,8 +170,9 @@ inline void RU_representative_cycles<Master_matrix>::update_representative_cycle
     for (Index i = 0; i < _matrix()->reducedMatrixR_.get_number_of_columns(); i++) {
       if (_matrix()->reducedMatrixR_.is_zero_column(i)) {
         representativeCycles_.push_back(Cycle());
-        for (const auto& entry : _matrix()->mirrorMatrixU_.get_column(i)) {
-          representativeCycles_.back().push_back(entry.get_row_index());
+        auto& col = _matrix()->mirrorMatrixU_.get_column(i);
+        for (auto it = col.begin(); it != col.end(); ++it) {
+          representativeCycles_.back().push_back(get_entry(it)->get_row_index());
         }
         if constexpr (std::is_same_v<typename Master_matrix::Column, typename Master_matrix::Matrix_heap_column> ||
                       std::is_same_v<typename Master_matrix::Column,

@@ -23,15 +23,13 @@
 #include <type_traits>
 #include <set>
 #include <utility>  //std::swap, std::move & std::exchange
+#include <algorithm>
 
-#include <boost/iterator/indirect_iterator.hpp>
 #if BOOST_VERSION >= 108100
 #include <boost/unordered/unordered_flat_set.hpp>
 #else
 #include <unordered_set>
 #endif
-
-#include <gudhi/Persistence_matrix/allocators/entry_constructors.h>
 
 namespace Gudhi {
 namespace persistence_matrix {
@@ -60,7 +58,6 @@ struct EntryPointerEq
  * also does not need to be ordered (contrary to most other column types).
  *
  * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
- * @tparam Entry_constructor Factory of @ref Entry classes.
  */
 template <class Master_matrix>
 class Unordered_set_column : public Master_matrix::Row_access_option,
@@ -91,8 +88,8 @@ class Unordered_set_column : public Master_matrix::Row_access_option,
 #endif
 
  public:
-  using iterator = boost::indirect_iterator<typename Column_support::iterator>;
-  using const_iterator = boost::indirect_iterator<typename Column_support::const_iterator>;
+  using iterator = typename Column_support::iterator;
+  using const_iterator = typename Column_support::const_iterator;
 
   Unordered_set_column(Column_settings* colSettings = nullptr);
   template <class Container = typename Master_matrix::Boundary>
@@ -876,12 +873,12 @@ inline bool Unordered_set_column<Master_matrix>::_add(const Entry_range& column)
 {
   return _generic_add(
       column,
-      [&](const Entry& oldEntry, Entry* newEntry) {
-        if constexpr (!Master_matrix::Option_list::is_z2) newEntry->set_element(oldEntry.get_element());
+      [&](const Entry* oldEntry, Entry* newEntry) {
+        if constexpr (!Master_matrix::Option_list::is_z2) newEntry->set_element(oldEntry->get_element());
       },
-      [&](Entry* targetEntry, const Entry& sourceEntry) {
+      [&](Entry* targetEntry, const Entry* sourceEntry) {
         if constexpr (!Master_matrix::Option_list::is_z2)
-          operators_->add_inplace(targetEntry->get_element(), sourceEntry.get_element());
+          operators_->add_inplace(targetEntry->get_element(), sourceEntry->get_element());
       });
 }
 
@@ -896,8 +893,9 @@ inline bool Unordered_set_column<Master_matrix>::_multiply_target_and_add(const 
       // this would not only mess up the base, but also the pivots stored.
     } else {
       clear();
-      for (const Entry& v : column) {
-        _insert_entry(v.get_element(), v.get_row_index());
+      for (auto it = column.begin(); it != column.end(); ++it) {
+        auto* v = get_entry(it);
+        _insert_entry(v->get_element(), v->get_row_index());
       }
       return true;
     }
@@ -920,12 +918,12 @@ inline bool Unordered_set_column<Master_matrix>::_multiply_source_and_add(const 
 
   return _generic_add(
       column,
-      [&](const Entry& oldEntry, Entry* newEntry) {
-        newEntry->set_element(oldEntry.get_element());
+      [&](const Entry* oldEntry, Entry* newEntry) {
+        newEntry->set_element(oldEntry->get_element());
         operators_->multiply_inplace(newEntry->get_element(), val);
       },
-      [&](Entry* targetEntry, const Entry& sourceEntry) {
-        operators_->multiply_and_add_inplace_back(sourceEntry.get_element(), val, targetEntry->get_element());
+      [&](Entry* targetEntry, const Entry* sourceEntry) {
+        operators_->multiply_and_add_inplace_back(sourceEntry->get_element(), val, targetEntry->get_element());
       });
 }
 
@@ -936,23 +934,31 @@ inline bool Unordered_set_column<Master_matrix>::_generic_add(const Entry_range&
                                                               F2&& update_target)
 {
   bool pivotIsZeroed = false;
+  auto get_entry = [](auto itTarget){
+    if constexpr (std::is_pointer_v<typename decltype(itTarget)::value_type>){
+      return *itTarget;
+    } else {
+      return &*itTarget;
+    }
+  };
 
-  for (const Entry& entry : source) {
+  for (auto it = source.begin(); it != source.end(); ++it) {
+    auto* entry = get_entry(it);
     Entry* newEntry;
     if constexpr (Master_matrix::Option_list::has_row_access) {
-      newEntry = entryPool_->construct(RA_opt::columnIndex_, entry.get_row_index());
+      newEntry = entryPool_->construct(RA_opt::columnIndex_, entry->get_row_index());
     } else {
-      newEntry = entryPool_->construct(entry.get_row_index());
+      newEntry = entryPool_->construct(entry->get_row_index());
     }
     auto res = column_.insert(newEntry);
     if (res.second) {
       process_source(entry, newEntry);
-      if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::insert_entry(entry.get_row_index(), newEntry);
+      if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::insert_entry(entry->get_row_index(), newEntry);
     } else {
       entryPool_->destroy(newEntry);
       if constexpr (Master_matrix::Option_list::is_z2) {
         if constexpr (Master_matrix::isNonBasic && !Master_matrix::Option_list::is_of_boundary_type) {
-          if (entry.get_row_index() == Chain_opt::get_pivot()) pivotIsZeroed = true;
+          if (entry->get_row_index() == Chain_opt::get_pivot()) pivotIsZeroed = true;
         }
         _delete_entry(res.first);
       } else {

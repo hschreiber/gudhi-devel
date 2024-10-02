@@ -58,6 +58,9 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
   using Column_settings = typename Master_matrix::Column_settings;      /**< Structure giving access to the columns to
                                                                              necessary external classes. */
 
+  // TODO: use a pair of Master_matrix::Column and rep instead such that the column is recognized as its
+  // original type when deducing templates (some columns have more optimized specialization when an entry range
+  // is of the same type as them selves)
   /**
    * @brief Type for columns. Only one for each "column class" is explicitly constructed.
    */

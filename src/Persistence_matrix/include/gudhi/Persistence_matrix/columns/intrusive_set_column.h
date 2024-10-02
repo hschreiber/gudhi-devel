@@ -26,7 +26,6 @@
 #include <boost/intrusive/set.hpp>
 
 #include <gudhi/Debug_utils.h>
-#include <gudhi/Persistence_matrix/allocators/entry_constructors.h>
 #include <gudhi/Persistence_matrix/columns/column_utilities.h>
 
 namespace Gudhi {
@@ -42,7 +41,6 @@ namespace persistence_matrix {
  * are stored uniquely in the underlying container.
  *
  * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
- * @tparam Entry_constructor Factory of @ref Entry classes.
  */
 template <class Master_matrix>
 class Intrusive_set_column : public Master_matrix::Row_access_option,
@@ -214,10 +212,13 @@ class Intrusive_set_column : public Master_matrix::Row_access_option,
   Field_operators* operators_;
   Entry_constructor* entryPool_;
 
-  template <class Column, class Entry_iterator, typename F1, typename F2, typename F3, typename F4>
+  template <class Column, typename Column_iterator, class Entry_iterator,
+            typename F1, typename F2, typename F3, typename F4>
   friend void _generic_merge_entry_to_column(Column& targetColumn,
                                              Entry_iterator& itSource,
-                                             typename Column::Column_support::iterator& itTarget,
+                                             Column_iterator& itTarget,
+                                             const typename Column::Entry* sourceEntry,
+                                             typename Column::Entry* targetEntry,
                                              F1&& process_target,
                                              F2&& process_source,
                                              F3&& update_target1,

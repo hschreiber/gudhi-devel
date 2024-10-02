@@ -69,16 +69,27 @@ using column_content = std::set<Entry_representative<Column> >;
 template <class Column>
 using witness_content = std::vector<Entry_representative<Column> >;
 
+template <typename Entry_iterator>
+auto get_entry(const Entry_iterator& itTarget)
+{
+  if constexpr (std::is_pointer_v<typename Entry_iterator::value_type>){
+    return *itTarget;
+  } else {
+    return &*itTarget;
+  }
+}
+
 // for vector, assumes no entry was removed via clear(Index)
 template <class Column>
 column_content<Column> get_column_content_via_iterators(const Column& col) {
   column_content<Column> entries;
 
-  for (const auto& c : col) {
+  for (auto it = col.begin(); it != col.end(); ++it) {
+    auto* c = get_entry(it);
     if constexpr (is_z2<Column>()) {
-      entries.insert(c.get_row_index());
+      entries.insert(c->get_row_index());
     } else {
-      entries.insert({c.get_row_index(), c.get_element()});
+      entries.insert({c->get_row_index(), c->get_element()});
     }
   }
 
@@ -92,15 +103,15 @@ column_content<Heap_column<Matrix> > get_column_content_via_iterators(const Heap
   std::vector<typename Heap_column<Matrix>::Field_element> cont;
   Zp operators(5);
 
-  for (const auto& c : col) {
+  for (const auto* c : col) {
     if constexpr (is_z2<Heap_column<Matrix> >()) {
-      auto p = entries.insert(c.get_row_index());
+      auto p = entries.insert(c->get_row_index());
       if (!p.second) {  // possible in heap
         entries.erase(p.first);
       }
     } else {
-      if (cont.size() <= c.get_row_index()) cont.resize(c.get_row_index() + 1, 0u);
-      cont[c.get_row_index()] = operators.add(cont[c.get_row_index()], c.get_element());
+      if (cont.size() <= c->get_row_index()) cont.resize(c->get_row_index() + 1, 0u);
+      cont[c->get_row_index()] = operators.add(cont[c->get_row_index()], c->get_element());
     }
   }
   if constexpr (!is_z2<Heap_column<Matrix> >()) {

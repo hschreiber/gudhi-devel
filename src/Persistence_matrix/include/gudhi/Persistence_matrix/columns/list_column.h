@@ -24,9 +24,6 @@
 #include <list>
 #include <utility>  //std::swap, std::move & std::exchange
 
-#include <boost/iterator/indirect_iterator.hpp>
-
-#include <gudhi/Persistence_matrix/allocators/entry_constructors.h>
 #include <gudhi/Persistence_matrix/columns/column_utilities.h>
 
 namespace Gudhi {
@@ -42,7 +39,6 @@ namespace persistence_matrix {
  * are stored uniquely in the underlying container.
  *
  * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
- * @tparam Entry_constructor Factory of @ref Entry classes.
  */
 template <class Master_matrix>
 class List_column : public Master_matrix::Row_access_option,
@@ -64,10 +60,10 @@ class List_column : public Master_matrix::Row_access_option,
   using Entry_constructor = typename Master_matrix::Entry_constructor;
 
  public:
-  using iterator = boost::indirect_iterator<typename Column_support::iterator>;
-  using const_iterator = boost::indirect_iterator<typename Column_support::const_iterator>;
-  using reverse_iterator = boost::indirect_iterator<typename Column_support::reverse_iterator>;
-  using const_reverse_iterator = boost::indirect_iterator<typename Column_support::const_reverse_iterator>;
+  using iterator = typename Column_support::iterator;
+  using const_iterator = typename Column_support::const_iterator;
+  using reverse_iterator = typename Column_support::reverse_iterator;
+  using const_reverse_iterator = typename Column_support::const_reverse_iterator;
 
   List_column(Column_settings* colSettings = nullptr);
   template <class Container = typename Master_matrix::Boundary>
@@ -189,10 +185,13 @@ class List_column : public Master_matrix::Row_access_option,
   Field_operators* operators_;
   Entry_constructor* entryPool_;
 
-  template <class Column, class Entry_iterator, typename F1, typename F2, typename F3, typename F4>
+  template <class Column, typename Column_iterator, class Entry_iterator,
+            typename F1, typename F2, typename F3, typename F4>
   friend void _generic_merge_entry_to_column(Column& targetColumn,
                                              Entry_iterator& itSource,
-                                             typename Column::Column_support::iterator& itTarget,
+                                             Column_iterator& itTarget,
+                                             const typename Column::Entry* sourceEntry,
+                                             typename Column::Entry* targetEntry,
                                              F1&& process_target,
                                              F2&& process_source,
                                              F3&& update_target1,
@@ -228,6 +227,8 @@ class List_column : public Master_matrix::Row_access_option,
   bool _multiply_target_and_add(const Field_element& val, const Entry_range& column);
   template <class Entry_range>
   bool _multiply_source_and_add(const Entry_range& column, const Field_element& val);
+  template <class Entry_range>
+  bool _replace_by(const Entry_range& column);
 };
 
 template <class Master_matrix>
@@ -916,16 +917,7 @@ inline bool List_column<Master_matrix>::_add(const Entry_range& column)
 {
   if (column.begin() == column.end()) return false;
   if (column_.empty()) {  // chain should never enter here.
-    column_.resize(column.size());
-    auto it = column_.begin();
-    for (const Entry& entry : column) {
-      if constexpr (Master_matrix::Option_list::is_z2) {
-        _update_entry(entry.get_row_index(), it++);
-      } else {
-        _update_entry(entry.get_element(), entry.get_row_index(), it++);
-      }
-    }
-    return true;
+    return _replace_by(column);
   }
 
   return _add_to_column(column, *this);
@@ -935,6 +927,9 @@ template <class Master_matrix>
 template <class Entry_range>
 inline bool List_column<Master_matrix>::_multiply_target_and_add(const Field_element& val, const Entry_range& column)
 {
+  if (column_.empty()) {  // chain should never enter here.
+    return _replace_by(column);
+  }
   return _multiply_target_and_add_to_column(val, column, *this);
 }
 
@@ -943,6 +938,34 @@ template <class Entry_range>
 inline bool List_column<Master_matrix>::_multiply_source_and_add(const Entry_range& column, const Field_element& val)
 {
   return _multiply_source_and_add_to_column(val, column, *this);
+}
+
+template <class Master_matrix>
+template <class Entry_range>
+inline bool List_column<Master_matrix>::_replace_by(const Entry_range& column)
+{
+  column_.resize(column.size());
+  auto it = column_.begin();
+
+  if constexpr (std::is_pointer_v<typename decltype(column.begin())::value_type>){
+    for (const auto* entry : column) {
+      if constexpr (Master_matrix::Option_list::is_z2) {
+        _update_entry(entry->get_row_index(), it++);
+      } else {
+        _update_entry(entry->get_element(), entry->get_row_index(), it++);
+      }
+    }
+  } else {
+    for (const auto& entry : column) {
+      if constexpr (Master_matrix::Option_list::is_z2) {
+        _update_entry(entry.get_row_index(), it++);
+      } else {
+        _update_entry(entry.get_element(), entry.get_row_index(), it++);
+      }
+    }
+  }
+
+  return true;
 }
 
 }  // namespace persistence_matrix

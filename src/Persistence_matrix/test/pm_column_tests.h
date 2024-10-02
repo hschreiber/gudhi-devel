@@ -28,11 +28,12 @@ std::vector<column_content<Column> > get_ordered_column_contents(std::vector<Col
                                                 >::type> > ordCol(matrix.size());
   for (unsigned int i = 0; i < matrix.size(); ++i) {
     Column& col = matrix[i];
-    for (auto& entry : col) {
+    for (auto it = col.begin(); it != col.end(); ++it) {
+      auto* entry = get_entry(it);
       if constexpr (is_z2<Column>()) {
-        ordCol[i].insert(entry.get_row_index());
+        ordCol[i].insert(entry->get_row_index());
       } else {
-        ordCol[i].insert({entry.get_row_index(), entry.get_element()});
+        ordCol[i].insert({entry->get_row_index(), entry->get_element()});
       }
     }
   }
@@ -47,12 +48,13 @@ std::vector<column_content<Column> > get_ordered_rows(std::vector<Column>& matri
                                                  std::pair<unsigned int, typename Column::Field_element>
                                                 >::type> > rows;
   for (Column& col : matrix) {
-    for (auto& entry : col) {
-      if (entry.get_row_index() >= rows.size()) rows.resize(entry.get_row_index() + 1);
+    for (auto it = col.begin(); it != col.end(); ++it) {
+      auto* entry = get_entry(it);
+      if (entry->get_row_index() >= rows.size()) rows.resize(entry->get_row_index() + 1);
       if constexpr (is_z2<Column>()) {
-        rows[entry.get_row_index()].insert(entry.get_column_index());
+        rows[entry->get_row_index()].insert(entry->get_column_index());
       } else {
-        rows[entry.get_row_index()].insert({entry.get_column_index(), entry.get_element()});
+        rows[entry->get_row_index()].insert({entry->get_column_index(), entry->get_element()});
       }
     }
   }

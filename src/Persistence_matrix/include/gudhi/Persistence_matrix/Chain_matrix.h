@@ -488,6 +488,8 @@ class Chain_matrix : public Master_matrix::Matrix_dimension_option,
   using Dictionary = typename Master_matrix::template Dictionary<Index>;
   using Barcode = typename Master_matrix::Barcode;
   using Bar_dictionary = typename Master_matrix::Bar_dictionary;
+  //TODO: replace Tmp_column with something more effective, or at least change the add method
+  //e.g. make it a dense vector with number of columns entries
   using Tmp_column = typename std::conditional<Master_matrix::Option_list::is_z2,
                                                std::set<ID_index>,
                                                std::map<ID_index, Field_element>
@@ -1134,22 +1136,31 @@ inline void Chain_matrix<Master_matrix>::_add_to(const Column& column,
                                                  Tmp_column& set,
                                                  [[maybe_unused]] unsigned int coef) 
 {
+  auto get_entry = [](auto itTarget){
+    if constexpr (std::is_pointer_v<typename decltype(itTarget)::value_type>){
+      return *itTarget;
+    } else {
+      return &*itTarget;
+    }
+  };
+
   if constexpr (Master_matrix::Option_list::is_z2) {
     std::pair<typename std::set<Index>::iterator, bool> res_insert;
-    for (const Entry& entry : column) {
-      res_insert = set.insert(entry.get_row_index());
+    for (auto it = column.begin(); it != column.end(); ++it) {
+      res_insert = set.insert(get_entry(it)->get_row_index());
       if (!res_insert.second) {
         set.erase(res_insert.first);
       }
     }
   } else {
     auto& operators = colSettings_->operators;
-    for (const Entry& entry : column) {
-      auto res = set.emplace(entry.get_row_index(), entry.get_element());
+    for (auto it = column.begin(); it != column.end(); ++it) {
+      auto* entry = get_entry(it);
+      auto res = set.emplace(entry->get_row_index(), entry->get_element());
       if (res.second){
         operators.multiply_inplace(res.first->second, coef);
       } else {
-        operators.multiply_and_add_inplace_back(entry.get_element(), coef, res.first->second);
+        operators.multiply_and_add_inplace_back(entry->get_element(), coef, res.first->second);
         if (res.first->second == Field_operators::get_additive_identity()) {
           set.erase(res.first);
         }

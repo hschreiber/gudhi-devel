@@ -24,9 +24,6 @@
 #include <set>
 #include <utility>  //std::swap, std::move & std::exchange
 
-#include <boost/iterator/indirect_iterator.hpp>
-
-#include <gudhi/Persistence_matrix/allocators/entry_constructors.h>
 #include <gudhi/Persistence_matrix/columns/column_utilities.h>
 
 namespace Gudhi {
@@ -42,7 +39,6 @@ namespace persistence_matrix {
  * are stored uniquely in the underlying container.
  *
  * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
- * @tparam Entry_constructor Factory of @ref Entry classes.
  */
 template <class Master_matrix>
 class Set_column : public Master_matrix::Row_access_option,
@@ -69,10 +65,10 @@ class Set_column : public Master_matrix::Row_access_option,
   using Entry_constructor = typename Master_matrix::Entry_constructor;
 
  public:
-  using iterator = boost::indirect_iterator<typename Column_support::iterator>;
-  using const_iterator = boost::indirect_iterator<typename Column_support::const_iterator>;
-  using reverse_iterator = boost::indirect_iterator<typename Column_support::reverse_iterator>;
-  using const_reverse_iterator = boost::indirect_iterator<typename Column_support::const_reverse_iterator>;
+  using iterator = typename Column_support::iterator;
+  using const_iterator = typename Column_support::const_iterator;
+  using reverse_iterator = typename Column_support::reverse_iterator;
+  using const_reverse_iterator = typename Column_support::const_reverse_iterator;
 
   Set_column(Column_settings* colSettings = nullptr);
   template <class Container = typename Master_matrix::Boundary>
@@ -194,10 +190,13 @@ class Set_column : public Master_matrix::Row_access_option,
   Field_operators* operators_;
   Entry_constructor* entryPool_;
 
-  template <class Column, class Entry_iterator, typename F1, typename F2, typename F3, typename F4>
+  template <class Column, typename Column_iterator, class Entry_iterator,
+            typename F1, typename F2, typename F3, typename F4>
   friend void _generic_merge_entry_to_column(Column& targetColumn,
                                              Entry_iterator& itSource,
-                                             typename Column::Column_support::iterator& itTarget,
+                                             Column_iterator& itTarget,
+                                             const typename Column::Entry* sourceEntry,
+                                             typename Column::Entry* targetEntry,
                                              F1&& process_target,
                                              F2&& process_source,
                                              F3&& update_target1,
