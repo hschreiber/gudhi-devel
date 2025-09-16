@@ -14,8 +14,6 @@
 #include <boost/intrusive/set.hpp>
 #include <boost/intrusive/list.hpp>
 
-#include <list>
-
 namespace Gudhi {
 
 namespace persistent_cohomology {
@@ -41,7 +39,7 @@ typedef boost::intrusive::list_base_hook<boost::intrusive::tag<cam_v_tag>,
  *
  */
 template<typename SimplexKey, typename ArithmeticElement>
-class Persistent_cohomology_cell : public base_hook_cam_h,
+class Persistent_cohomology_entry : public base_hook_cam_h,
     public base_hook_cam_v {
  public:
   template<class T1, class T2> friend class Persistent_cohomology;
@@ -49,12 +47,16 @@ class Persistent_cohomology_cell : public base_hook_cam_h,
 
   typedef Persistent_cohomology_column<SimplexKey, ArithmeticElement> Column;
 
-  Persistent_cohomology_cell(SimplexKey key, ArithmeticElement x,
+  Persistent_cohomology_entry(SimplexKey key, ArithmeticElement x,
                              Column * self_col)
       : key_(key),
         coefficient_(x),
         self_col_(self_col) {
   }
+
+  ArithmeticElement get_element() const { return coefficient_; }
+  // SimplexKey get_column_index() const { return self_col_->class_key(); }
+  Column const* get_column_index() const { return self_col_; }
 
   SimplexKey key_;
   ArithmeticElement coefficient_;
@@ -76,8 +78,8 @@ class Persistent_cohomology_column : public boost::intrusive::set_base_hook<
   template<class T1, class T2> friend class Persistent_cohomology;
 
  public:
-  typedef Persistent_cohomology_cell<SimplexKey, ArithmeticElement> Cell;
-  typedef boost::intrusive::list<Cell,
+  typedef Persistent_cohomology_entry<SimplexKey, ArithmeticElement> Entry;
+  typedef boost::intrusive::list<Entry,
       boost::intrusive::constant_time_size<false>,
       boost::intrusive::base_hook<base_hook_cam_v> > Col_type;
 
@@ -96,6 +98,8 @@ class Persistent_cohomology_column : public boost::intrusive::set_base_hook<
   SimplexKey class_key() const {
     return class_key_;
   }
+
+  bool is_empty() const { return col_.empty(); }
 
   /** \brief Lexicographic comparison of two columns.*/
   friend bool operator<(const Persistent_cohomology_column& c1,

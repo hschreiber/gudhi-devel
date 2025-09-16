@@ -13,8 +13,10 @@
 
 #include <gmpxx.h>
 
+#include <cassert>
 #include <vector>
 #include <utility>
+#include <iostream>
 
 namespace Gudhi {
 
@@ -31,6 +33,11 @@ namespace persistent_cohomology {
 class Multi_field {
  public:
   typedef mpz_class Element;
+
+  /**
+   * @brief Value of a non initialized characteristic.
+   */
+  inline static const Element nullCharacteristic = 0;
 
   Multi_field()
   : prod_characteristics_(0),

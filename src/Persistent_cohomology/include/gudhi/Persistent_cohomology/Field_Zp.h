@@ -11,6 +11,7 @@
 #ifndef PERSISTENT_COHOMOLOGY_FIELD_ZP_H_
 #define PERSISTENT_COHOMOLOGY_FIELD_ZP_H_
 
+#include <cassert>
 #include <utility>
 #include <vector>
 #include <stdexcept>
@@ -27,6 +28,11 @@ namespace persistent_cohomology {
 class Field_Zp {
  public:
   typedef int Element;
+
+  /**
+   * @brief Value of a non initialized characteristic.
+   */
+  constexpr static const int nullCharacteristic = 0;
 
   Field_Zp()
       : Prime(0),
