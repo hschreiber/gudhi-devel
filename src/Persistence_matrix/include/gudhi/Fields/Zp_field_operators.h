@@ -20,7 +20,8 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
-#include <limits.h>
+#include <climits>
+#include <cassert>
 
 namespace Gudhi {
 /// Field namespace
@@ -326,6 +327,57 @@ class Zp_field_operators
     std::swap(f1.characteristic_, f2.characteristic_);
     f1.inverse_.swap(f2.inverse_);
   }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // LEGACY methods from Field_Zp to maintain retro-compatibility
+  // TODO: add Deprecated Warning?
+
+  using LegacyElement = int;
+
+  void init(Characteristic characteristic)
+  {
+    // Check that the provided prime is less than the maximum allowed as int, calculation below, and 'plus_times_equal'
+    // function : 46337 ; i.e (max_prime-1)*max_prime <= INT_MAX
+    if (characteristic > 46337) throw std::invalid_argument("Maximum homology_coeff_field allowed value is 46337");
+    set_characteristic(characteristic);
+  }
+
+  [[nodiscard]] Characteristic characteristic() const { return get_characteristic(); }
+
+  [[nodiscard]] LegacyElement additive_identity() const { return get_additive_identity(); }
+
+  [[nodiscard]] LegacyElement multiplicative_identity(Characteristic p = 0) const
+  {
+    return get_partial_multiplicative_identity(p);
+  }
+
+  [[nodiscard]] std::pair<LegacyElement, Characteristic> inverse(LegacyElement x, Characteristic p) const
+  {
+    return get_partial_inverse(get_value(x), p);
+  }
+
+  [[nodiscard]] LegacyElement plus_times_equal(LegacyElement x, LegacyElement y, LegacyElement w) const
+  {
+    return multiply_and_add(get_value(y), get_value(w), get_value(x));
+  }
+
+  [[nodiscard]] LegacyElement times(LegacyElement y, LegacyElement w) const
+  {
+    return multiply(get_value(y), get_value(w));
+  }
+
+  [[nodiscard]] LegacyElement plus_equal(LegacyElement x, LegacyElement y) const
+  {
+    return add(get_value(x), get_value(y));
+  }
+
+  [[nodiscard]] LegacyElement times_minus(LegacyElement x, LegacyElement y) const
+  {
+    return multiply(get_value(y), multiply(get_value(x), get_value(-1)));
+  }
+
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
  private:
   Characteristic characteristic_; /**< Current characteristic of the field. */

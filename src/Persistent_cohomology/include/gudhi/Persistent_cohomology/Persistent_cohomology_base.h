@@ -11,6 +11,7 @@
 #ifndef PERSISTENT_COHOMOLOGY_H_
 #define PERSISTENT_COHOMOLOGY_H_
 
+#include <cstddef>
 #include <initializer_list>
 #include <iostream>
 #include <map>
@@ -42,9 +43,16 @@ namespace persistent_cohomology {
 template <typename Simplex_key>
 struct Cell_union_find {
  public:
-  Cell_union_find(int num_simplices)
+  Cell_union_find(int num_simplices = 0)
       : ds_rank_(num_simplices), ds_parent_(num_simplices), dsets_(ds_rank_.data(), ds_parent_.data())
   {}
+
+  void resize(std::size_t n)
+  {
+    ds_rank_.resize(n);
+    ds_parent_.resize(n);
+    dsets_ = boost::disjoint_sets<int*, Simplex_key*>(ds_rank_.data(), ds_parent_.data());
+  }
 
   void make_set(Simplex_key key) { dsets_.make_set(key); }
 
@@ -67,7 +75,7 @@ class Compressed_annotation_matrix
  public:
   using Characteristic = typename CoefficientField::Element;
   using Index = Simplex_key;
-  using ID_index = unsigned int;
+  using ID_index = Simplex_key;
   using Column = Persistent_cohomology_column<Index, Characteristic>;
   // Entry type
   using Entry = typename Column::Entry;  // contains 2 list_hooks
@@ -142,9 +150,9 @@ class Compressed_annotation_matrix
    *
    * @param characteristic The characteristic to set.
    */
-  void set_characteristic(Characteristic characteristic) { coeff_field_.init(characteristic); }
+  void set_characteristic(Characteristic characteristic) { coeff_field_.set_characteristic(characteristic); }
 
-  void set_characteristic(int charac_min, int charac_max) { coeff_field_.init(charac_min, charac_max); }
+  void set_characteristic(int charac_min, int charac_max) { coeff_field_.set_characteristic(charac_min, charac_max); }
 
   // (TODO: if there is no row access and the column type corresponds to the internal column type of the matrix,
   // moving the column instead of copying it should be possible. Is it worth implementing it?)
@@ -162,7 +170,7 @@ class Compressed_annotation_matrix
   void insert_column(const Container& column)
   {
     // Should only be called on a single entry column
-    GUDHI_CHECK(column.size() == 1, "Internal problem: column should contain only one element.");
+    GUDHI_CHECK(column.size() == 1, std::logic_error("Internal problem: column should contain only one element."));
     auto element = *column.begin();
     Index key = element.first;
     Characteristic x = element.second;
@@ -225,7 +233,7 @@ class Compressed_annotation_matrix
   void erase_empty_row(ID_index rowIndex)
   {
     // row should be empty
-    GUDHI_CHECK(transverse_idx_.find(rowIndex)->second.size() == 0, "Internal problem: row should be empty.");
+    GUDHI_CHECK(transverse_idx_.find(rowIndex)->second.size() == 0, std::logic_error("Internal problem: row should be empty."));
     transverse_idx_.erase(rowIndex);
   }
 
@@ -360,18 +368,18 @@ class Compressed_annotation_matrix
         if (target_it->key_ > other_it->first) {
           Entry* entry_tmp = entry_pool_.construct(Entry(other_it->first  // key
                                                      ,
-                                                     coeff_field_.additive_identity(),
+                                                     coeff_field_.get_additive_identity(),
                                                      &target));
 
-          entry_tmp->coefficient_ = coeff_field_.plus_times_equal(entry_tmp->coefficient_, other_it->second, w);
+          entry_tmp->coefficient_ = coeff_field_.multiply_and_add(other_it->second, w, entry_tmp->coefficient_);
 
           target.col_.insert(target_it, *entry_tmp);
 
           ++other_it;
         } else {  // it1->key == it2->key
           // target_it->coefficient_ <- target_it->coefficient_ + other_it->second * w
-          target_it->coefficient_ = coeff_field_.plus_times_equal(target_it->coefficient_, other_it->second, w);
-          if (target_it->coefficient_ == coeff_field_.additive_identity()) {
+          target_it->coefficient_ = coeff_field_.multiply_and_add(other_it->second, w, target_it->coefficient_);
+          if (target_it->coefficient_ == coeff_field_.get_additive_identity()) {
             auto tmp_it = target_it;
             ++target_it;
             ++other_it;  // iterators remain valid
@@ -387,8 +395,8 @@ class Compressed_annotation_matrix
       }
     }
     while (other_it != other.end()) {
-      Entry* entry_tmp = entry_pool_.construct(Entry(other_it->first, coeff_field_.additive_identity(), &target));
-      entry_tmp->coefficient_ = coeff_field_.plus_times_equal(entry_tmp->coefficient_, other_it->second, w);
+      Entry* entry_tmp = entry_pool_.construct(Entry(other_it->first, coeff_field_.get_additive_identity(), &target));
+      entry_tmp->coefficient_ = coeff_field_.multiply_and_add(other_it->second, w, entry_tmp->coefficient_);
       target.col_.insert(target.col_.end(), *entry_tmp);
 
       ++other_it;
@@ -450,7 +458,7 @@ class Persistent_cohomology
         dim_max_(cpx.dimension()),              // upper bound on the dimension of the simplices
         coeff_field_(),                         // initialize the field coefficient structure.
         num_simplices_(cpx_->num_simplices()),  // num_simplices save to avoid to call thrice the function
-        vertex_sets_(num_simplices_), // TODO: super wasteful
+        vertex_sets_(),
         cam_(num_simplices_),  // collection of annotation vectors
         zero_cocycles_(),      // union-find -> Simplex_key of creator for 0-homology
         transverse_idx_(),     // key -> row
@@ -485,14 +493,15 @@ class Persistent_cohomology
   /** \brief Initializes the coefficient field.*/
   void init_coefficients(int charac)
   {
-    coeff_field_.init(charac);
+    if (charac <= 0) throw std::invalid_argument("Characteristic has to be a positive prime number.");
+    coeff_field_.set_characteristic(charac);
     cam_.set_characteristic(charac);
   }
 
   /** \brief Initializes the coefficient field for multi-field persistent homology.*/
   void init_coefficients(int charac_min, int charac_max)
   {
-    coeff_field_.init(charac_min, charac_max);
+    coeff_field_.set_characteristic(charac_min, charac_max);
     cam_.set_characteristic(charac_min, charac_max);
   }
 
@@ -506,43 +515,75 @@ class Persistent_cohomology
    * valid. Undefined behavior otherwise. */
   void compute_persistent_cohomology(Filtration_value min_interval_length = 0)
   {
-    if (coeff_field_.characteristic() == CoefficientField::nullCharacteristic)
+    if (coeff_field_.get_characteristic() == CoefficientField::nullCharacteristic)
       throw std::logic_error("Coefficient field was not initialized! Please call `init_coefficients` first.");
 
     if (dim_max_ <= 0) return;  // --------->>
 
     interval_length_policy.set_length(min_interval_length);
+    vertex_sets_.resize(cpx_->num_vertices());
     Simplex_key idx_fil = -1;
+    Simplex_key idx_fil_v = -1;
     std::vector<Simplex_key> vertices;  // so we can check the connected components at the end
     // Compute all finite intervals
     for (auto sh : cpx_->filtration_simplex_range()) {
-      cpx_->assign_key(sh, ++idx_fil);
       int dim_simplex = cpx_->dimension(sh);
       switch (dim_simplex) {
         case 0:
-          vertex_sets_.make_set(idx_fil);
-          vertices.push_back(idx_fil);
+          cpx_->assign_key(sh, ++idx_fil_v);
+          vertex_sets_.make_set(idx_fil_v);
+          vertices.push_back(++idx_fil);
           break;
         case 1:
-          update_cohomology_groups_edge(sh);
+          cpx_->assign_key(sh, ++idx_fil);
+          update_cohomology_groups_edge(sh, vertices);
           break;
         default:
+          cpx_->assign_key(sh, ++idx_fil);
           update_cohomology_groups(sh, dim_simplex);
           break;
       }
     }
     // Compute infinite intervals of dimension 0
+    Simplex_key i = 0;
     for (Simplex_key key : vertices) {         // for all 0-dimensional simplices
-      if (vertex_sets_.get_parent(key) == key  // root of its tree
-          && zero_cocycles_.find(key) == zero_cocycles_.end()) {
-        persistent_pairs_.emplace_back(cpx_->simplex(key), cpx_->null_simplex(), coeff_field_.characteristic());
+      if (vertex_sets_.get_parent(i) == i  // root of its tree
+          && zero_cocycles_.find(i) == zero_cocycles_.end()) {
+        persistent_pairs_.emplace_back(cpx_->simplex(key), cpx_->null_simplex(), coeff_field_.get_characteristic());
       }
+      ++i;
     }
     for (auto zero_idx : zero_cocycles_) {
       persistent_pairs_.emplace_back(
-          cpx_->simplex(zero_idx.second), cpx_->null_simplex(), coeff_field_.characteristic());
+          cpx_->simplex(vertices[zero_idx.second]), cpx_->null_simplex(), coeff_field_.get_characteristic());
     }
     // Compute infinite interval of dimension > 0
+    for (const auto& cocycle : transverse_idx_) {
+      persistent_pairs_.emplace_back(cpx_->simplex(cocycle.first), cpx_->null_simplex(), cocycle.second);
+    }
+  }
+
+  /**
+   * @private
+   * Temporary patch to make the computation of more general FilteredComplex possible
+   * Will be removed when a better solution was agreed on.
+   */
+  void compute_persistent_cohomology_without_optimizations(Filtration_value min_interval_length = 0) {
+    if (coeff_field_.get_characteristic() == CoefficientField::nullCharacteristic)
+      throw std::logic_error("Coefficient field was not initialized! Please call `init_coefficients` first.");
+
+    if (dim_max_ <= 0)
+      return;  // --------->>
+
+    interval_length_policy.set_length(min_interval_length);
+    Simplex_key idx_fil = -1;
+    // Compute all finite intervals
+    for (auto sh : cpx_->filtration_simplex_range()) {
+      cpx_->assign_key(sh, ++idx_fil);
+      int dim_simplex = cpx_->dimension(sh);
+      update_cohomology_groups(sh, dim_simplex);
+    }
+
     for (const auto& cocycle : transverse_idx_) {
       persistent_pairs_.emplace_back(cpx_->simplex(cocycle.first), cpx_->null_simplex(), cocycle.second);
     }
@@ -553,7 +594,7 @@ class Persistent_cohomology
    *
    * The 0-homology is maintained with a simple Union-Find data structure, which
    * explains the existence of a specific function of edge insertions. */
-  void update_cohomology_groups_edge(Simplex_handle sigma)
+  void update_cohomology_groups_edge(Simplex_handle sigma, const std::vector<Simplex_key>& vertices)
   {
     Simplex_handle u, v;
     boost::tie(u, v) = cpx_->endpoints(sigma);
@@ -582,10 +623,10 @@ class Persistent_cohomology
         idx_coc_v = map_it_v->second;
       }
 
-      if (cpx_->filtration(cpx_->simplex(idx_coc_u)) <
-          cpx_->filtration(cpx_->simplex(idx_coc_v))) {  // Kill cocycle [idx_coc_v], which is younger.
-        if (interval_length_policy(cpx_->simplex(idx_coc_v), sigma)) {
-          persistent_pairs_.emplace_back(cpx_->simplex(idx_coc_v), sigma, coeff_field_.characteristic());
+      if (cpx_->filtration(cpx_->simplex(vertices[idx_coc_u])) <
+          cpx_->filtration(cpx_->simplex(vertices[idx_coc_v]))) {  // Kill cocycle [idx_coc_v], which is younger.
+        if (interval_length_policy(cpx_->simplex(vertices[idx_coc_v]), sigma)) {
+          persistent_pairs_.emplace_back(cpx_->simplex(vertices[idx_coc_v]), sigma, coeff_field_.get_characteristic());
         }
         // Maintain the index of the 0-cocycle alive.
         if (kv != idx_coc_v) {
@@ -598,8 +639,8 @@ class Persistent_cohomology
           zero_cocycles_[kv] = idx_coc_u;
         }
       } else {  // Kill cocycle [idx_coc_u], which is younger.
-        if (interval_length_policy(cpx_->simplex(idx_coc_u), sigma)) {
-          persistent_pairs_.emplace_back(cpx_->simplex(idx_coc_u), sigma, coeff_field_.characteristic());
+        if (interval_length_policy(cpx_->simplex(vertices[idx_coc_u]), sigma)) {
+          persistent_pairs_.emplace_back(cpx_->simplex(vertices[idx_coc_u]), sigma, coeff_field_.get_characteristic());
         }
         // Maintain the index of the 0-cocycle alive.
         if (ku != idx_coc_u) {
@@ -614,7 +655,7 @@ class Persistent_cohomology
       }
       cpx_->assign_key(sigma, cpx_->null_key());
     } else if (dim_max_ > 1) {  // If ku == kv, same connected component: create a 1-cocycle class.
-      create_cocycle(sigma, coeff_field_.multiplicative_identity(), coeff_field_.characteristic());
+      create_cocycle(sigma, coeff_field_.get_multiplicative_identity(), coeff_field_.get_characteristic());
     }
   }
 
@@ -661,16 +702,17 @@ class Persistent_cohomology
         mult += ann_it->second;
         ++ann_it;
       }
+      Arith_element mult_coeff = coeff_field_.get_value(mult);
       // The following test is just a heuristic, it is not required, and it is fine that is misses p == 0.
-      if (mult != coeff_field_.additive_identity()) {  // For all columns in the boundary,
+      if (mult_coeff != coeff_field_.get_additive_identity()) {  // For all columns in the boundary,
         for (const auto& entry_ref : col->col_) {              // insert every entry in map_a_ds with multiplicity
-          Arith_element w_y = coeff_field_.times(entry_ref.coefficient_, mult);  // coefficient * multiplicity
+          Arith_element w_y = coeff_field_.multiply(entry_ref.coefficient_, mult_coeff);  // coefficient * multiplicity
 
-          if (w_y != coeff_field_.additive_identity()) {  // if != 0
+          if (w_y != coeff_field_.get_additive_identity()) {  // if != 0
             result_insert_a_ds = map_a_ds.insert(std::pair<Simplex_key, Arith_element>(entry_ref.key_, w_y));
             if (!(result_insert_a_ds.second)) {  // if entry_ref.key_ already a Key in map_a_ds
-              result_insert_a_ds.first->second = coeff_field_.plus_equal(result_insert_a_ds.first->second, w_y);
-              if (result_insert_a_ds.first->second == coeff_field_.additive_identity()) {
+              result_insert_a_ds.first->second = coeff_field_.add(result_insert_a_ds.first->second, w_y);
+              if (result_insert_a_ds.first->second == coeff_field_.get_additive_identity()) {
                 map_a_ds.erase(result_insert_a_ds.first);
               }
             }
@@ -691,7 +733,7 @@ class Persistent_cohomology
     // Update the cohomology groups:
     if (map_a_ds.empty()) {  // sigma is a creator in all fields represented in coeff_field_
       if (dim_sigma < dim_max_) {
-        create_cocycle(sigma, coeff_field_.multiplicative_identity(), coeff_field_.characteristic());
+        create_cocycle(sigma, coeff_field_.get_multiplicative_identity(), coeff_field_.get_characteristic());
       }
     } else {  // sigma is a destructor in at least a field in coeff_field_
       // Convert map_a_ds to a vector
@@ -701,18 +743,18 @@ class Persistent_cohomology
       }
 
       Arith_element inv_x, charac;
-      Arith_element prod = coeff_field_.characteristic();  // Product of characteristic of the fields
-      for (auto a_ds_rit = a_ds.rbegin(); (a_ds_rit != a_ds.rend()) && (prod != coeff_field_.multiplicative_identity());
+      Arith_element prod = coeff_field_.get_characteristic();  // Product of characteristic of the fields
+      for (auto a_ds_rit = a_ds.rbegin(); (a_ds_rit != a_ds.rend()) && (prod != coeff_field_.get_multiplicative_identity());
            ++a_ds_rit) {
-        std::tie(inv_x, charac) = coeff_field_.inverse(a_ds_rit->second, prod);
+        std::tie(inv_x, charac) = coeff_field_.get_partial_inverse(a_ds_rit->second, prod);
 
-        if (inv_x != coeff_field_.additive_identity()) {
+        if (inv_x != coeff_field_.get_additive_identity()) {
           destroy_cocycle(sigma, a_ds, a_ds_rit->first, inv_x, charac);
           prod /= charac;
         }
       }
-      if (prod != coeff_field_.multiplicative_identity() && dim_sigma < dim_max_) {
-        create_cocycle(sigma, coeff_field_.multiplicative_identity(prod), prod);
+      if (prod != coeff_field_.get_multiplicative_identity() && dim_sigma < dim_max_) {
+        create_cocycle(sigma, coeff_field_.get_partial_multiplicative_identity(prod), prod);
       }
     }
   }
@@ -761,9 +803,10 @@ class Persistent_cohomology
 
     while (row_entry_it != death_key_row.end()) {  // Traverse all entries in the row at index death_key.
       const auto& entry = *row_entry_it;
-      Arith_element w = coeff_field_.times_minus(inv_x, entry.get_element());
+      Arith_element minus_x = coeff_field_.multiply(inv_x, coeff_field_.get_value(-1));
+      Arith_element w = coeff_field_.multiply(minus_x, entry.get_element());
 
-      if (w != coeff_field_.additive_identity()) {
+      if (w != coeff_field_.get_additive_identity()) {
         ++row_entry_it;  // has to be done before column addition to avoid invalidating the iterator
 
         cam_.multiply_source_and_add_to(w, a_ds, entry.get_column_index());
@@ -773,7 +816,7 @@ class Persistent_cohomology
     }
 
     // Because it is a killer simplex, set the data of sigma to null_key().
-    if (charac == coeff_field_.characteristic()) {
+    if (charac == coeff_field_.get_characteristic()) {
       cpx_->assign_key(sigma, cpx_->null_key());
     }
     if (death_cocycle_coeff == charac) {

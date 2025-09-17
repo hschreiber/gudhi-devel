@@ -426,6 +426,49 @@ class Multi_field_operators
     f1.partials_.swap(f2.partials_);
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // LEGACY methods from Multi_field to maintain retro-compatibility
+  // TODO: add Deprecated Warning?
+
+  using LegacyElement = mpz_class;
+
+  void init(int min_prime, int max_prime) { set_characteristic(min_prime, max_prime); }
+
+  [[nodiscard]] const Characteristic& characteristic() const { return get_characteristic(); }
+
+  [[nodiscard]] const LegacyElement& additive_identity() const { return get_additive_identity(); }
+
+  [[nodiscard]] const LegacyElement& multiplicative_identity() const { return get_multiplicative_identity(); }
+
+  [[nodiscard]] LegacyElement multiplicative_identity(const Characteristic& p) const
+  {
+    return get_partial_multiplicative_identity(p);
+  }
+
+  [[nodiscard]] std::pair<LegacyElement, Characteristic> inverse(const LegacyElement& x, const Characteristic& p) const
+  {
+    return get_partial_inverse(x, p);
+  }
+
+  [[nodiscard]] LegacyElement plus_times_equal(const LegacyElement& x,
+                                               const LegacyElement& y,
+                                               const LegacyElement& w) const
+  {
+    return multiply_and_add(y, w, x);
+  }
+
+  [[nodiscard]] LegacyElement times(const LegacyElement& y, const LegacyElement& w) const { return multiply(y, w); }
+
+  [[nodiscard]] LegacyElement plus_equal(const LegacyElement& x, const LegacyElement& y) const { return add(x, y); }
+
+  [[nodiscard]] LegacyElement times_minus(const LegacyElement& x, const LegacyElement& y) const
+  {
+    return multiply(y, multiply(x, LegacyElement(-1)));
+  }
+
+  //
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
  private:
   std::vector<unsigned int> primes_;           /**< All characteristics. */
   Characteristic productOfAllCharacteristics_; /**< Product of all characteristics. */

@@ -95,11 +95,11 @@ void test_persistence_with_coeff_field(int min_coefficient, int max_coefficient)
 }
 
 BOOST_AUTO_TEST_CASE(persistent_cohomology_multi_field_coeff_0_0) {
-  test_persistence_with_coeff_field(0, 0);
+  BOOST_CHECK_THROW(test_persistence_with_coeff_field(0, 0), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(persistent_cohomology_multi_field_coeff_0_1) {
-  test_persistence_with_coeff_field(0, 1);
+  BOOST_CHECK_THROW(test_persistence_with_coeff_field(0, 1), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(persistent_cohomology_multi_field_coeff_0_6) {

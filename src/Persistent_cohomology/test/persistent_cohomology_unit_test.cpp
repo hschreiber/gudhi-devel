@@ -158,11 +158,6 @@ BOOST_AUTO_TEST_CASE( persistent_cohomology_single_field_coeff_prime )
     test_persistence_with_coeff_field(prime);
 }
 
-BOOST_AUTO_TEST_CASE( persistent_cohomology_single_field_coeff_limit )
-{
-  BOOST_CHECK_THROW(test_persistence_with_coeff_field(46349), std::invalid_argument);
-}
-
 /** SimplexTree minimal options to test the limits.
  * 
  * Maximum number of simplices to compute persistence is <CODE>std::numeric_limits<std::uint8_t>::max()<\CODE> = 256.*/
