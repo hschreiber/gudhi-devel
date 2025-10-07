@@ -471,7 +471,7 @@ class Multi_field_operators
 
   [[nodiscard]] LegacyElement times_minus(const LegacyElement& x, const LegacyElement& y) const
   {
-    return multiply(y, multiply(x, LegacyElement(-1)));
+    return multiply(y, -x);
   }
 
   //

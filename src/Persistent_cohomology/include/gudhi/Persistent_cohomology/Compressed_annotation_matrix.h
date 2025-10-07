@@ -126,14 +126,9 @@ class Compressed_annotation_matrix
    * @tparam Container Range of @ref Entry_representative. Assumed to have a begin(), end() and size() method.
    * @param column Column to be inserted.
    */
-  template <class Container = std::initializer_list<std::pair<Index, Characteristic>>>
-  void insert_column(const Container& column)
+  // template <class Container = std::initializer_list<std::pair<Index, Characteristic>>>
+  void insert_column(Index key, Characteristic x)
   {
-    // Should only be called on a single entry column
-    GUDHI_CHECK(column.size() == 1, std::logic_error("Internal problem: column should contain only one element."));
-    auto element = *column.begin();
-    Index key = element.first;
-    Characteristic x = element.second;
     // Create a column containing only one entry,
     Column* new_col = column_pool_.construct(key);
     Entry* new_entry = entry_pool_.construct(key, x, new_col);
@@ -156,7 +151,12 @@ class Compressed_annotation_matrix
    * @param columnIndex @ref MatIdx index of the column to return.
    * @return Const reference to the column.
    */
-  const Column& get_column(Index columnIndex) { return *ds_repr_[cell_sets_.find_set(columnIndex)]; }
+  const Column& get_column(Index columnIndex)
+  {
+    auto* col = ds_repr_[cell_sets_.find_set(columnIndex)];
+    if (col == nullptr) return empty_column_;
+    return *col;
+  }
 
   const Column& get_column(Column* col) { return *col; }
 
@@ -256,26 +256,6 @@ class Compressed_annotation_matrix
   }
 
   /**
-   * @brief Indicates if the column at given index has value zero.
-   *
-   * For @ref boundarymatrix "RU matrices", equivalent to
-   * @ref is_zero_column(Index columnIndex, bool inR) "is_zero_column(columnIndex, true)".
-   *
-   * Note that for @ref chainmatrix "chain matrices", this method should always return false, as a valid
-   * @ref chainmatrix "chain matrix" never has empty columns.
-   *
-   * @param columnIndex @ref MatIdx index of the column.
-   * @return true If the column has value zero.
-   * @return false Otherwise.
-   */
-  bool is_zero_column(Index columnIndex)
-  {
-    auto col = ds_repr_[cell_sets_.find_set(columnIndex)];
-    if (col == nullptr) return true;
-    return col->is_empty();
-  }
-
-  /**
    * @brief Assign operator.
    *
    * @param other %Compressed_annotation_matrix to copy
@@ -312,6 +292,8 @@ class Compressed_annotation_matrix
 
   Simple_object_pool<Column> column_pool_;
   Simple_object_pool<Entry> entry_pool_;
+
+  inline static const Column empty_column_; /**< Representative for empty columns. */
 
   /*
    * Assign:    target <- target + w * other.

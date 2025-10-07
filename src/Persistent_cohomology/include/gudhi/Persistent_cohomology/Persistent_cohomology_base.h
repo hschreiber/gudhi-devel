@@ -44,8 +44,6 @@ template <class KeyHandleMap>
 class Persistent_cohomology_optimizations
 {
  public:
-  // Data attached to each simplex to interface with a Property Map.
-
   /** \brief Data stored for each simplex. */
   using Cell_key = typename KeyHandleMap::Simplex_key;
   /** \brief Handle to specify a simplex. */
@@ -138,14 +136,14 @@ class Persistent_cohomology_optimizations
   void finalize_computation(F&& add_pair)
   {
     Cell_key i = 0;
-    for (Cell_handle key : vertices_) {
+    for (const Cell_handle& key : vertices_) {
       if (vertex_sets_.get_parent(i) == i  // root of its tree
           && zero_cocycles_.find(i) == zero_cocycles_.end()) {
         std::forward<F>(add_pair)(key);
       }
       ++i;
     }
-    for (auto zero_idx : zero_cocycles_) {
+    for (const auto& zero_idx : zero_cocycles_) {
       std::forward<F>(add_pair)(vertices_[zero_idx.second]);
     }
   }
@@ -251,7 +249,7 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
    *
    * The 0-homology is maintained with a simple Union-Find data structure, which
    * explains the existence of a specific function of edge insertions. */
-  void update_cohomology_groups_edge(Cell_handle edge, Cell_handle u, Cell_handle v, bool kill_only)
+  void update_cohomology_groups_edge(Cell_handle edge, Cell_handle u, Cell_handle v, const bool kill_only)
   {
     if constexpr (with_optimizations) {
       Base::update_cohomology_groups_edge(
@@ -277,7 +275,7 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
    * Update the cohomology groups under the insertion of a simplex.
    */
   template <class Simplex_boundary_range = std::initializer_list<Cell_handle>>
-  void update_cohomology_groups(Cell_handle sigma, const Simplex_boundary_range& boundary, bool kill_only)
+  void update_cohomology_groups(Cell_handle sigma, const Simplex_boundary_range& boundary, const bool kill_only)
   {
     // Compute the annotation of the boundary of sigma:
     std::map<Cell_key, Arith_element> map_a_ds;
@@ -290,7 +288,7 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
     } else {  // sigma is a destructor in at least a field in coeff_field_
       // Convert map_a_ds to a vector
       A_ds_type a_ds;  // admits reverse iterators
-      for (auto map_a_ds_ref : map_a_ds) {
+      for (const auto& map_a_ds_ref : map_a_ds) {
         a_ds.push_back(std::pair<Cell_key, Arith_element>(map_a_ds_ref.first, map_a_ds_ref.second));
       }
 
@@ -359,13 +357,14 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
     int sign = -1;  // \in {-1,1} provides the sign in the alternate sum in the boundary.
     Cell_key key;
 
-    for (auto sh : boundary) {
+    for (const auto& sh : boundary) {
       key = key_handle_map_->key(sh);
       if (key != key_handle_map_->null_key()) {  // A simplex with null_key is a killer, and have null annotation
         // Find its annotation vector
-        if (!cam_.is_zero_column(key)) {
+        const auto& col = cam_.get_column(key);
+        if (!col.is_empty()) {
           // and insert it in annotations_in_boundary with multiplicative factor "sign".
-          annotations_in_boundary.emplace_back(&cam_.get_column(key), sign);
+          annotations_in_boundary.emplace_back(&col, sign);
         }
       }
       sign = -sign;
@@ -417,7 +416,7 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
   void create_cocycle(Cell_handle sigma, Arith_element x, Arith_element charac)
   {
     Cell_key key = key_handle_map_->key(sigma);
-    cam_.insert_column({std::make_pair(key, x)});
+    cam_.insert_column(key, x);
     transverse_idx_[key] = charac;  // insert the new row
   }
 
@@ -445,14 +444,14 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
     }
 
     const auto& death_key_row = cam_.get_row(death_key);  // Find the beginning of the row.
-    auto& death_cocycle_coeff = transverse_idx_[death_key];
+    auto death_cocycle_coeff = transverse_idx_.find(death_key);
 
     auto row_entry_it = death_key_row.begin();
 
     while (row_entry_it != death_key_row.end()) {  // Traverse all entries in the row at index death_key.
       const auto& entry = *row_entry_it;
-      Arith_element minus_x = coeff_field_.multiply(inv_x, coeff_field_.get_value(-1));
-      Arith_element w = coeff_field_.multiply(minus_x, entry.get_element());
+      Arith_element w = coeff_field_.multiply(inv_x, -entry.get_element());
+      // Arith_element w = coeff_field_.times_minus(inv_x, entry.get_element());
 
       if (w != coeff_field_.get_additive_identity()) {
         ++row_entry_it;  // has to be done before column addition to avoid invalidating the iterator
@@ -466,11 +465,11 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
     if (charac == coeff_field_.get_characteristic()) {
       key_handle_map_->assign_key(sigma, key_handle_map_->null_key());
     }
-    if (death_cocycle_coeff == charac) {
+    if (death_cocycle_coeff->second == charac) {
       cam_.erase_empty_row(death_key);
-      transverse_idx_.erase(death_key);
+      transverse_idx_.erase(death_cocycle_coeff);
     } else {
-      death_cocycle_coeff /= charac;
+      death_cocycle_coeff->second /= charac;
     }
   }
 };

@@ -353,27 +353,27 @@ class Zp_field_operators
 
   [[nodiscard]] std::pair<LegacyElement, Characteristic> inverse(LegacyElement x, Characteristic p) const
   {
-    return get_partial_inverse(get_value(x), p);
+    return get_partial_inverse(x, p);
   }
 
   [[nodiscard]] LegacyElement plus_times_equal(LegacyElement x, LegacyElement y, LegacyElement w) const
   {
-    return multiply_and_add(get_value(y), get_value(w), get_value(x));
+    return multiply_and_add(y, w, x);
   }
 
   [[nodiscard]] LegacyElement times(LegacyElement y, LegacyElement w) const
   {
-    return multiply(get_value(y), get_value(w));
+    return multiply(y, w);
   }
 
   [[nodiscard]] LegacyElement plus_equal(LegacyElement x, LegacyElement y) const
   {
-    return add(get_value(x), get_value(y));
+    return add(x, y);
   }
 
   [[nodiscard]] LegacyElement times_minus(LegacyElement x, LegacyElement y) const
   {
-    return multiply(get_value(y), multiply(get_value(x), get_value(-1)));
+    return multiply(y, -x);
   }
 
   //

@@ -84,12 +84,12 @@ class Persistent_cohomology_column : public boost::intrusive::set_base_hook<
       boost::intrusive::base_hook<base_hook_cam_v> > Col_type;
 
   /** \brief Creates an empty column.*/
-  explicit Persistent_cohomology_column(SimplexKey key)
+  explicit Persistent_cohomology_column(SimplexKey key = -1)
       : col_(),
         class_key_(key) {}
 
   /** \brief Returns true iff the column is null.*/
-  bool is_null() const {
+  bool is_empty() const {
     return col_.empty();
   }
   /** \brief Returns the key of the representative simplex of
@@ -98,8 +98,6 @@ class Persistent_cohomology_column : public boost::intrusive::set_base_hook<
   SimplexKey class_key() const {
     return class_key_;
   }
-
-  bool is_empty() const { return col_.empty(); }
 
   /** \brief Lexicographic comparison of two columns.*/
   friend bool operator<(const Persistent_cohomology_column& c1,
