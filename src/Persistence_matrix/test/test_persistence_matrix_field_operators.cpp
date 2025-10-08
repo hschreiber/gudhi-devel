@@ -306,6 +306,8 @@ void test_z2_standart_field_properties(Z2& op) {
   unsigned int z21 = 7;
   unsigned int z22 = 2;
 
+  BOOST_CHECK_EQUAL(op.get_opposite(z21), 1);
+  BOOST_CHECK_EQUAL(op.get_opposite(z22), 0);
   BOOST_CHECK_EQUAL(op.get_inverse(z21), 1);
   BOOST_CHECK_EQUAL(op.get_inverse(z22), 0);
   BOOST_CHECK(op.get_partial_inverse(z21, 35) == std::make_pair(typename Z2::Element(1), 35u));
@@ -326,6 +328,8 @@ void test_z5_standart_field_properties(Z5& op) {
   unsigned int z51 = 7;
   unsigned int z52 = 3;
 
+  BOOST_CHECK_EQUAL(op.get_opposite(z51), 3);
+  BOOST_CHECK_EQUAL(op.get_opposite(z52), 2);
   BOOST_CHECK_EQUAL(op.get_inverse(z51), 3);
   BOOST_CHECK_EQUAL(op.get_inverse(z52), 2);
   BOOST_CHECK(op.get_partial_inverse(z51, 35) == std::make_pair(3u, 35u));
@@ -347,6 +351,8 @@ void test_z7_standart_field_properties(Z7& op) {
   unsigned int z71 = 8;
   unsigned int z72 = 3;
 
+  BOOST_CHECK_EQUAL(op.get_opposite(z71), 6);
+  BOOST_CHECK_EQUAL(op.get_opposite(z72), 4);
   BOOST_CHECK_EQUAL(op.get_inverse(z71), 1);
   BOOST_CHECK_EQUAL(op.get_inverse(z72), 5);
   BOOST_CHECK(op.get_partial_inverse(z71, 35) == std::make_pair(1u, 35u));
@@ -526,6 +532,8 @@ void test_multi_field_properties(MF& op) {
   T m1(1);
   T m2(7);
 
+  BOOST_CHECK_EQUAL(op.get_opposite(m1), T(5004));
+  BOOST_CHECK_EQUAL(op.get_opposite(m2), T(4998));
   BOOST_CHECK_EQUAL(op.get_inverse(m1), T(1));
   BOOST_CHECK_EQUAL(op.get_inverse(m2), T(2758));
   BOOST_CHECK(op.get_partial_inverse(m1, 35) == std::make_pair(T(1716), T(35)));
@@ -566,9 +574,9 @@ BOOST_AUTO_TEST_CASE(Multi_Field_operators_properties) {
   mfop.set_characteristic(3, 30);
   smfop.set_characteristic(3, 30);
 
-  BOOST_CHECK_EQUAL(mfop.get_characteristic(), smfop.get_characteristic());                            // == 3234846615
-  BOOST_CHECK_EQUAL(mfop.get_partial_inverse(2, 35).first, smfop.get_partial_inverse(2, 35).first);    // == 2033332158
-  BOOST_CHECK_EQUAL(mfop.get_partial_inverse(2, 35).second, smfop.get_partial_inverse(2, 35).second);  // == 2033332158
+  BOOST_CHECK_EQUAL(mfop.get_characteristic(), smfop.get_characteristic());                            // == 5005
+  BOOST_CHECK_EQUAL(mfop.get_partial_inverse(2, 35).first, smfop.get_partial_inverse(2, 35).first);
+  BOOST_CHECK_EQUAL(mfop.get_partial_inverse(2, 35).second, smfop.get_partial_inverse(2, 35).second);
   BOOST_CHECK_EQUAL(mfop.get_partial_multiplicative_identity(35), smfop.get_partial_multiplicative_identity(35));
 #endif
 }

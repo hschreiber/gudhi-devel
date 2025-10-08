@@ -233,6 +233,8 @@ void test_z2_standard_field_properties() {
   Z2 z21(7);
   Z2 z22(2);
 
+  BOOST_CHECK_EQUAL(z21.get_opposite(), 1);
+  BOOST_CHECK_EQUAL(z22.get_opposite(), 0);
   BOOST_CHECK_EQUAL(z21.get_inverse(), 1);
   BOOST_CHECK_EQUAL(z22.get_inverse(), 0);
   BOOST_CHECK(z21.get_partial_inverse(35) == std::make_pair(Z2(1), 35u));
@@ -258,6 +260,8 @@ void test_z5_standard_field_properties() {
   Z5 z51(7);
   Z5 z52(3);
 
+  BOOST_CHECK_EQUAL(z51.get_opposite(), 3);
+  BOOST_CHECK_EQUAL(z52.get_opposite(), 2);
   BOOST_CHECK_EQUAL(z51.get_inverse(), 3);
   BOOST_CHECK_EQUAL(z52.get_inverse(), 2);
   BOOST_CHECK(z51.get_partial_inverse(35) == std::make_pair(Z5(3), 35u));
@@ -283,6 +287,8 @@ void test_z7_standard_field_properties() {
   Z7 z71(8);
   Z7 z72(3);
 
+  BOOST_CHECK_EQUAL(z71.get_opposite(), 6);
+  BOOST_CHECK_EQUAL(z72.get_opposite(), 4);
   BOOST_CHECK_EQUAL(z71.get_inverse(), 1);
   BOOST_CHECK_EQUAL(z72.get_inverse(), 5);
   BOOST_CHECK(z71.get_partial_inverse(35) == std::make_pair(Z7(1), 35u));
@@ -449,6 +455,8 @@ void test_multi_field_properties() {
   MF m1(1);
   MF m2(7);
 
+  BOOST_CHECK_EQUAL(m1.get_opposite(), T(3234846614));
+  BOOST_CHECK_EQUAL(m2.get_opposite(), T(3234846608));
   BOOST_CHECK_EQUAL(m1.get_inverse(), T(1));
   BOOST_CHECK_EQUAL(m2.get_inverse(), T(2758));
   BOOST_CHECK(m1.get_partial_inverse(35) == std::make_pair(MF(1716), T(35)));

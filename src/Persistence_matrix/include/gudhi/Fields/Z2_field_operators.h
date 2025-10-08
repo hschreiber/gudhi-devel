@@ -326,6 +326,23 @@ class Z2_field_operators
   }
 
   /**
+   * @brief Returns the opposite of the given element in the field.
+   *
+   * @tparam Unsigned_integer_type A native unsigned integer type: unsigned int, bool, etc.
+   * @param e Element to get the opposite from.
+   * @return Opposite in the current field of `e % 2`.
+   */
+  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
+  static Element get_opposite(Unsigned_integer_type e)
+  {
+    if constexpr (std::is_same_v<Unsigned_integer_type, bool>) {
+      return e;
+    } else {
+      return get_value(e);
+    }
+  }
+
+  /**
    * @brief Returns the inverse of the given element in the field.
    *
    * @tparam Unsigned_integer_type A native unsigned integer type: unsigned int, bool, etc.

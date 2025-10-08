@@ -57,6 +57,7 @@ class Persistent_cohomology_entry : public base_hook_cam_h,
   ArithmeticElement get_element() const { return coefficient_; }
   // SimplexKey get_column_index() const { return self_col_->class_key(); }
   Column const* get_column_index() const { return self_col_; }
+  SimplexKey get_row_index() const { return key_; }
 
   SimplexKey key_;
   ArithmeticElement coefficient_;
@@ -82,6 +83,8 @@ class Persistent_cohomology_column : public boost::intrusive::set_base_hook<
   typedef boost::intrusive::list<Entry,
       boost::intrusive::constant_time_size<false>,
       boost::intrusive::base_hook<base_hook_cam_v> > Col_type;
+  using iterator = typename Col_type::iterator;
+  using const_iterator = typename Col_type::const_iterator;
 
   /** \brief Creates an empty column.*/
   explicit Persistent_cohomology_column(SimplexKey key = -1)
@@ -118,6 +121,14 @@ class Persistent_cohomology_column : public boost::intrusive::set_base_hook<
     }
     return (it2 != c2.col_.end());
   }
+
+  iterator begin() noexcept { return col_.begin(); }
+
+  const_iterator begin() const noexcept { return col_.begin(); }
+
+  iterator end() noexcept { return col_.end(); }
+
+  const_iterator end() const noexcept { return col_.end(); }
 
   Col_type col_;
   SimplexKey class_key_;

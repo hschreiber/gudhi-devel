@@ -285,6 +285,14 @@ class Multi_field_element
   explicit operator mpz_class() const { return element_; }
 
   /**
+   * @brief Returns the opposite of the element.
+   */
+  [[nodiscard]] Multi_field_element get_opposite() const
+  {
+    return {element_ == 0 ? element_ : productOfAllCharacteristics_ - element_};
+  }
+
+  /**
    * @brief Returns the inverse of the element in the multi-field, see @cite boissonnat:hal-00922572.
    *
    * @return The inverse.

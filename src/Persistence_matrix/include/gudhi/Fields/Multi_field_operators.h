@@ -342,6 +342,18 @@ class Multi_field_operators
   }
 
   /**
+   * @brief Returns the opposite of the given element.
+   *
+   * @param e Element to get the opposite from.
+   * @return Opposite in the current product of all field.
+   */
+  [[nodiscard]] Element get_opposite(const Element& e) const
+  {
+    auto v = get_value(e);
+    return v == 0 ? v : productOfAllCharacteristics_ - v;
+  }
+
+  /**
    * @brief Returns the inverse of the given element in the sense of @cite boissonnat:hal-00922572 with respect
    * to the product of all characteristics.
    *

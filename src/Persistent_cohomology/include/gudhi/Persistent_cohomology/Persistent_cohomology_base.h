@@ -389,11 +389,11 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
       Arith_element mult_coeff = coeff_field_.get_value(mult);
       // The following test is just a heuristic, it is not required, and it is fine that is misses p == 0.
       if (mult_coeff != coeff_field_.get_additive_identity()) {  // For all columns in the boundary,
-        for (const auto& entry_ref : col->col_) {                // insert every entry in map_a_ds with multiplicity
-          Arith_element w_y = coeff_field_.multiply(entry_ref.coefficient_, mult_coeff);  // coefficient * multiplicity
+        for (const auto& entry_ref : *col) {                // insert every entry in map_a_ds with multiplicity
+          Arith_element w_y = coeff_field_.multiply(entry_ref.get_element(), mult_coeff);  // coefficient * multiplicity
 
           if (w_y != coeff_field_.get_additive_identity()) {  // if != 0
-            result_insert_a_ds = map_a_ds.insert(std::pair<Cell_key, Arith_element>(entry_ref.key_, w_y));
+            result_insert_a_ds = map_a_ds.insert(std::pair<Cell_key, Arith_element>(entry_ref.get_row_index(), w_y));
             if (!(result_insert_a_ds.second)) {  // if entry_ref.key_ already a Key in map_a_ds
               result_insert_a_ds.first->second = coeff_field_.add(result_insert_a_ds.first->second, w_y);
               if (result_insert_a_ds.first->second == coeff_field_.get_additive_identity()) {
@@ -450,8 +450,7 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
 
     while (row_entry_it != death_key_row.end()) {  // Traverse all entries in the row at index death_key.
       const auto& entry = *row_entry_it;
-      Arith_element w = coeff_field_.multiply(inv_x, -entry.get_element());
-      // Arith_element w = coeff_field_.times_minus(inv_x, entry.get_element());
+      Arith_element w = coeff_field_.multiply(inv_x, coeff_field_.get_opposite(entry.get_element()));
 
       if (w != coeff_field_.get_additive_identity()) {
         ++row_entry_it;  // has to be done before column addition to avoid invalidating the iterator

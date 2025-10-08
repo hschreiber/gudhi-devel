@@ -275,6 +275,17 @@ class Zp_field_operators
   bool are_equal(Element e1, Element e2) const { return get_value(e1) == get_value(e2); }
 
   /**
+   * @brief Returns the opposite of the given element in the field.
+   *
+   * @param e Element to get the opposite from.
+   * @return Opposite in the current field of `e % characteristic`.
+   */
+  Element get_opposite(Element e) const { 
+    auto v = get_value(e);
+    return v == 0 ? 0 : characteristic_ - v;
+  }
+
+  /**
    * @brief Returns the inverse of the given element in the field.
    *
    * @param e Element to get the inverse from.

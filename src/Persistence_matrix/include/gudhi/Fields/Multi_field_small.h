@@ -19,7 +19,7 @@
 
 #include <utility>
 #include <vector>
-#include <limits.h>
+#include <climits>
 #include <numeric>
 
 #include <gudhi/Debug_utils.h>
@@ -331,6 +331,14 @@ class Multi_field_element_with_small_characteristics
    * @brief Casts the element into an unsigned int.
    */
   operator unsigned int() const { return element_; }
+
+  /**
+   * @brief Returns the opposite of the element.
+   */
+  [[nodiscard]] Multi_field_element_with_small_characteristics get_opposite() const
+  {
+    return element_ == 0 ? element_ : productOfAllCharacteristics_ - element_;
+  }
 
   /**
    * @brief Returns the inverse of the element in the multi-field, see @cite boissonnat:hal-00922572.

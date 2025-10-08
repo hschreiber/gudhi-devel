@@ -375,6 +375,14 @@ class Shared_multi_field_element_with_small_characteristics
   operator unsigned int() const { return element_; }
 
   /**
+   * @brief Returns the opposite of the element.
+   */
+  [[nodiscard]] Shared_multi_field_element_with_small_characteristics get_opposite() const
+  {
+    return element_ == 0 ? element_ : productOfAllCharacteristics_ - element_;
+  }
+
+  /**
    * @brief Returns the inverse of the element in the multi-field, see @cite boissonnat:hal-00922572.
    *
    * @return The inverse.

@@ -314,6 +314,18 @@ class Z2_field_element
   operator unsigned int() const { return static_cast<unsigned int>(element_); }
 
   /**
+   * @brief Returns the opposite of the given element in the field.
+   *
+   * @tparam Unsigned_integer_type A native unsigned integer type: unsigned int, bool, etc.
+   * @param e Element to get the opposite from.
+   * @return Opposite in the current field of `e % 2`.
+   */
+  [[nodiscard]] Z2_field_element get_opposite() const
+  {
+    return element_ ? Z2_field_element(1) : Z2_field_element();
+  }
+
+  /**
    * @brief Returns the inverse of the element.
    *
    * @return The inverse.
