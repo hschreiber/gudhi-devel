@@ -316,14 +316,14 @@ class Compressed_annotation_matrix
                                                          coeff_field_.get_additive_identity(),
                                                          &target));
 
-          entry_tmp->coefficient_ = coeff_field_.multiply_and_add(other_it->second, w, entry_tmp->coefficient_);
+          coeff_field_.multiply_and_add_inplace_back(other_it->second, w, entry_tmp->coefficient_);
 
           target.col_.insert(target_it, *entry_tmp);
 
           ++other_it;
         } else {  // it1->key == it2->key
           // target_it->coefficient_ <- target_it->coefficient_ + other_it->second * w
-          target_it->coefficient_ = coeff_field_.multiply_and_add(other_it->second, w, target_it->coefficient_);
+          coeff_field_.multiply_and_add_inplace_back(other_it->second, w, target_it->coefficient_);
           if (target_it->coefficient_ == coeff_field_.get_additive_identity()) {
             auto tmp_it = target_it;
             ++target_it;
@@ -341,7 +341,7 @@ class Compressed_annotation_matrix
     }
     while (other_it != other.end()) {
       Entry* entry_tmp = entry_pool_.construct(Entry(other_it->first, coeff_field_.get_additive_identity(), &target));
-      entry_tmp->coefficient_ = coeff_field_.multiply_and_add(other_it->second, w, entry_tmp->coefficient_);
+      coeff_field_.multiply_and_add_inplace_back(other_it->second, w, entry_tmp->coefficient_);
       target.col_.insert(target.col_.end(), *entry_tmp);
 
       ++other_it;

@@ -140,8 +140,8 @@ class Multi_field_operators
    */
   void get_value_inplace(Element& e) const
   {
-    if (e >= productOfAllCharacteristics_ || e < -productOfAllCharacteristics_)
-      mpz_mod(e.get_mpz_t(), e.get_mpz_t(), productOfAllCharacteristics_.get_mpz_t());
+    // comparing e with p and -p seems more costly than directly taking the modulo
+    mpz_mod(e.get_mpz_t(), e.get_mpz_t(), productOfAllCharacteristics_.get_mpz_t());
     if (e < 0) e += productOfAllCharacteristics_;
   }
 
@@ -152,10 +152,9 @@ class Multi_field_operators
    * @param e2 Second element.
    * @return `(e1 + e2) % productOfAllCharacteristics`, such that the result is positive.
    */
-  [[nodiscard]] Element add(Element e1, const Element& e2) const
+  [[nodiscard]] Element add(const Element& e1, const Element& e2) const
   {
-    add_inplace(e1, e2);
-    return e1;
+    return get_value(e1 + e2);
   }
 
   /**
@@ -178,10 +177,9 @@ class Multi_field_operators
    * @param e2 Second element.
    * @return `(e1 - e2) % productOfAllCharacteristics`, such that the result is positive.
    */
-  [[nodiscard]] Element subtract(Element e1, const Element& e2) const
+  [[nodiscard]] Element subtract(const Element& e1, const Element& e2) const
   {
-    subtract_inplace_front(e1, e2);
-    return e1;
+    return get_value(e1 - e2);
   }
 
   /**
@@ -217,10 +215,9 @@ class Multi_field_operators
    * @param e2 Second element.
    * @return `(e1 * e2) % productOfAllCharacteristics`, such that the result is positive.
    */
-  [[nodiscard]] Element multiply(Element e1, const Element& e2) const
+  [[nodiscard]] Element multiply(const Element& e1, const Element& e2) const
   {
-    multiply_inplace(e1, e2);
-    return e1;
+    return get_value(e1 * e2);
   }
 
   /**
@@ -335,7 +332,7 @@ class Multi_field_operators
    * @return true If `e1 % productOfAllCharacteristics == e2 % productOfAllCharacteristics`.
    * @return false Otherwise.
    */
-  bool are_equal(const Element& e1, const Element& e2) const
+  [[nodiscard]] bool are_equal(const Element& e1, const Element& e2) const
   {
     if (e1 == e2) return true;
     return get_value(e1) == get_value(e2);
@@ -350,7 +347,17 @@ class Multi_field_operators
   [[nodiscard]] Element get_opposite(const Element& e) const
   {
     auto v = get_value(e);
-    return v == 0 ? v : productOfAllCharacteristics_ - v;
+    return mpz_sgn(v.get_mpz_t()) == 0 ? v : productOfAllCharacteristics_ - v;
+  }
+
+  /**
+   * @brief Stores the opposite of the given element in the element.
+   */
+  void get_opposite_inplace(Element& e) const
+  {
+    get_value_inplace(e);
+    if (mpz_sgn(e.get_mpz_t()) == 0) return;
+    mpz_sub(e.get_mpz_t(), productOfAllCharacteristics_.get_mpz_t(), e.get_mpz_t());
   }
 
   /**
@@ -483,7 +490,9 @@ class Multi_field_operators
 
   [[nodiscard]] LegacyElement times_minus(const LegacyElement& x, const LegacyElement& y) const
   {
-    return multiply(y, -x);
+    LegacyElement m = multiply(x, y);
+    get_opposite_inplace(m);
+    return m;
   }
 
   //

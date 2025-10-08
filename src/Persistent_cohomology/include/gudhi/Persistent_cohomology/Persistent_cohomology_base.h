@@ -395,7 +395,7 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
           if (w_y != coeff_field_.get_additive_identity()) {  // if != 0
             result_insert_a_ds = map_a_ds.insert(std::pair<Cell_key, Arith_element>(entry_ref.get_row_index(), w_y));
             if (!(result_insert_a_ds.second)) {  // if entry_ref.key_ already a Key in map_a_ds
-              result_insert_a_ds.first->second = coeff_field_.add(result_insert_a_ds.first->second, w_y);
+              coeff_field_.add_inplace(result_insert_a_ds.first->second, w_y);
               if (result_insert_a_ds.first->second == coeff_field_.get_additive_identity()) {
                 map_a_ds.erase(result_insert_a_ds.first);
               }
@@ -450,7 +450,8 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
 
     while (row_entry_it != death_key_row.end()) {  // Traverse all entries in the row at index death_key.
       const auto& entry = *row_entry_it;
-      Arith_element w = coeff_field_.multiply(inv_x, coeff_field_.get_opposite(entry.get_element()));
+      Arith_element w = coeff_field_.get_opposite(coeff_field_.multiply(inv_x, entry.get_element()));
+      // Arith_element w = coeff_field_.times_minus(inv_x, entry.get_element());
 
       if (w != coeff_field_.get_additive_identity()) {
         ++row_entry_it;  // has to be done before column addition to avoid invalidating the iterator

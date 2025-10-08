@@ -384,7 +384,7 @@ class Zp_field_operators
 
   [[nodiscard]] LegacyElement times_minus(LegacyElement x, LegacyElement y) const
   {
-    return multiply(y, -x);
+    return get_opposite(multiply(x, y));
   }
 
   //
