@@ -300,8 +300,7 @@ class Compressed_annotation_matrix
    */
   template <class Entry_range>
   void plus_equal_column(Column& target,
-                         Entry_range const& other  // value_type is pair<Cell_key,Arith_element>
-                         ,
+                         Entry_range const& other,  // value_type is pair<Cell_key,Arith_element>
                          Characteristic w)
   {
     auto target_it = target.col_.begin();
@@ -311,10 +310,7 @@ class Compressed_annotation_matrix
         ++target_it;
       } else {
         if (target_it->key_ > other_it->first) {
-          Entry* entry_tmp = entry_pool_.construct(Entry(other_it->first  // key
-                                                         ,
-                                                         coeff_field_.get_additive_identity(),
-                                                         &target));
+          Entry* entry_tmp = entry_pool_.construct(other_it->first, coeff_field_.get_additive_identity(), &target);
 
           coeff_field_.multiply_and_add_inplace_back(other_it->second, w, entry_tmp->coefficient_);
 
@@ -340,7 +336,7 @@ class Compressed_annotation_matrix
       }
     }
     while (other_it != other.end()) {
-      Entry* entry_tmp = entry_pool_.construct(Entry(other_it->first, coeff_field_.get_additive_identity(), &target));
+      Entry* entry_tmp = entry_pool_.construct(other_it->first, coeff_field_.get_additive_identity(), &target);
       coeff_field_.multiply_and_add_inplace_back(other_it->second, w, entry_tmp->coefficient_);
       target.col_.insert(target.col_.end(), *entry_tmp);
 

@@ -274,8 +274,8 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
   /*
    * Update the cohomology groups under the insertion of a simplex.
    */
-  template <class Simplex_boundary_range = std::initializer_list<Cell_handle>>
-  void update_cohomology_groups(Cell_handle sigma, const Simplex_boundary_range& boundary, const bool kill_only)
+  template <class Cell_boundary_range = std::initializer_list<Cell_handle>>
+  void update_cohomology_groups(Cell_handle sigma, const Cell_boundary_range& boundary, const bool kill_only)
   {
     // Compute the annotation of the boundary of sigma:
     std::map<Cell_key, Arith_element> map_a_ds;
@@ -345,8 +345,8 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
   /*
    * Compute the annotation of the boundary of a simplex.
    */
-  template <class Simplex_boundary_range>
-  void annotation_of_the_boundary(std::map<Cell_key, Arith_element>& map_a_ds, const Simplex_boundary_range& boundary)
+  template <class Cell_boundary_range>
+  void annotation_of_the_boundary(std::map<Cell_key, Arith_element>& map_a_ds, const Cell_boundary_range& boundary)
   {
     // traverses the boundary of sigma, keeps track of the annotation vectors,
     // with multiplicity. We used to sum the coefficients directly in
