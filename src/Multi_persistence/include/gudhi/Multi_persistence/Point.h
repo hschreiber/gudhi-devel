@@ -104,6 +104,11 @@ class Point
   operator std::vector<T>() const { return coordinates_; }
 
   /**
+   * @brief Returns the underlying std::vector.
+   */
+  std::vector<T> &retrieve_underlying_container() { return coordinates_; }
+
+  /**
    * @brief At operator.
    */
   reference at(size_type pos) { return coordinates_.at(pos); }
@@ -217,6 +222,11 @@ class Point
    * @brief Number of coordinates.
    */
   size_type size() const noexcept { return coordinates_.size(); }
+
+  /**
+   * @brief Resizes the number of coordinates.
+   */
+  void resize(size_type count) { coordinates_.resize(count); }
 
   /**
    * @brief Swap operator.
