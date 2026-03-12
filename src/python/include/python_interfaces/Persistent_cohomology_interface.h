@@ -11,6 +11,7 @@
 #ifndef INCLUDE_PERSISTENT_COHOMOLOGY_INTERFACE_H_
 #define INCLUDE_PERSISTENT_COHOMOLOGY_INTERFACE_H_
 
+#include <array>
 #include <cstdlib>
 #include <vector>
 #include <utility>    // for std::pair
@@ -18,9 +19,11 @@
 #include <unordered_map>
 
 #include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
 
 #include <gudhi/Persistent_cohomology.h>
 #include <gudhi/Simplex_tree.h>  // for Extended_simplex_type
+#include <python_interfaces/numpy_utils.h>
 
 namespace Gudhi {
 
@@ -73,6 +76,32 @@ class Persistent_cohomology_interface
     cmp_intervals_by_dim_then_length cmp;
     std::sort(std::begin(persistence), std::end(persistence), cmp);
     return persistence;
+  }
+
+  nanobind::tuple get_intervals()
+  {
+    std::pair<std::vector<std::vector<std::array<double, 2> > >, std::vector<std::vector<double> > > intervals;
+    intervals.first.resize(Base::dim_max_);
+    intervals.second.resize(Base::dim_max_);
+
+    for (const auto& pair : Base::get_persistent_pairs()) {
+      if (get<1>(pair) == stptr_->null_simplex()) {
+        intervals.second[stptr_->dimension(get<0>(pair))].push_back(stptr_->filtration(get<0>(pair)));
+      } else {
+        intervals.first[stptr_->dimension(get<0>(pair))].push_back({stptr_->filtration(get<0>(pair)), stptr_->filtration(get<1>(pair))});
+      }
+    }
+
+    nanobind::list finites;
+    nanobind::list infinites;
+
+    for (int d = 0; d < Base::dim_max_; ++d) {
+      // TODO: sort like for the others?
+      finites.append(_wrap_as_numpy_array(std::move(intervals.first[d])));
+      infinites.append(_wrap_as_numpy_array(std::move(intervals.second[d]), intervals.second[d].size()));
+    }
+
+    return nanobind::make_tuple(finites, infinites);
   }
 
   // This function computes the top-dimensional cofaces associated to the positive and negative

@@ -11,6 +11,7 @@
  */
 
 #include <cstddef>
+#include <functional>
 #include <vector>
 
 // Nanobind/Sphinx bug hack: Required to remove collections.abc.* in the documentation
@@ -24,14 +25,14 @@
 #include <nanobind/operators.h>
 #include <nanobind/ndarray.h>
 
-#include <python_interfaces/Persistent_cohomology_interface.h>
+// #include <python_interfaces/Persistent_cohomology_interface.h>
 #include <python_interfaces/Simplex_tree_interface.h>
 #include <python_interfaces/numpy_utils.h>
 
 namespace nb = nanobind;
 
 using gsti = Gudhi::Simplex_tree_interface;
-using gpers = Gudhi::Persistent_cohomology_interface<gsti>;
+// using gpers = Gudhi::Persistent_cohomology_interface<gsti>;
 
 gsti deserialize_from_python(const nb::ndarray<const char, nb::ndim<1>, nb::numpy> &state)
 {
@@ -46,6 +47,16 @@ gsti deserialize_from_python(const nb::ndarray<const char, nb::ndim<1>, nb::nump
 NB_MODULE(_simplex_tree_ext, m)
 {
   m.attr("__license__") = "MIT";
+
+  nb::class_<gsti::Simplex_handle>(m, "_Simplex_tree_python_handle")
+      .def(nb::init<>())
+      .def("__eq__",
+           [](const gsti::Simplex_handle &a, const gsti::Simplex_handle &b) -> bool {
+             return &(a->second) == &(b->second);
+           })
+      .def("__hash__", [](const gsti::Simplex_handle &a) -> std::size_t {
+        return std::hash<const Gudhi::Simplex_tree_node_explicit_storage<gsti::Base> *>()(&(a->second));
+      });
 
   nb::class_<gsti>(m, "_Simplex_tree_python_interface")
       .def(nb::init<>(), nb::call_guard<nb::gil_scoped_release>())
@@ -399,17 +410,4 @@ unpickle a SimplexTree.
 :param state: Serialized SimplexTree data structure
 :type state: numpy.array of shape (n,)
            )doc");
-
-  nb::class_<gpers>(m, "_Simplex_tree_persistence_interface")
-      .def(nb::init<gsti &, bool>(), nb::call_guard<nb::gil_scoped_release>())
-      .def("_compute_persistence", &gpers::compute_persistence, nb::call_guard<nb::gil_scoped_release>())
-      .def("_get_persistence", &gpers::get_persistence)
-      .def("_betti_numbers", &gpers::betti_numbers)
-      .def("_persistent_betti_numbers", &gpers::persistent_betti_numbers)
-      .def("_intervals_in_dimension", &gpers::intervals_in_dimension)
-      .def("_write_output_diagram", &gpers::write_output_diagram, nb::call_guard<nb::gil_scoped_release>())
-      .def("_persistence_pairs", &gpers::persistence_pairs)
-      .def("_lower_star_generators", &gpers::lower_star_generators)
-      .def("_flag_generators", &gpers::flag_generators)
-      .def("_compute_extended_persistence_subdiagrams", &gpers::compute_extended_persistence_subdiagrams);
 }

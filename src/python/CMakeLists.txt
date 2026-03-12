@@ -220,6 +220,7 @@ include_directories(BEFORE include)
 add_subdirectory("gudhi")
 add_subdirectory("gudhi/clustering")
 add_subdirectory("gudhi/datasets/generators")
+add_subdirectory("gudhi/invariants")
 
 # Path separator management for windows
 if (WIN32)

@@ -13,10 +13,8 @@ __license__ = "MIT"
 
 import numpy as np
 
-from gudhi._cubical_complex_ext import (
-    _Periodic_cubical_complex_interface,
-    _Periodic_cubical_complex_persistence_interface,
-)
+from gudhi._cubical_complex_ext import _Periodic_cubical_complex_interface
+from gudhi.invariants._pers_cohomology_ext import _Periodic_cubical_complex_persistence_interface
 
 
 # PeriodicCubicalComplex python interface

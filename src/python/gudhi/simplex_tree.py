@@ -20,6 +20,7 @@ from numpy.typing import ArrayLike
 import warnings
 
 from gudhi import _simplex_tree_ext as t
+from gudhi.invariants._pers_cohomology_ext import _Simplex_tree_persistence_interface
 
 
 # SimplexTree python interface
@@ -196,7 +197,7 @@ class SimplexTree(t._Simplex_tree_python_interface):
         This `notebook <https://github.com/GUDHI/TDA-tutorial/blob/master/Tuto-GUDHI-extended-persistence.ipynb>`_
         explains how to compute an extension of persistence called extended persistence.
         """
-        self._pers = t._Simplex_tree_persistence_interface(self, False)
+        self._pers = _Simplex_tree_persistence_interface(self, False)
         self._pers._compute_persistence(homology_coeff_field, -1.0)
         return self._pers._compute_extended_persistence_subdiagrams(min_persistence)
 
@@ -245,7 +246,7 @@ class SimplexTree(t._Simplex_tree_python_interface):
         :returns: Nothing.
         """
         # bool(persistence_dim_max) because of numpy bool_ is not recognized as the right type
-        self._pers = t._Simplex_tree_persistence_interface(self, bool(persistence_dim_max))
+        self._pers = _Simplex_tree_persistence_interface(self, bool(persistence_dim_max))
         self._pers._compute_persistence(homology_coeff_field, min_persistence)
         return self
 
