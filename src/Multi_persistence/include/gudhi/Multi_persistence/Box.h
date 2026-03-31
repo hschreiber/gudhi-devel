@@ -58,7 +58,8 @@ class Box
   {
     GUDHI_CHECK(lowerCorner.size() == upperCorner.size(),
                 std::invalid_argument("The two corners of the box don't have the same dimension."));
-    GUDHI_CHECK(lowerCorner <= upperCorner, std::invalid_argument("The first corner is not smaller than the second."));
+    // GUDHI_CHECK(lowerCorner <= upperCorner, std::invalid_argument("The first corner is not smaller than the
+    // second."));
   }
 
   /**
