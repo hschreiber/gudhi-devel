@@ -343,8 +343,8 @@ inline void write_complex_to_scc_file(const std::string& outFilePath,
 
   file << std::setprecision(std::numeric_limits<typename Fil::value_type>::digits);
 
-  std::size_t startIndex = reverse ? minIndex + 1 : minIndex;
-  std::size_t endIndex = reverse ? maxIndex : maxIndex - 1;
+  int startIndex = reverse ? minIndex + 1 : minIndex;
+  int endIndex = reverse ? maxIndex : maxIndex - 1;
   const auto& filtValues = complex.get_filtration_values();
   const auto& boundaries = complex.get_boundaries();
   int currDim;
@@ -362,7 +362,7 @@ inline void write_complex_to_scc_file(const std::string& outFilePath,
       }
     }
   }
-  for (std::size_t i = startIndex; i <= endIndex; ++i) {
+  for (int i = startIndex; i <= endIndex; ++i) {
     if (!stripComments) {
       file << "# Block of dimension " << currDim << "\n";
       if (reverse)
