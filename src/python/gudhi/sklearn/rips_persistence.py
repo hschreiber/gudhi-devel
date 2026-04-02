@@ -10,19 +10,13 @@
 __license__ = "MIT"
 
 
-import math
 import numpy as np
 from numpy.typing import ArrayLike
 from typing import Literal, Optional
 from sklearn.base import BaseEstimator, TransformerMixin
 from joblib import Parallel, delayed
-from scipy.sparse import coo_matrix
-from scipy.spatial import cKDTree
-from scipy.spatial.distance import pdist, squareform
 
-from .._ripser_ext import _lower, _full, _sparse, _lower_to_coo, _lower_cone_radius
-from ..flag_filtration.edge_collapse import reduce_graph
-from .. import SimplexTree
+from gudhi._ripser import _compute_ripser_arguments, _compute_persistence_with_ripser
 
 
 # Mermaid sequence diagram - https://mermaid-js.github.io/mermaid-live-editor/
@@ -106,112 +100,32 @@ class RipsPersistence(BaseEstimator, TransformerMixin):
         return self
 
     def __transform(self, inp):
-        # TODO: give the user more control over the strategy
-        # Should we use threshold in the sparse case?
-        num_collapses = self.num_collapses
-        input_type = self.input_type
-        threshold = self.threshold
-        n = inp.shape[0] if input_type == "distance coo_matrix" else len(inp)
-        max_dimension = min(max(self._dim_list), max(0, n - 3))
-        # Ripser needs to encode simplices and coefficients in 128 bits, which may not always fit
-        # Instead of a 256 bit version which may not always suffice either, fall back to SimplexTree
-        use_simplex_tree = math.comb(n, min(n // 2, max_dimension + 2)) >= (
-            1 << (128 - (self.homology_coeff_field - 2).bit_length())
+        input_type, input, max_dimension = _compute_ripser_arguments(
+            input=inp,
+            homology_dim_list=self._dim_list,
+            homology_coeff_field=self.homology_coeff_field,
+            num_collapses=self.num_collapses,
+            input_type=self.input_type,
+            threshold=self.threshold,
         )
-        if num_collapses == "auto":
-            num_collapses = 1 if max_dimension > (not use_simplex_tree) else 0
-            # or num_collapses=max_dimension-1 maybe?
-        elif max_dimension == 0:
-            num_collapses = 0
 
-        # Points -> distance matrix
-        if input_type == "point cloud":
-            if threshold < float("inf"):
-                # Hope that the user gave a useful threshold
-                tree = cKDTree(inp)
-
-                ## V1: Returns self-loops and every edge twice (symmetry)
-                # inp = tree.sparse_distance_matrix(tree, max_distance=threshold, output_type="coo_matrix")
-                # mask = inp.row < inp.col
-                # inp = coo_matrix((inp.data[mask], (inp.row[mask], inp.col[mask])), shape=inp.shape)
-
-                # V2: Gets the right edges, but forgets the distances
-                pairs = tree.query_pairs(r=threshold, output_type="ndarray")
-                data = np.ravel(np.linalg.norm(np.diff(inp[pairs], axis=1), axis=-1))
-                inp = coo_matrix((data, (pairs[:, 0], pairs[:, 1])), shape=(n,) * 2)
-
-                input_type = "distance coo_matrix"
-            else:
-                inp = squareform(pdist(inp))
-                input_type = "full distance matrix"
-
-        # Dense -> sparse
-        if input_type in ("full distance matrix", "lower distance matrix"):
-            # After this filtration value, all complexes are cones, nothing happens
-            if input_type == "full distance matrix":
-                inp = np.asarray(inp)
-                cone_radius = inp.max(-1).min()
-            else:
-                cone_radius = _lower_cone_radius(inp)
-            sparsify = use_simplex_tree or num_collapses > 0 or threshold < cone_radius  # heuristic
-            threshold = min(threshold, cone_radius)
-            if sparsify:
-                # For 'full' we could use i, j = np.triu_indices_from(inp, k=1), etc
-                i, j, f = _lower_to_coo(inp, threshold)
-                inp = coo_matrix((f, (i, j)), shape=(n,) * 2)
-                input_type = "distance coo_matrix"
-
-        if num_collapses > 0:
-            if input_type != "distance coo_matrix":
-                raise ValueError(
-                    "Input type has to be 'distance coo_matrix' when 'num_collapses' is not 0"
-                )
-            inp = reduce_graph(inp, num_collapses)
-
-        if use_simplex_tree:
-            st = SimplexTree()
-            # Use create_from_array in case of full matrix?
-            # (not important since this fallback mostly matters in high dimension, where we use edge-collapse anyway)
-            st.insert_batch(np.arange(n).reshape(1, -1), np.zeros(n))
-            st.insert_edges_from_coo_matrix(inp)
-            st.expansion(max_dimension + 1)
-            st.compute_persistence(
-                homology_coeff_field=self.homology_coeff_field, persistence_dim_max=max_dimension >= st.dimension()
-            )
-            return [st.persistence_intervals_in_dimension(dim) for dim in self._dim_list]
-
-        if input_type == "full distance matrix":
-            ## Possibly transpose for performance?
-            # if inp.strides[0] > inp.strides[1]: # or the reverse?
-            #     inp = inp.T
-            dgm = _full(
-                inp,
-                max_dimension=max_dimension,
-                max_edge_length=threshold,
+        # input_type is a string otherwise
+        if input_type is True:
+            # Ripser needs to encode simplices and coefficients in 128 bits, which may not always fit
+            # Instead of a 256 bit version which may not always suffice either, fall back to SimplexTree
+            input.compute_persistence(
                 homology_coeff_field=self.homology_coeff_field,
+                persistence_dim_max=max_dimension >= input.dimension(),
             )
-        elif input_type == "lower distance matrix":
-            dgm = _lower(
-                inp,
-                max_dimension=max_dimension,
-                max_edge_length=threshold,
-                homology_coeff_field=self.homology_coeff_field,
-            )
-        elif input_type == "distance coo_matrix":
-            # Switch to coo_array (danger: row/col seem deprecated)?
-            dgm = _sparse(
-                inp.row,
-                inp.col,
-                inp.data,
-                inp.shape[0],
-                max_dimension=max_dimension,
-                max_edge_length=threshold,
-                homology_coeff_field=self.homology_coeff_field,
-            )
-        else:
-            raise ValueError(
-                "Only 'point cloud', 'lower distance matrix', 'full distance matrix' and 'distance coo_matrix' are valid input_type"
-            )  # move to __init__?
+            return [input.persistence_intervals_in_dimension(dim) for dim in self._dim_list]
+
+        dgm = _compute_persistence_with_ripser(
+            input=input,
+            max_dimension=max_dimension,
+            homology_coeff_field=self.homology_coeff_field,
+            input_type=input_type,
+            threshold=self.threshold,
+        )
 
         # dgm stops at n-2
         return [dgm[dim] if dim < len(dgm) else np.empty((0, 2)) for dim in self._dim_list]
