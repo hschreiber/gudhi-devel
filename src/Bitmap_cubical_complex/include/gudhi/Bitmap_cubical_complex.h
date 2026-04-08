@@ -231,7 +231,7 @@ class Bitmap_cubical_complex : public T {
    * boundary_simplex_range creates an object of a Boundary_simplex_range class
    * that provides ranges for the Boundary_simplex_iterator.
    **/
-  Boundary_simplex_range boundary_simplex_range(Simplex_handle sh) { return this->get_boundary_of_a_cell(sh); }
+  Boundary_simplex_range boundary_simplex_range(Simplex_handle sh) const { return this->get_boundary_of_a_cell(sh); }
 
   Complex_simplex_range complex_simplex_range() {
     Complex_simplex_range res(T::data.size());

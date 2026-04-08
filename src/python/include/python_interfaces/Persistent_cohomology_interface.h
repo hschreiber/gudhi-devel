@@ -12,6 +12,7 @@
 #define INCLUDE_PERSISTENT_COHOMOLOGY_INTERFACE_H_
 
 #include <array>
+#include <cstddef>
 #include <cstdlib>
 #include <vector>
 #include <utility>    // for std::pair
@@ -27,6 +28,26 @@
 #include <python_interfaces/numpy_utils.h>
 
 namespace Gudhi {
+
+/**
+ * @private
+ */
+template <typename T>
+class ComplexTraits {
+ private:
+  static auto check_simplex_vertex_range(...) -> std::false_type;
+  template <typename U>
+  static auto check_simplex_vertex_range(const U& x)
+      -> decltype(x.simplex_vertex_range(typename U::Simplex_handle()), std::true_type{});
+
+  static auto check_find_vertex(...) -> std::false_type;
+  template <typename U>
+  static auto check_find_vertex(const U& x) -> decltype(x.find_vertex(0), std::true_type{});
+
+ public:
+  static constexpr bool has_simplex_vertex_range = decltype(check_simplex_vertex_range(std::declval<T>()))::value;
+  static constexpr bool has_find_vertex = decltype(check_find_vertex(std::declval<T>()))::value;
+};
 
 template <class FilteredComplex>
 class Persistent_cohomology_interface
@@ -216,6 +237,62 @@ class Persistent_cohomology_interface
       persistence_pairs.emplace_back(birth, death);
     }
     return persistence_pairs;
+  }
+
+  // only for simplices as it is not really usefull for general cells
+  nanobind::tuple get_simplicial_intervals_as_vertices(double min_persistence, int maxDim = -1,
+                                                       bool only_finite = false, bool only_infinite = false) {
+    // won't compile even without the static_assert, it is just to have a clearer message as
+    // `get_simplicial_intervals_as_vertices` is not a necessary function
+    static_assert(ComplexTraits<FilteredComplex>::has_simplex_vertex_range,
+                  "Contrary to all other methods, `get_simplicial_intervals_as_vertices` needs the complex class to "
+                  "have a `simplex_vertex_range` method.");
+    
+    using Simplex_handle = typename FilteredComplex::Simplex_handle;
+
+    auto add_simplex = [&](Simplex_handle sh, std::size_t dim, std::vector<std::vector<int>>& cont) {
+      for (auto vertex : stptr_->simplex_vertex_range(sh)) {
+        cont[dim].push_back(vertex);
+      }
+    };
+
+    maxDim = maxDim < 0 ? Base::dim_max_ : maxDim + 1;
+    std::pair<std::vector<std::vector<int> >, std::vector<std::vector<int> > > intervals;
+    intervals.first.resize(only_infinite ? 0 : maxDim);
+    intervals.second.resize(only_finite ? 0 : maxDim);
+
+    for (const auto& pair : Base::get_persistent_pairs()) {
+      if (get<0>(pair) != stptr_->null_simplex()) {
+        int dim = stptr_->dimension(get<0>(pair));
+        // if (dim > 2) std::cout << dim << ", " << maxDim << std::endl;
+        if (dim < maxDim) {
+          if (!only_finite && get<1>(pair) == stptr_->null_simplex()) {
+            add_simplex(get<0>(pair), dim, intervals.second);
+          } else if (!only_infinite && get<1>(pair) != stptr_->null_simplex()) {
+            auto b = get<0>(pair);
+            auto d = get<1>(pair);
+            if (stptr_->filtration(d) - stptr_->filtration(b) >= min_persistence) {
+              add_simplex(b, dim, intervals.first);
+              add_simplex(d, dim, intervals.first);
+            }
+          }
+        }
+      }
+    }
+
+    nanobind::list finites;
+    nanobind::list infinites;
+
+    for (int d = 0; d < maxDim; ++d) {
+      int size = d + 1;
+      if (!only_infinite)
+        finites.append(
+            _wrap_as_numpy_array(std::move(intervals.first[d]), intervals.first[d].size() / (size * 2), 2, size));
+      if (!only_finite)
+        infinites.append(_wrap_as_numpy_array(std::move(intervals.second[d]), intervals.second[d].size() / size, size));
+    }
+
+    return nanobind::make_tuple(finites, infinites);
   }
 
   // TODO: (possibly at the python level)

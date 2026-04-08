@@ -49,24 +49,27 @@ def _compute_persistence_annotation_cohomology(
         raise ValueError("'cpx' argument has to be given for 'annotation_cohomology' backend")
     elif isinstance(cpx, SimplexTree):
         if max_dim is not None:
-            cpx = t._St_dim_overlay(cpx, max_dim)
-            pers = t._Simplex_tree_max_dim_persistence_interface(cpx, persistence_dim_max)
+            d_cpx = t._St_dim_overlay(cpx, max_dim)
+            pers = t._Simplex_tree_max_dim_persistence_interface(d_cpx, persistence_dim_max)
         else:
-            pers = t._Simplex_tree_persistence_interface(cpx, persistence_dim_max)
+            d_cpx = cpx
+            pers = t._Simplex_tree_persistence_interface(d_cpx, persistence_dim_max)
     elif isinstance(cpx, CubicalComplex):
         if max_dim is not None:
-            cpx = t._Cc_dim_overlay(cpx, max_dim)
-            pers = t._Cubical_complex_max_dim_persistence_interface(cpx, persistence_dim_max)
+            d_cpx = t._Cc_dim_overlay(cpx, max_dim)
+            pers = t._Cubical_complex_max_dim_persistence_interface(d_cpx, persistence_dim_max)
         else:
-            pers = t._Cubical_complex_persistence_interface(cpx, persistence_dim_max)
+            d_cpx = cpx
+            pers = t._Cubical_complex_persistence_interface(d_cpx, persistence_dim_max)
     elif isinstance(cpx, PeriodicCubicalComplex):
         if max_dim is not None:
-            cpx = t._Pcc_complex_dim_overlay(cpx, max_dim)
+            d_cpx = t._Pcc_complex_dim_overlay(cpx, max_dim)
             pers = t._Periodic_cubical_complex_max_dim_persistence_interface(
-                cpx, persistence_dim_max
+                d_cpx, persistence_dim_max
             )
         else:
-            pers = t._Periodic_cubical_complex_persistence_interface(cpx, persistence_dim_max)
+            d_cpx = cpx
+            pers = t._Periodic_cubical_complex_persistence_interface(d_cpx, persistence_dim_max)
     elif isinstance(cpx, ComplexForCohomology):
         cpx = t._complex_coho_overlay(cpx)
         if max_dim is not None:
@@ -74,12 +77,14 @@ def _compute_persistence_annotation_cohomology(
             d_cpx = t._Complex_dim_overlay(cpx, max_dim)
             pers = t._Complex_max_dim_persistence_interface(d_cpx, persistence_dim_max)
         else:
-            pers = t._Complex_persistence_interface(cpx, persistence_dim_max)
+            d_cpx = cpx
+            pers = t._Complex_persistence_interface(d_cpx, persistence_dim_max)
     else:
         raise ValueError("Complex type not supported yet.")
 
     pers._compute_persistence(coef, 0)
-    return pers._get_intervals()
+    # d_cpx has to be maintained for pers to not segfault
+    return (pers, d_cpx)
 
 
 def _compute_persistence_ripser_(
@@ -178,10 +183,12 @@ def compute_persistence(
             pers = _compute_persistence_annotation_cohomology(
                 cpx, coef, max_dim, persistence_dim_max
             )
+            res = PersistenceObject(intervals=pers[0]._get_intervals(), pers=pers)
         case "ripser":
             pers = _compute_persistence_ripser_(
                 input, rips_max_dimension, coef, input_data, threshold
             )
+            res = PersistenceObject(intervals=pers)
         case _:
             raise ValueError(
                 "argument `force_backend` does not contain a valid literal: "
@@ -191,4 +198,4 @@ def compute_persistence(
 
     _progress(verbose, "Done.")
 
-    return PersistenceObject(pers)
+    return res

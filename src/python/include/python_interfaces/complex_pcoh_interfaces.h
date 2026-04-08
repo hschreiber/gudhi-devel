@@ -19,7 +19,8 @@
 #define PY_COMPLEX_PCOH_INTERFACE_H_INCLUDED
 
 #include <cstddef>
-#include <stdexcept>
+#include <iterator>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -131,6 +132,23 @@ class Complex_pcoh_interface {
                [&](const nanobind::handle &item) -> Simplex_handle { return nanobind::cast<Simplex_handle>(item); });
   }
 
+  [[nodiscard]] auto simplex_vertex_range(Simplex_handle sh) const {
+    auto rec_get_vertices = [&](const auto &self, Simplex_handle b_sh, std::set<Simplex_handle> &vertices) -> void {
+      auto r = boundary_simplex_range(b_sh);
+      if (std::begin(r) == std::end(r)) {
+        vertices.insert(b_sh);
+        return;
+      }
+
+      for (auto bb_sh : r) {
+        self(self, bb_sh, vertices);
+      }
+    };
+    std::set<Simplex_handle> vertices;
+    rec_get_vertices(rec_get_vertices, sh, vertices);
+    return vertices;
+  }
+
  private:
   Complex cpx_;
 
@@ -203,6 +221,8 @@ class Dimension_threshold_pcoh_interface {
   [[nodiscard]] const std::vector<Simplex_handle>& filtration_simplex_range() const { return numToHandle_; }
 
   [[nodiscard]] auto boundary_simplex_range(Simplex_handle sh) { return cpx_->boundary_simplex_range(sh); }
+
+  [[nodiscard]] auto simplex_vertex_range(Simplex_handle sh) const { return cpx_->simplex_vertex_range(sh); }
 
  private:
   Complex *cpx_;

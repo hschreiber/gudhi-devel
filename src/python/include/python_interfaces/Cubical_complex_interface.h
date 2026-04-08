@@ -12,6 +12,7 @@
 #ifndef INCLUDE_CUBICAL_INTERFACE_H_
 #define INCLUDE_CUBICAL_INTERFACE_H_
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,12 @@
 namespace Gudhi {
 namespace cubical_complex {
 
+template <class CC>
+inline std::vector<std::size_t> get_vertices(const CC& cpx, std::size_t sh) {
+  if (cpx.dimension(sh) == 0) return {sh};
+  return cpx.boundary_simplex_range(sh);
+}
+
 class Cubical_complex_interface : public Bitmap_cubical_complex<Bitmap_cubical_complex_base<double>> {
  public:
   using Base = Bitmap_cubical_complex<Bitmap_cubical_complex_base<double>>;
@@ -41,6 +48,15 @@ class Cubical_complex_interface : public Bitmap_cubical_complex<Bitmap_cubical_c
 
   nanobind::ndarray<double, nanobind::numpy> get_numpy_array() {
     return nanobind::ndarray<double, nanobind::numpy>(Base::data.data(), {Base::data.size()});
+  }
+
+  [[nodiscard]] auto simplex_vertex_range(Simplex_handle sh) const {
+    if (Base::dimension(sh) > 1)
+      throw std::invalid_argument(
+          "`simplex_vertex_range` is only valid for cells of dimension 0 and 1 in a cubical complex. Set argument "
+          "max_dimension to 1 in the used python method.");
+
+    return get_vertices(*this, sh);
   }
 };
 
@@ -65,6 +81,15 @@ class Periodic_cubical_complex_interface
 
   nanobind::ndarray<double, nanobind::numpy> get_numpy_array() {
     return nanobind::ndarray<double, nanobind::numpy>(Base::data.data(), {Base::data.size()});
+  }
+
+  [[nodiscard]] auto simplex_vertex_range(Simplex_handle sh) const {
+    if (Base::dimension(sh) > 1)
+      throw std::invalid_argument(
+          "`simplex_vertex_range` is only valid for cells of dimension 0 and 1 in a cubical complex. Set argument "
+          "max_dimension to 1 in the used python method.");
+
+    return get_vertices(*this, sh);
   }
 };
 
