@@ -17,8 +17,10 @@ from numpy.typing import NDArray
 import numpy as np
 
 from gudhi.invariants import PersistenceObject
-from gudhi.invariants import _pers_cohomology_ext as t
-from gudhi import SimplexTree, CubicalComplex, PeriodicCubicalComplex
+from gudhi import _pers_cohomology_ext as t
+from gudhi.simplex_tree import SimplexTree
+from gudhi.cubical_complex import CubicalComplex
+from gudhi.periodic_cubical_complex import PeriodicCubicalComplex
 from gudhi._ripser import _compute_ripser_arguments, _compute_persistence_with_ripser
 
 

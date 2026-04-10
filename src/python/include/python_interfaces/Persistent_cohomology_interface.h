@@ -255,6 +255,9 @@ class Persistent_cohomology_interface
         cont[dim].push_back(vertex);
       }
     };
+    auto add_dummy_simplex = [&](std::size_t dim, std::vector<std::vector<int>>& cont) {
+      cont[dim].resize(cont[dim].size() + dim + 2, -1);
+    };
 
     maxDim = maxDim < 0 ? Base::dim_max_ : maxDim + 1;
     std::pair<std::vector<std::vector<int> >, std::vector<std::vector<int> > > intervals;
@@ -264,7 +267,6 @@ class Persistent_cohomology_interface
     for (const auto& pair : Base::get_persistent_pairs()) {
       if (get<0>(pair) != stptr_->null_simplex()) {
         int dim = stptr_->dimension(get<0>(pair));
-        // if (dim > 2) std::cout << dim << ", " << maxDim << std::endl;
         if (dim < maxDim) {
           if (!only_finite && get<1>(pair) == stptr_->null_simplex()) {
             add_simplex(get<0>(pair), dim, intervals.second);
@@ -273,7 +275,9 @@ class Persistent_cohomology_interface
             auto d = get<1>(pair);
             if (stptr_->filtration(d) - stptr_->filtration(b) >= min_persistence) {
               add_simplex(b, dim, intervals.first);
-              add_simplex(d, dim, intervals.first);
+              intervals.first[dim].push_back(-1);
+              if (dim == maxDim - 1) add_dummy_simplex(dim, intervals.first);
+              else add_simplex(d, dim, intervals.first);
             }
           }
         }
@@ -284,12 +288,12 @@ class Persistent_cohomology_interface
     nanobind::list infinites;
 
     for (int d = 0; d < maxDim; ++d) {
-      int size = d + 1;
+      int size = d + 2;
       if (!only_infinite)
         finites.append(
             _wrap_as_numpy_array(std::move(intervals.first[d]), intervals.first[d].size() / (size * 2), 2, size));
       if (!only_finite)
-        infinites.append(_wrap_as_numpy_array(std::move(intervals.second[d]), intervals.second[d].size() / size, size));
+        infinites.append(_wrap_as_numpy_array(std::move(intervals.second[d]), intervals.second[d].size() / (size - 1), size - 1));
     }
 
     return nanobind::make_tuple(finites, infinites);

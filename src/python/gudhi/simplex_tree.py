@@ -20,7 +20,7 @@ from numpy.typing import ArrayLike
 import warnings
 
 from gudhi import _simplex_tree_ext as t
-from gudhi.invariants._pers_cohomology_ext import _Simplex_tree_persistence_interface
+from gudhi._pers_cohomology_ext import _Simplex_tree_persistence_interface
 
 
 # SimplexTree python interface

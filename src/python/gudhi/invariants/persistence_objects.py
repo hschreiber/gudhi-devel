@@ -24,7 +24,9 @@ class IntervalObject:
         # no death for infinite bars
         self._intervals = intervals
 
-    def _get_union_io(self, f: NDArray[np.double], i: NDArray[np.double], min_persistence: float):
+    def _get_union_io(
+        self, f: NDArray[np.double], i: NDArray[np.double], min_persistence: float
+    ):
         return np.concatenate(
             (
                 f[f[:, 1] - f[:, 0] >= min_persistence],
@@ -76,7 +78,7 @@ class SimplexIntervalObject:
         return np.concatenate(
             (
                 f,
-                np.pad(i[:, np.newaxis, :], ((0, 0), (0, 1), (0, 0)), constant_values=-1),
+                np.pad(i[:, np.newaxis, :], ((0, 0), (0, 1), (0, 1)), constant_values=-1),
             ),
             axis=0,
         )
@@ -89,14 +91,14 @@ class SimplexIntervalObject:
     ) -> Union[list[NDArray], NDArray]:
         if not self._pers:
             raise RuntimeError(
-                "`build_simplicial_intervals_as_vertices` cannot be executed as it is " +
-                "not compatible with the chosen persistence computation method."
+                "`build_simplicial_intervals_as_vertices` cannot be executed as it is "
+                + "not compatible with the chosen persistence computation method."
             )
 
         if (dimension is not None) and (max_dimension is None or max_dimension > dimension):
-            max_dimension = dimension
+            max_dimension = dimension + 1
         if dimension is not None and max_dimension is not None and dimension > max_dimension:
-            return np.empty(shape=[0, 2, dimension + 1])
+            return np.empty(shape=[0, 2, dimension + 2])
 
         intervals = self._pers._get_simplicial_intervals_as_vertices(
             min_persistence, max_dimension if max_dimension is not None else -1, False, False
@@ -104,7 +106,7 @@ class SimplexIntervalObject:
         if dimension is None:
             return [self._get_union_sio(f, i) for f, i in zip(intervals[0], intervals[1])]
         if dimension >= len(intervals[0]):
-            return np.empty(shape=[0, 2, dimension + 1])
+            return np.empty(shape=[0, 2, dimension + 2])
         return self._get_union_sio(intervals[0][dimension], intervals[1][dimension])
 
     def build_finite_simplicial_intervals_as_vertices(
@@ -115,14 +117,14 @@ class SimplexIntervalObject:
     ) -> Union[list[NDArray], NDArray]:
         if not self._pers:
             raise RuntimeError(
-                "`build_finite_simplicial_intervals_as_vertices` cannot be executed as it is " +
-                "not compatible with the chosen persistence computation method."
+                "`build_finite_simplicial_intervals_as_vertices` cannot be executed as it is "
+                + "not compatible with the chosen persistence computation method."
             )
 
         if (dimension is not None) and (max_dimension is None or max_dimension > dimension):
-            max_dimension = dimension
+            max_dimension = dimension + 1
         if dimension is not None and max_dimension is not None and dimension > max_dimension:
-            return np.empty(shape=[0, 2, dimension + 1])
+            return np.empty(shape=[0, 2, dimension + 2])
 
         intervals = self._pers._get_simplicial_intervals_as_vertices(
             min_persistence, max_dimension if max_dimension is not None else -1, True, False
@@ -130,7 +132,7 @@ class SimplexIntervalObject:
         if dimension is None:
             return intervals[0]
         if dimension >= len(intervals[0]):
-            return np.empty(shape=[0, 2, dimension + 1])
+            return np.empty(shape=[0, 2, dimension + 2])
         return intervals[0][dimension]
 
     def build_infinite_simplicial_intervals_as_vertices(
@@ -138,22 +140,22 @@ class SimplexIntervalObject:
     ) -> Union[list[NDArray], NDArray]:
         if not self._pers:
             raise RuntimeError(
-                "`build_infinite_simplicial_intervals_as_vertices` cannot be executed as it is " +
-                "not compatible with the chosen persistence computation method."
+                "`build_infinite_simplicial_intervals_as_vertices` cannot be executed as it is "
+                + "not compatible with the chosen persistence computation method."
             )
 
         if (dimension is not None) and (max_dimension is None or max_dimension > dimension):
-            max_dimension = dimension
+            max_dimension = dimension + 1
         if dimension is not None and max_dimension is not None and dimension > max_dimension:
-            return np.empty(shape=[0, dimension + 1])
+            return np.empty(shape=[0, dimension + 2])
 
         intervals = self._pers._get_simplicial_intervals_as_vertices(
-            min_persistence, max_dimension if max_dimension is not None else -1, False, True
+            0, max_dimension if max_dimension is not None else -1, False, True
         )
         if dimension is None:
             return intervals[1]
         if dimension >= len(intervals[1]):
-            return np.empty(shape=[0, dimension + 1])
+            return np.empty(shape=[0, dimension + 2])
         return intervals[1][dimension]
 
 
@@ -201,7 +203,9 @@ class BettiObject:
 
 
 class PersistenceObject(IntervalObject, BettiObject, SimplexIntervalObject):
-    def __init__(self, intervals: tuple[list[NDArray[np.double]], list[NDArray[np.double]]], pers = None):
+    def __init__(
+        self, intervals: tuple[list[NDArray[np.double]], list[NDArray[np.double]]], pers=None
+    ):
         # pair(finite, infinite) of dim x bar number x (birth, death)
         # same numbers of dim
         # no death for infinite bars

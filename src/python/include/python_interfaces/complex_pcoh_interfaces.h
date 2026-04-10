@@ -133,6 +133,8 @@ class Complex_pcoh_interface {
   }
 
   [[nodiscard]] auto simplex_vertex_range(Simplex_handle sh) const {
+    // Warning: exponential recursion. Could be improved by remembering faces already visited.
+    // But I don't know if this is better for small dimensions. Make a case distinction perhaps?
     auto rec_get_vertices = [&](const auto &self, Simplex_handle b_sh, std::set<Simplex_handle> &vertices) -> void {
       auto r = boundary_simplex_range(b_sh);
       if (std::begin(r) == std::end(r)) {
@@ -140,7 +142,8 @@ class Complex_pcoh_interface {
         return;
       }
 
-      for (auto bb_sh : r) {
+      // r invalidates for some reasons, so boundary_simplex_range has to be recalled
+      for (auto bb_sh : boundary_simplex_range(b_sh)) {
         self(self, bb_sh, vertices);
       }
     };

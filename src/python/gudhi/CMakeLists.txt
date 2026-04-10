@@ -17,4 +17,5 @@ nanobind_add_module_with_targets(_euclidean_witness_complex_ext _euclidean_witne
 nanobind_add_module_with_targets(_euclidean_strong_witness_complex_ext _euclidean_strong_witness_complex.cc TARGETS Eigen3::Eigen CGAL::CGAL TBB::tbb)
 nanobind_add_module_with_targets(_subsampling_ext _subsampling.cc TARGETS Eigen3::Eigen CGAL::CGAL TBB::tbb)
 nanobind_add_module_with_targets(_vineyard_ext _vineyard.cc TARGETS TBB::tbb)
+nanobind_add_module_with_targets(_pers_cohomology_ext _cohomology.cc TARGETS TBB::tbb)
 
