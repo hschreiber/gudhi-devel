@@ -5,6 +5,8 @@
  *    Copyright (C) 2016 Inria
  *
  *    Modification(s):
+ *      - 2026/04 Hannah Schreiber: New format for old methods: build_intervals, build_simplicial_intervals_as_vertices,
+ *                ComplexTraits
  *      - YYYY/MM Author: Description of the modification
  */
 
@@ -100,7 +102,7 @@ class Persistent_cohomology_interface
     return persistence;
   }
 
-  nanobind::tuple get_intervals()
+  nanobind::tuple build_intervals()
   {
     std::pair<std::vector<std::vector<std::array<double, 2> > >, std::vector<std::vector<double> > > intervals;
     intervals.first.resize(Base::dim_max_);
@@ -110,7 +112,8 @@ class Persistent_cohomology_interface
       if (get<1>(pair) == stptr_->null_simplex()) {
         intervals.second[stptr_->dimension(get<0>(pair))].push_back(stptr_->filtration(get<0>(pair)));
       } else {
-        intervals.first[stptr_->dimension(get<0>(pair))].push_back({stptr_->filtration(get<0>(pair)), stptr_->filtration(get<1>(pair))});
+        intervals.first[stptr_->dimension(get<0>(pair))].push_back(
+            {stptr_->filtration(get<0>(pair)), stptr_->filtration(get<1>(pair))});
       }
     }
 
@@ -240,14 +243,15 @@ class Persistent_cohomology_interface
   }
 
   // only for simplices as it is not really usefull for general cells
-  nanobind::tuple get_simplicial_intervals_as_vertices(double min_persistence, int maxDim = -1,
-                                                       bool only_finite = false, bool only_infinite = false) {
+  nanobind::tuple build_simplicial_intervals_as_vertices(double min_persistence, int maxDim = -1,
+                                                         bool only_finite = false, bool only_infinite = false)
+  {
     // won't compile even without the static_assert, it is just to have a clearer message as
-    // `get_simplicial_intervals_as_vertices` is not a necessary function
+    // `build_simplicial_intervals_as_vertices` is not a necessary function
     static_assert(ComplexTraits<FilteredComplex>::has_simplex_vertex_range,
-                  "Contrary to all other methods, `get_simplicial_intervals_as_vertices` needs the complex class to "
+                  "Contrary to all other methods, `build_simplicial_intervals_as_vertices` needs the complex class to "
                   "have a `simplex_vertex_range` method.");
-    
+
     using Simplex_handle = typename FilteredComplex::Simplex_handle;
 
     auto add_simplex = [&](Simplex_handle sh, std::size_t dim, std::vector<std::vector<int>>& cont) {
@@ -293,7 +297,8 @@ class Persistent_cohomology_interface
         finites.append(
             _wrap_as_numpy_array(std::move(intervals.first[d]), intervals.first[d].size() / (size * 2), 2, size));
       if (!only_finite)
-        infinites.append(_wrap_as_numpy_array(std::move(intervals.second[d]), intervals.second[d].size() / (size - 1), size - 1));
+        infinites.append(
+            _wrap_as_numpy_array(std::move(intervals.second[d]), intervals.second[d].size() / (size - 1), size - 1));
     }
 
     return nanobind::make_tuple(finites, infinites);

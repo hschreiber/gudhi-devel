@@ -216,3 +216,15 @@ class PersistenceObject(IntervalObject, BettiObject, SimplexIntervalObject):
         if pers is not None:
             self._pers_pair = pers
             SimplexIntervalObject.__init__(self, self._pers_pair[0])
+
+    def __getstate__(self):
+        # self._pers_pair won't be pickled even if existing
+        # otherwise we would need a way to pickle the complex + the persistence class
+        # which does not seem that useful for now.
+        return self._intervals
+
+    def __setstate__(self, state):
+        self._intervals = state
+        IntervalObject.__init__(self, self._intervals)
+        BettiObject.__init__(self, self._intervals)
+        # calling the methods of SimplexIntervalObject will raise a RuntimeError

@@ -22,15 +22,6 @@ def write_diagram_in_file(
     min_persistence: float = 0,
     delimiter: str = " ",
 ):
-    # TODO: time _write_output_diagram vs. savetxt and if it is worth keeping both
-    # add delimiter option to _write_output_diagram
-    if delimiter == " ":
-        try:
-            diagram._pers_pair[0]._write_output_diagram(persistence_file)
-            return
-        except AttributeError:
-            pass
-
     values = diagram.get_intervals(min_persistence=min_persistence)
 
     total_rows = sum(arr.shape[0] for arr in values)
@@ -53,13 +44,21 @@ def read_diagram_from_file(
     raw = np.loadtxt(persistence_file, dtype=np.double, delimiter=delimiter)
     # to order by dimension and have inf deaths last
     raw = raw[np.lexsort((raw[:, 1], raw[:, 2], raw[:, 0]))]
+    max_dim = int(raw[-1][0])
     raw_finite = raw[raw[:, 2] != np.inf]
     raw_infinite = raw[raw[:, 2] == np.inf]
     raw_infinite = raw_infinite[:, :2]
 
     split_points = np.where(np.diff(raw_finite[:, 0]))[0] + 1
+    dimensions = raw_finite[np.r_[0, split_points], 0]
     finite = np.split(raw_finite[:, 1:], split_points)
+    finite = dict(zip(dimensions, finite))
+    finite = [finite.get(np.double(d), np.empty((0, 2))) for d in range(max_dim + 1)]
+
     split_points = np.where(np.diff(raw_infinite[:, 0]))[0] + 1
+    dimensions = raw_infinite[np.r_[0, split_points], 0]
     infinite = np.split(raw_infinite[:, 1], split_points)
+    infinite = dict(zip(dimensions, infinite))
+    infinite = [infinite.get(np.double(d), np.empty((0))) for d in range(max_dim + 1)]
 
     return PersistenceObject(intervals=(finite, infinite))
