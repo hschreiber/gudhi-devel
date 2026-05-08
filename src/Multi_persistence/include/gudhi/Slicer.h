@@ -361,8 +361,10 @@ class Slicer
   /**
    * @brief Sets the current slice from a contiguous view without creating a temporary container.
    */
-  void set_slice(Gudhi::Simple_mdspan<const T, Gudhi::dextents<std::size_t, 1>> slice)
+  template <typename Slice_value>
+  void set_slice(Gudhi::Simple_mdspan<Slice_value, Gudhi::dextents<std::size_t, 1>> slice)
   {
+    static_assert(std::is_convertible_v<Slice_value*, const T*>);
     if (slice.size() != slice_.size()) throw std::invalid_argument("Slice size mismatch.");
     std::copy_n(slice.data_handle(), slice.size(), slice_.begin());
   }

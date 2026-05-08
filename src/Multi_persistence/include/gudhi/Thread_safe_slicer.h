@@ -236,7 +236,8 @@ class Thread_safe_slicer : private Slicer
   /**
    * @brief Sets the current slice from a contiguous view without creating a temporary container.
    */
-  void set_slice(Gudhi::Simple_mdspan<const T, Gudhi::dextents<std::size_t, 1>> slice)
+  template <typename Slice_value>
+  void set_slice(Gudhi::Simple_mdspan<Slice_value, Gudhi::dextents<std::size_t, 1>> slice)
   {
     Slicer::set_slice(slice);
   }
