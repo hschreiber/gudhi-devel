@@ -18,9 +18,11 @@
 #ifndef MP_SLICER_H_INCLUDED
 #define MP_SLICER_H_INCLUDED
 
+#include <algorithm>
 #include <array>
 #include <initializer_list>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>  //std::move
@@ -40,6 +42,7 @@
 #include <gudhi/Thread_safe_slicer.h>
 #include <gudhi/Projective_cover_kernel.h>
 #include <gudhi/persistence_interval.h>
+#include <gudhi/simple_mdspan.h>
 #include <gudhi/slicer_helpers.h>
 
 namespace Gudhi {
@@ -353,6 +356,15 @@ class Slicer
   void set_slice(const Array& slice)
   {
     slice_ = std::vector<T>(slice.begin(), slice.end());
+  }
+
+  /**
+   * @brief Sets the current slice from a contiguous view without creating a temporary container.
+   */
+  void set_slice(Gudhi::Simple_mdspan<const T, Gudhi::dextents<std::size_t, 1>> slice)
+  {
+    if (slice.size() != slice_.size()) throw std::invalid_argument("Slice size mismatch.");
+    std::copy_n(slice.data_handle(), slice.size(), slice_.begin());
   }
 
   /**

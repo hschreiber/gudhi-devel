@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <gudhi/Multi_persistence/Line.h>
+#include <gudhi/simple_mdspan.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -228,6 +229,14 @@ class Thread_safe_slicer : private Slicer
    */
   template <class Array = std::initializer_list<T>>
   void set_slice(const Array& slice)
+  {
+    Slicer::set_slice(slice);
+  }
+
+  /**
+   * @brief Sets the current slice from a contiguous view without creating a temporary container.
+   */
+  void set_slice(Gudhi::Simple_mdspan<const T, Gudhi::dextents<std::size_t, 1>> slice)
   {
     Slicer::set_slice(slice);
   }

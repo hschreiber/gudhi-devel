@@ -11,6 +11,7 @@
 #include <array>
 #include <initializer_list>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -304,6 +305,12 @@ void test_slicer_slice_modifiers(Slicer& s)
   BOOST_CHECK_EQUAL(s.get_slice().size(), 9);
   s.set_slice({0, 0, 0, 2, 3, 3, 5, 5, 5});
   BOOST_CHECK(s.get_slice() == (std::vector<T>{0, 0, 0, 2, 3, 3, 5, 5, 5}));
+  std::array<T, 9> view_slice{0, 0, 0, 1, 2, 3, 4, 5, 6};
+  s.set_slice(Gudhi::Simple_mdspan(view_slice.data(), view_slice.size()));
+  BOOST_CHECK(s.get_slice() == (std::vector<T>{0, 0, 0, 1, 2, 3, 4, 5, 6}));
+  std::array<T, 3> wrong_size_slice{0, 0, 0};
+  BOOST_CHECK_THROW(s.set_slice(Gudhi::Simple_mdspan(wrong_size_slice.data(), wrong_size_slice.size())),
+                    std::invalid_argument);
   s.push_to(Line<T>({0, 1, 1}));
   BOOST_CHECK(s.get_slice() == (std::vector<T>{1, 1, 2, 3, 4, 6, 6, 7, 7}));
   s.push_to({0, 1, 1});
