@@ -12,6 +12,7 @@
 #include <initializer_list>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -309,8 +310,15 @@ void test_slicer_slice_modifiers(Slicer& s)
   s.set_slice(Gudhi::Simple_mdspan(view_slice.data(), view_slice.size()));
   BOOST_CHECK(s.get_slice() == (std::vector<T>{0, 0, 0, 1, 2, 3, 4, 5, 6}));
   std::array<T, 3> wrong_size_slice{0, 0, 0};
-  BOOST_CHECK_THROW(s.set_slice(Gudhi::Simple_mdspan(wrong_size_slice.data(), wrong_size_slice.size())),
-                    std::invalid_argument);
+  s.set_slice({42, 43, 44});
+  BOOST_CHECK_EQUAL(s.get_slice().size(), 3);
+  BOOST_CHECK_EXCEPTION(s.set_slice(Gudhi::Simple_mdspan(wrong_size_slice.data(), wrong_size_slice.size())),
+                        std::invalid_argument,
+                        [](const std::invalid_argument& e) {
+                          return std::string(e.what()).find("expected 9, got 3") != std::string::npos;
+                        });
+  s.set_slice(Gudhi::Simple_mdspan(view_slice.data(), view_slice.size()));
+  BOOST_CHECK(s.get_slice() == (std::vector<T>{0, 0, 0, 1, 2, 3, 4, 5, 6}));
   s.push_to(Line<T>({0, 1, 1}));
   BOOST_CHECK(s.get_slice() == (std::vector<T>{1, 1, 2, 3, 4, 6, 6, 7, 7}));
   s.push_to({0, 1, 1});

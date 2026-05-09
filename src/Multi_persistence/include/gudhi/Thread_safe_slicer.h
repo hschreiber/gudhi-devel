@@ -18,7 +18,11 @@
 #ifndef MP_THREAD_SAFE_SLICER_H_INCLUDED
 #define MP_THREAD_SAFE_SLICER_H_INCLUDED
 
+#include <algorithm>
 #include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -239,7 +243,15 @@ class Thread_safe_slicer : private Slicer
   template <typename Slice_value>
   void set_slice(Gudhi::Simple_mdspan<Slice_value, Gudhi::dextents<std::size_t, 1>> slice)
   {
-    Slicer::set_slice(slice);
+    static_assert(std::is_convertible_v<Slice_value*, const T*>);
+    const auto num_generators = static_cast<std::size_t>(get_number_of_cycle_generators());
+    if (slice.size() != num_generators) {
+      throw std::invalid_argument("Slice size mismatch: expected " + std::to_string(num_generators) + ", got " +
+                                  std::to_string(slice.size()) + ".");
+    }
+    auto& current_slice = Slicer::get_slice();
+    if (current_slice.size() != num_generators) current_slice.resize(num_generators);
+    std::copy_n(slice.data_handle(), num_generators, current_slice.begin());
   }
 
   /**

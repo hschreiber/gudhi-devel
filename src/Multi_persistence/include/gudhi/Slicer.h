@@ -365,8 +365,13 @@ class Slicer
   void set_slice(Gudhi::Simple_mdspan<Slice_value, Gudhi::dextents<std::size_t, 1>> slice)
   {
     static_assert(std::is_convertible_v<Slice_value*, const T*>);
-    if (slice.size() != slice_.size()) throw std::invalid_argument("Slice size mismatch.");
-    std::copy_n(slice.data_handle(), slice.size(), slice_.begin());
+    const auto num_generators = static_cast<std::size_t>(get_number_of_cycle_generators());
+    if (slice.size() != num_generators) {
+      throw std::invalid_argument("Slice size mismatch: expected " + std::to_string(num_generators) + ", got " +
+                                  std::to_string(slice.size()) + ".");
+    }
+    if (slice_.size() != num_generators) slice_.resize(num_generators);
+    std::copy_n(slice.data_handle(), num_generators, slice_.begin());
   }
 
   /**
