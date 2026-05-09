@@ -364,14 +364,7 @@ class Slicer
   template <typename Slice_value>
   void set_slice(Gudhi::Simple_mdspan<Slice_value, Gudhi::dextents<std::size_t, 1>> slice)
   {
-    static_assert(std::is_convertible_v<Slice_value*, const T*>);
-    const auto num_generators = static_cast<std::size_t>(get_number_of_cycle_generators());
-    if (slice.size() != num_generators) {
-      throw std::invalid_argument("Slice size mismatch: expected " + std::to_string(num_generators) + ", got " +
-                                  std::to_string(slice.size()) + ".");
-    }
-    if (slice_.size() != num_generators) slice_.resize(num_generators);
-    std::copy_n(slice.data_handle(), num_generators, slice_.begin());
+    _set_slice_from_view(slice_, slice, static_cast<std::size_t>(get_number_of_cycle_generators()));
   }
 
   /**
@@ -704,6 +697,20 @@ class Slicer
       slice_[i] = line.template compute_forward_intersection<T>(filtrationValues[i]);
     }
 #endif
+  }
+
+  template <typename Slice_value>
+  static void _set_slice_from_view(std::vector<T>& target,
+                                   Gudhi::Simple_mdspan<Slice_value, Gudhi::dextents<std::size_t, 1>> slice,
+                                   std::size_t num_generators)
+  {
+    static_assert(std::is_convertible_v<Slice_value*, const T*>);
+    if (slice.size() != num_generators) {
+      throw std::invalid_argument("Slice size mismatch: expected " + std::to_string(num_generators) + ", got " +
+                                  std::to_string(slice.size()) + ".");
+    }
+    if (target.size() != num_generators) target.resize(num_generators);
+    std::copy_n(slice.data_handle(), num_generators, target.begin());
   }
 
   void _initialize_persistence_computation(const Complex& complex, bool ignoreInf = false)
