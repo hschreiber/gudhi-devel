@@ -12,7 +12,10 @@
 /**
  * @file summand_helpers.h
  * @author David Loiseaux
- * @brief Contains the helper methods @ref Gudhi::multi_persistence::.
+ * @brief Contains the helper methods @ref Gudhi::multi_persistence::compute_summand_distance_to,
+ * @ref Gudhi::multi_persistence::compute_summand_interleaving,
+ * @ref Gudhi::multi_persistence::compute_summand_local_weight and
+ * @ref Gudhi::multi_persistence::compute_summand_landscape_value.
  */
 
 #ifndef MP_SUMMAND_HELPERS_H_
@@ -28,20 +31,10 @@
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Summand.h>
+#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
-
-template <typename T>
-struct type_identity {
-  using type = T;
-};
-
-// std::make_signed_t does not compile for T signed and std::conditional evaluates both possibilities
-// so this trick is necessary if we want to avoid using `if constexpr` everywhere
-template <typename T>
-using maybe_make_signed_t =
-    typename std::conditional_t<std::is_unsigned_v<T>, std::make_signed<T>, type_identity<T>>::type;
 
 /**
  * @ingroup multi_persistence
@@ -173,7 +166,7 @@ inline Distance _get_summand_diagonal(const RandomAccessValueRange1 &birth, cons
  * undefined. E.g., if `T` is `unsigned int` and `Out` is `int`, the values should not exceed `INT_MAX`.
  */
 template <typename T, typename Out = maybe_make_signed_t<T>, typename D = int, typename U = T>
-Out compute_summand_interleaving(const Summand<T, D> &sum, const Box<U> &box) {
+inline Out compute_summand_interleaving(const Summand<T, D> &sum, const Box<U> &box) {
   static_assert(std::is_same_v<U, T> || std::is_same_v<U, maybe_make_signed_t<T>>,
                 "Box template parameter is not compatible with Summand value type.");
 

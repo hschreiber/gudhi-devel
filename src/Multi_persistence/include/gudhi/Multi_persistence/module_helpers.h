@@ -12,7 +12,11 @@
 /**
  * @file module_helpers.h
  * @author David Loiseaux
- * @brief Contains the helper methods @ref Gudhi::multi_persistence::.
+ * @brief Contains the helper methods @ref Gudhi::multi_persistence::build_permuted_module,
+ * @ref Gudhi::multi_persistence::build_module_of_dimension,
+ * @ref Gudhi::multi_persistence::compute_set_of_module_landscapes,
+ * @ref Gudhi::multi_persistence::compute_module_distances_to,
+ * @ref Gudhi::multi_persistence::compute_module_interleavings and @ref Gudhi::multi_persistence::compute_module_pixels.
  */
 
 #ifndef MP_MODULE_HELPERS_H_
@@ -35,6 +39,7 @@
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Module.h>
 #include <gudhi/Multi_persistence/summand_helpers.h>
+#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -51,7 +56,7 @@ namespace multi_persistence {
  * corresponds to the summand at index \f$ perm[i] \f$ in the original module.
  */
 template <typename T, class RandomAccessValueRange>
-Module<T> build_permuted_module(const Module<T> &module, const RandomAccessValueRange &permutation) {
+inline Module<T> build_permuted_module(const Module<T> &module, const RandomAccessValueRange &permutation) {
   GUDHI_CHECK(permutation.size() <= module.size(),
               std::invalid_argument("Permutation size is greater than the module size."));
 
@@ -77,7 +82,7 @@ Module<T> build_permuted_module(const Module<T> &module, const RandomAccessValue
  * @param dim Dimension.
  */
 template <typename T>
-Module<T> build_module_of_dimension(const Module<T> &module, int dim) {
+inline Module<T> build_module_of_dimension(const Module<T> &module, int dim) {
   if (dim < 0 || module.size() == 0) return {};
 
   Module<T> out;
@@ -111,7 +116,7 @@ Module<T> build_module_of_dimension(const Module<T> &module, int dim) {
  */
 template <typename T, class ContinuousRandomAccessRange,
           class = std::enable_if_t<!std::is_arithmetic_v<ContinuousRandomAccessRange>>>
-Module<T> build_module_of_dimension(const Module<T> &module, const ContinuousRandomAccessRange &dims) {
+inline Module<T> build_module_of_dimension(const Module<T> &module, const ContinuousRandomAccessRange &dims) {
   if (module.size() == 0) return {};
 
   Module<T> out;

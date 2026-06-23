@@ -33,7 +33,7 @@ namespace multi_persistence {
  * @brief Interface respecting the @ref PersistenceAlgorithm concept to use @ref Slicer with the homology, vineyard
  * and representative cycle algorithms implemented in @ref Gudhi::persistence_matrix::Matrix.
  *
- * @tparam VineyardOptions Options respecting the @ref VineyardOptions concept.
+ * @tparam VineyardOptions Options respecting the @ref Gudhi::vineyard::VineyardOptions concept.
  */
 template <class VineyardOptions = Gudhi::vineyard::Default_vineyard_options>
 class Persistence_interface_vineyard

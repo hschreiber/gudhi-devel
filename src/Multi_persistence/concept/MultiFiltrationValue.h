@@ -30,7 +30,7 @@ namespace multi_persistence {
 class MultiFiltrationValue
 {
  public:
-  using value_type = unspecified;           /**< Numerical value type. */
+  using value_type = unspecified;           /**< Signed numerical value type. */
   using Underlying_container = unspecified; /**< Underlying container for values. */
   using size_type = unspecified;            /**< Size type. */
   using reference = unspecified;            /**< Reference type. */

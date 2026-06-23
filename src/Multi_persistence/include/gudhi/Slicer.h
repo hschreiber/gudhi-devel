@@ -437,10 +437,10 @@ class Slicer
 
   /**
    * @brief Updates the persistence barcode with the new slice. If @ref PersistenceAlgorithm is
-   * @ref Persistence_interface_vineyard: will update everything necessary for the barcode without re-computing
+   * @ref Persistence_interface_vineyard "": will update everything necessary for the barcode without re-computing
    * everything from scratch (contrary to @ref initialize_persistence_computation). Furthermore, it guarantees that
    * the new barcode will "matches" the precedent one. TODO: explain exactly what it means and how to do the matching.
-   * For other @ref PersistenceAlgorithm: more or less equivalent to @ref initialize_persistence_computation.
+   * For other @ref PersistenceAlgorithm "": more or less equivalent to @ref initialize_persistence_computation.
    *
    * @pre @ref initialize_persistence_computation has to be called at least once before.
    *

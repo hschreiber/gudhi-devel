@@ -39,6 +39,17 @@ struct is_forward_iterator<T, std::void_t<typename std::iterator_traits<T>::iter
 template <class T>
 constexpr bool is_forward_iterator_v = details::is_forward_iterator<T>::value;
 
+template <typename T>
+struct type_identity {
+  using type = T;
+};
+
+// std::make_signed_t does not compile for T signed and std::conditional evaluates both possibilities
+// so this trick is necessary if we want to avoid using `if constexpr` everywhere
+template <typename T>
+using maybe_make_signed_t =
+    typename std::conditional_t<std::is_unsigned_v<T>, std::make_signed<T>, type_identity<T>>::type;
+
 }  // namespace multi_persistence
 
 }  // namespace Gudhi

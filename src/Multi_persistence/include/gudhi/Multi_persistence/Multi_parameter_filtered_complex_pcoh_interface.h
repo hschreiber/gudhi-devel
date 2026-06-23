@@ -61,8 +61,7 @@ class Multi_parameter_filtered_complex_pcoh_interface
   /**
    * @brief Constructs the interface and stores a pointer to the given complex and the given permutation. Assumes that
    * the pointers remain valid through the whole life of the instance. If they get invalidated, they can be updated
-   * via the copy/move constructors if the content did not change (otherwise, reconstruct from scratch with
-   * @ref reinitialize).
+   * via the copy/move constructors if the content did not change.
    *
    * @param boundaries Complex to interface.
    * @param permutation Permutation map indicating the order of the cells stored in @p boundaries as a standard
