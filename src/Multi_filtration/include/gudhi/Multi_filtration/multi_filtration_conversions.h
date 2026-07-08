@@ -22,6 +22,10 @@
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
+#include <limits>
+#include <cmath>
+
+#include <boost/safe_numerics/safe_integer.hpp>
 
 #include <gudhi/Multi_parameter_filtration.h>
 #include <gudhi/Dynamic_multi_parameter_filtration.h>
@@ -277,6 +281,69 @@ inline Out_multi_filtration as_type(const Degree_rips_bifiltration<T, Co, Ensure
       throw std::invalid_argument("Given out multi filtration value is not available.");
     }
   }
+}
+
+/**
+ * @private
+ * Tries as good as it can to be precise, but there is probably room for improvements...
+ */
+template <typename T, typename U>
+bool _safe_equal(T t, U u) {
+  static_assert(std::is_arithmetic_v<T> && std::is_arithmetic_v<U>, "_safe_equal requires arithmetic types");
+
+  if constexpr (std::is_same_v<T, U>) {
+    return t == u;
+  } else if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
+    // integer x integer
+    // in C++20, can be replaced with std::cmp_equal
+    return boost::safe_numerics::safe<T>(t) == boost::safe_numerics::safe<U>(u);
+  } else if constexpr (std::is_floating_point_v<T> && std::is_floating_point_v<U>) {
+    // floating x floating
+    using Wider = std::conditional_t<(sizeof(T) >= sizeof(U)), T, U>;
+    return static_cast<Wider>(t) == static_cast<Wider>(u);
+  } else {
+    if constexpr (std::is_floating_point_v<T>) {
+      // floating x integer
+      // if the floating type is nan or has non-zero decimal values, it cannot be equal to an integer.
+      if (std::isnan(t) || std::trunc(t) != t) return false;
+      // the floating type does not have any decimal, i.e. is comparable with an integer
+      if (t < static_cast<T>(std::numeric_limits<U>::min()) || t > static_cast<T>(std::numeric_limits<U>::max())) {
+        return false;
+      }
+      return static_cast<U>(t) == u;
+    } else {
+      // integer x floating
+      if (std::isnan(u) || std::trunc(u) != u) return false;
+      if (u < static_cast<U>(std::numeric_limits<T>::min()) || u > static_cast<U>(std::numeric_limits<T>::max())) {
+        return false;
+      }
+      return t == static_cast<T>(u);
+    }
+  }
+}
+
+/**
+ * @brief Compares for equality two filtration values potentially not of the same type.
+ * 
+ * @tparam MultiFiltrationValue1 A filtration value type with methods: num_parameters(), num_generators()
+ * and operator(g, p).
+ * @tparam MultiFiltrationValue2 A filtration value type with methods: num_parameters(), num_generators()
+ * and operator(g, p).
+ */
+template <class MultiFiltrationValue1, class MultiFiltrationValue2>
+inline bool are_equal_filtration_values(const MultiFiltrationValue1& f1, const MultiFiltrationValue2& f2) {
+  if constexpr (std::is_same_v<MultiFiltrationValue1, MultiFiltrationValue2>) {
+    if (&f1 == &f2) return true;
+  }
+  if (f1.num_parameters() != f2.num_parameters()) return false;
+  if (f1.num_generators() != f2.num_generators()) return false;
+
+  for (std::size_t p = 0; p < f1.num_parameters(); ++p) {
+    for (std::size_t g = 0; g < f1.num_generators(); ++g) {
+      if (!_safe_equal(f1(g, p), f2(g, p))) return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace multi_filtration
