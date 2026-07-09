@@ -52,8 +52,7 @@ namespace multi_persistence {
  * @tparam D Dimension type. Default value: int.
  */
 template <class MultiFiltrationValue, typename I = std::uint32_t, typename D = int>
-class Multi_parameter_filtered_complex
-{
+class Multi_parameter_filtered_complex {
  public:
   using Index = I;                                    /**< Complex index type. */
   using Filtration_value = MultiFiltrationValue;      /**< Filtration value type. */
@@ -83,15 +82,13 @@ class Multi_parameter_filtered_complex
    * @param filtrationValues Filtration value container. The value at index \f$ i \f$ has to correspond to the
    * filtration value of the cell at index \f$ i \f$ in `boundaries`.
    */
-  Multi_parameter_filtered_complex(const Boundary_container& boundaries,
-                                   const Dimension_container& dimensions,
+  Multi_parameter_filtered_complex(const Boundary_container& boundaries, const Dimension_container& dimensions,
                                    const Filtration_value_container& filtrationValues)
       : boundaries_(boundaries),
         dimensions_(dimensions),
         filtrationValues_(filtrationValues),
         maxDimension_(nullDimension),
-        isOrderedByDimension_(false)
-  {
+        isOrderedByDimension_(false) {
     _initialize_dimension_utils();
   }
 
@@ -107,21 +104,19 @@ class Multi_parameter_filtered_complex
    * @param filtrationValues Filtration value container. The value at index \f$ i \f$ has to correspond to the
    * filtration value of the cell at index \f$ i \f$ in `boundaries`.
    */
-  Multi_parameter_filtered_complex(Boundary_container&& boundaries,
-                                   Dimension_container&& dimensions,
+  Multi_parameter_filtered_complex(Boundary_container&& boundaries, Dimension_container&& dimensions,
                                    Filtration_value_container&& filtrationValues)
       : boundaries_(std::move(boundaries)),
         dimensions_(std::move(dimensions)),
         filtrationValues_(std::move(filtrationValues)),
         maxDimension_(nullDimension),
-        isOrderedByDimension_(false)
-  {
+        isOrderedByDimension_(false) {
     _initialize_dimension_utils();
   }
 
   /**
    * @brief Constructs the complex from the given containers.
-   * 
+   *
    * @tparam BoundaryRange Boundary range with a size() and operator[] method. The boundary returned by operator[]
    * has to have a begin() and end() method returning `LegacyForwardIterator` iterators dereferencing into a type
    * convertible into @ref MultiFiltrationValue::value_type.
@@ -147,8 +142,7 @@ class Multi_parameter_filtered_complex
         dimensions_(dimensions.begin(), dimensions.end()),
         filtrationValues_(),
         maxDimension_(nullDimension),
-        isOrderedByDimension_(false)
-  {
+        isOrderedByDimension_(false) {
     GUDHI_CHECK(boundaries.size() == dimensions.size(),
                 std::invalid_argument("There should be as many boundaries as dimensions."));
     GUDHI_CHECK(boundaries.size() == filtrationValues.size(),
@@ -203,8 +197,7 @@ class Multi_parameter_filtered_complex
         dimensions_(complex.get_dimensions().begin(), complex.get_dimensions().end()),
         filtrationValues_(complex.get_filtration_values().size()),
         maxDimension_(complex.get_max_dimension()),
-        isOrderedByDimension_(complex.is_ordered_by_dimension())
-  {
+        isOrderedByDimension_(complex.is_ordered_by_dimension()) {
     const auto& fils = complex.get_filtration_values();
     for (Index i = 0; i < filtrationValues_.size(); ++i) {
       filtrationValues_[i] = multi_filtration::as_type<MultiFiltrationValue>(fils[i]);
@@ -231,8 +224,7 @@ class Multi_parameter_filtered_complex
    */
   template <class OtherFiltrationValue, typename OI, typename OD>
   Multi_parameter_filtered_complex& operator=(
-      const Multi_parameter_filtered_complex<OtherFiltrationValue, OI, OD>& other)
-  {
+      const Multi_parameter_filtered_complex<OtherFiltrationValue, OI, OD>& other) {
     boundaries_ = Boundary_container(other.get_boundaries().begin(), other.get_boundaries().end());
     dimensions_ = Dimension_container(other.get_dimensions().begin(), other.get_dimensions().end());
     const auto& fils = other.get_filtration_values();
@@ -259,8 +251,7 @@ class Multi_parameter_filtered_complex
   /**
    * @brief Returns the number of parameters in the filtration.
    */
-  [[nodiscard]] Index get_number_of_parameters() const
-  {
+  [[nodiscard]] Index get_number_of_parameters() const {
     if (filtrationValues_.empty()) return 0;
     return filtrationValues_[0].num_parameters();
   }
@@ -304,8 +295,7 @@ class Multi_parameter_filtered_complex
    * considered equal (i.e., they relative position from each other does not matter).
    * Note that the indices of the cells changes therefore.
    */
-  void sort_by_dimension_co_lexicographically()
-  {
+  void sort_by_dimension_co_lexicographically() {
     using namespace Gudhi::multi_filtration;
 
     sort([&](Index i, Index j) -> bool {
@@ -325,8 +315,7 @@ class Multi_parameter_filtered_complex
    * only if the cell at the first index is supposed to be placed before the cell at the second index.
    */
   template <typename Comp>
-  void sort(Comp&& comparaison)
-  {
+  void sort(Comp&& comparaison) {
     // TODO: test if it is not faster to just reconstruct everything instead of swapping
     // Note: perm and inv have to be build in any case
     // if we reconstruct, we additionally build three containers of vector of Index, of Index
@@ -373,8 +362,7 @@ class Multi_parameter_filtered_complex
    * @param maxDim Maximal dimension to keep.
    * @return Number of remaining cells in the complex.
    */
-  Index prune_above_dimension(int maxDim)
-  {
+  Index prune_above_dimension(int maxDim) {
     if (!isOrderedByDimension_) sort_by_dimension_co_lexicographically();
     Index i = 0;
     while (i < dimensions_.size() && dimensions_[i] < maxDim + 1) ++i;
@@ -397,8 +385,7 @@ class Multi_parameter_filtered_complex
    * @param coordinate If true, the values are set to the coordinates of the projection in the grid. If false,
    * the values are set to the values at the coordinates of the projection.
    */
-  void coarsen_on_grid(const std::vector<std::vector<T> >& grid, bool coordinate = true)
-  {
+  void coarsen_on_grid(const std::vector<std::vector<T> >& grid, bool coordinate = true) {
 #ifdef GUDHI_USE_TBB
     tbb::parallel_for(Index(0), Index(filtrationValues_.size()), [&](Index gen) {
       // TODO : preallocate for tbb
@@ -416,8 +403,7 @@ class Multi_parameter_filtered_complex
    * @brief Builds a new complex by reordering the cells in the given complex with the given permutation map.
    */
   friend Multi_parameter_filtered_complex build_permuted_complex(const Multi_parameter_filtered_complex& complex,
-                                                                 const std::vector<Index>& permutation)
-  {
+                                                                 const std::vector<Index>& permutation) {
     if (permutation.size() > complex.get_number_of_cycle_generators())
       throw std::invalid_argument("Invalid permutation size.");
 
@@ -443,8 +429,8 @@ class Multi_parameter_filtered_complex
       newFiltrationValues.emplace_back(complex.filtrationValues_[i]);
     }
 
-    return Multi_parameter_filtered_complex(
-        std::move(newBoundaries), std::move(newDimensions), std::move(newFiltrationValues));
+    return Multi_parameter_filtered_complex(std::move(newBoundaries), std::move(newDimensions),
+                                            std::move(newFiltrationValues));
   }
 
   /**
@@ -453,8 +439,7 @@ class Multi_parameter_filtered_complex
    * permutation map used as second element.
    */
   friend std::pair<Multi_parameter_filtered_complex, std::vector<Index> > build_permuted_complex(
-      const Multi_parameter_filtered_complex& complex)
-  {
+      const Multi_parameter_filtered_complex& complex) {
     using namespace Gudhi::multi_filtration;
 
     std::vector<Index> perm(complex.get_number_of_cycle_generators());
@@ -478,8 +463,7 @@ class Multi_parameter_filtered_complex
    * See @ref coarsen_on_grid with the paramater `coordinate` at true.
    */
   friend auto build_complex_coarsen_on_grid(const Multi_parameter_filtered_complex& complex,
-                                            const std::vector<std::vector<T> >& grid)
-  {
+                                            const std::vector<std::vector<T> >& grid) {
     using namespace Gudhi::multi_filtration;
     using Return_filtration_value = decltype(std::declval<Filtration_value>().template as_type<std::int32_t>());
     using Return_complex = Multi_parameter_filtered_complex<Return_filtration_value, I, D>;
@@ -503,8 +487,7 @@ class Multi_parameter_filtered_complex
   /**
    * @brief Outstream operator.
    */
-  friend std::ostream& operator<<(std::ostream& stream, const Multi_parameter_filtered_complex& complex)
-  {
+  friend std::ostream& operator<<(std::ostream& stream, const Multi_parameter_filtered_complex& complex) {
     stream << "Boundary:\n";
     stream << "{\n";
     for (Index i = 0; i < complex.boundaries_.size(); ++i) {
@@ -542,8 +525,7 @@ class Multi_parameter_filtered_complex
   /**
    * @brief Initializes maxDimension_ and isOrderedByDimension_
    */
-  void _initialize_dimension_utils()
-  {
+  void _initialize_dimension_utils() {
     isOrderedByDimension_ = true;
     if (dimensions_.empty()) return;
 

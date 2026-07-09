@@ -38,8 +38,7 @@ namespace multi_persistence {
  * @tparam Slicer Underlying @ref Slicer type.
  */
 template <class Slicer>
-class Thread_safe_slicer : private Slicer
-{
+class Thread_safe_slicer : private Slicer {
  public:
   using Persistence = typename Slicer::Persistence;           /**< Persistence algorithm type. */
   using Filtration_value = typename Slicer::Filtration_value; /**< Filtration value type. */
@@ -83,32 +82,26 @@ class Thread_safe_slicer : private Slicer
    * @param slicer Original slicer.
    */
   Thread_safe_slicer(const Slicer& slicer)
-      : Slicer(slicer.get_slice(), slicer.get_persistence_algorithm()), slicer_(&slicer)
-  {}
+      : Slicer(slicer.get_slice(), slicer.get_persistence_algorithm()), slicer_(&slicer) {}
 
   /**
    * @brief Copy constructor.
    */
   Thread_safe_slicer(const Thread_safe_slicer& slicer)
-      : Slicer(slicer.get_slice(), slicer.get_persistence_algorithm()),
-        slicer_(slicer.slicer_)
-  {}
+      : Slicer(slicer.get_slice(), slicer.get_persistence_algorithm()), slicer_(slicer.slicer_) {}
 
   /**
    * @brief Move constructor.
    */
   Thread_safe_slicer(Thread_safe_slicer&& slicer) noexcept
-      : Slicer(std::move(slicer.slice_), std::move(slicer.persistence_)),
-        slicer_(slicer.slicer_)
-  {}
+      : Slicer(std::move(slicer.slice_), std::move(slicer.persistence_)), slicer_(slicer.slicer_) {}
 
   ~Thread_safe_slicer() = default;
 
   /**
    * @brief Assign operator.
    */
-  Thread_safe_slicer& operator=(const Thread_safe_slicer& other)
-  {
+  Thread_safe_slicer& operator=(const Thread_safe_slicer& other) {
     if (this == &other) return *this;
 
     Slicer::slice_ = other.slice_;
@@ -180,8 +173,7 @@ class Thread_safe_slicer : private Slicer
    * @brief Returns a const reference to the filtration value container. A filtration value at index \$f i \$f
    * correspond to the filtration value associated to the generators at index \$f i \$f.
    */
-  const typename Complex::Filtration_value_container& get_filtration_values() const
-  {
+  const typename Complex::Filtration_value_container& get_filtration_values() const {
     return slicer_->get_filtration_values();
   }
 
@@ -227,8 +219,7 @@ class Thread_safe_slicer : private Slicer
    * @tparam Array Container which can be converted into a vector of `T`.
    */
   template <class Array = std::initializer_list<T>>
-  void set_slice(const Array& slice)
-  {
+  void set_slice(const Array& slice) {
     GUDHI_CHECK(slice.size() == slicer_->complex_.get_number_of_cycle_generators(),
                 std::invalid_argument("Slice should have the same size than the number of generators in the complex."));
 
@@ -241,8 +232,7 @@ class Thread_safe_slicer : private Slicer
    * @tparam Line_like Any type convertible to a @ref Line class. Default value: `std::initializer_list<T>`.
    */
   template <class Line_like = std::initializer_list<T>>
-  void push_to(const Line_like& line)
-  {
+  void push_to(const Line_like& line) {
     Slicer::_push_to(slicer_->complex_, Line<typename Line_like::value_type>(line));
   }
 
@@ -252,8 +242,7 @@ class Thread_safe_slicer : private Slicer
    * @tparam U Template parameter of the given line.
    */
   template <class U>
-  void push_to(const Line<U>& line)
-  {
+  void push_to(const Line<U>& line) {
     Slicer::_push_to(slicer_->complex_, line);
   }
 
@@ -262,8 +251,7 @@ class Thread_safe_slicer : private Slicer
   /**
    * @brief Returns true if and only if @ref initialize_persistence_computation was properly called.
    */
-  [[nodiscard]] bool persistence_computation_is_initialized() const
-  {
+  [[nodiscard]] bool persistence_computation_is_initialized() const {
     return Slicer::persistence_computation_is_initialized();
   }
 
@@ -276,8 +264,7 @@ class Thread_safe_slicer : private Slicer
    * if the update method of the template parameter @ref PersistenceAlgorithm does not permit this feature.
    * Default value: false.
    */
-  void initialize_persistence_computation(bool ignoreInf = false)
-  {
+  void initialize_persistence_computation(bool ignoreInf = false) {
     Slicer::_initialize_persistence_computation(slicer_->complex_, ignoreInf);
   }
 
@@ -308,8 +295,7 @@ class Thread_safe_slicer : private Slicer
    * Default value: -1.
    */
   template <bool byDim = true, typename Value = T, bool idx = false>
-  auto get_barcode(int maxDim = -1)
-  {
+  auto get_barcode(int maxDim = -1) {
     // complex in parent is empty, so maxDim needs to be initialized from the outside.
     if (maxDim < 0) maxDim = slicer_->get_max_dimension();
     return Slicer::template get_barcode<byDim, Value, idx>(maxDim);
@@ -327,8 +313,7 @@ class Thread_safe_slicer : private Slicer
    * Default value: -1.
    */
   template <bool byDim = false, typename Value = T, bool idx = false>
-  auto get_flat_barcode(int maxDim = -1)
-  {
+  auto get_flat_barcode(int maxDim = -1) {
     // complex in parent is empty, so maxDim needs to be initialized from the outside.
     if (maxDim < 0) maxDim = slicer_->get_max_dimension();
     return Slicer::template get_flat_barcode<byDim, Value, idx>(maxDim);
@@ -346,13 +331,11 @@ class Thread_safe_slicer : private Slicer
    * @param update If true, updates the stored representative cycles, otherwise just returns the container in its
    * current state. So should be true at least the first time the method is used.
    */
-  std::vector<std::vector<Cycle>> get_representative_cycles(bool update = true)
-  {
+  std::vector<std::vector<Cycle>> get_representative_cycles(bool update = true) {
     return Slicer::_get_representative_cycles(slicer_->complex_, update);
   }
 
-  Cycle get_most_persistent_cycle(Dimension dim = 1, bool update = true)
-  {
+  Cycle get_most_persistent_cycle(Dimension dim = 1, bool update = true) {
     return Slicer::get_most_persistent_cycle(dim, update);
   }
 
@@ -361,8 +344,7 @@ class Thread_safe_slicer : private Slicer
   /**
    * @brief Outstream operator.
    */
-  friend std::ostream& operator<<(std::ostream& stream, const Thread_safe_slicer& slicer)
-  {
+  friend std::ostream& operator<<(std::ostream& stream, const Thread_safe_slicer& slicer) {
     stream << "-------------------- Thread_safe_slicer \n";
 
     stream << "--- Filtered complex \n";

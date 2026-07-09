@@ -458,8 +458,7 @@ class Summand {
    * @param start Pointer to the start of the space in the buffer where to store the serialization.
    * @return End position of the serialization in the buffer.
    */
-  friend char *serialize_value_to_char_buffer(const Summand &value, char *start)
-  {
+  friend char *serialize_value_to_char_buffer(const Summand &value, char *start) {
     const std::size_t dimSize = sizeof(Dimension);
     memcpy(start, &value.dimension_, dimSize);
     char *curr = start + dimSize;
@@ -475,8 +474,7 @@ class Summand {
    * @param start Pointer to the start of the space in the buffer where the serialization is stored.
    * @return End position of the serialization in the buffer.
    */
-  friend const char *deserialize_value_from_char_buffer(Summand &value, const char *start)
-  {
+  friend const char *deserialize_value_from_char_buffer(Summand &value, const char *start) {
     const std::size_t dimSize = sizeof(Dimension);
     memcpy(&value.dimension_, start, dimSize);
     const char *curr = start + dimSize;
@@ -488,8 +486,7 @@ class Summand {
   /**
    * @brief Returns the serialization size of the given summand.
    */
-  friend std::size_t get_serialization_size_of(const Summand &value)
-  {
+  friend std::size_t get_serialization_size_of(const Summand &value) {
     std::size_t size = sizeof(Dimension);
     size += get_serialization_size_of(value.birthCorners_);
     size += get_serialization_size_of(value.deathCorners_);

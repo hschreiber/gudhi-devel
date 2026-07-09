@@ -34,8 +34,7 @@ template <typename T>
 using Std_tree = Gudhi::Simplex_tree<Std_options<T> >;
 
 template <typename T>
-Multi_tree<T> build_multi_simplex_tree()
-{
+Multi_tree<T> build_multi_simplex_tree() {
   Multi_tree<T> st;
   st.insert_simplex_and_subfaces({0, 1, 2}, std::initializer_list<T>{0, 1, 2});
   st.insert_simplex_and_subfaces({0, 1, 3}, std::initializer_list<T>{3, 4, 5});
@@ -45,8 +44,7 @@ Multi_tree<T> build_multi_simplex_tree()
 }
 
 template <typename T>
-Std_tree<T> build_std_simplex_tree()
-{
+Std_tree<T> build_std_simplex_tree() {
   Std_tree<T> st;
   st.insert_simplex_and_subfaces({0, 1, 2}, 1);
   st.insert_simplex_and_subfaces({0, 1, 3}, 4);
@@ -55,8 +53,7 @@ Std_tree<T> build_std_simplex_tree()
 }
 
 template <typename T>
-Multi_tree<T> build_proj_multi_simplex_tree()
-{
+Multi_tree<T> build_proj_multi_simplex_tree() {
   Multi_tree<T> st;
   st.insert_simplex_and_subfaces({0, 1, 2}, std::initializer_list<T>{0, 1, 2});
   st.insert_simplex_and_subfaces({0, 1, 3}, std::initializer_list<T>{0, 4, 2});
@@ -65,8 +62,7 @@ Multi_tree<T> build_proj_multi_simplex_tree()
   return st;
 }
 
-BOOST_AUTO_TEST_CASE(multi_simplex_tree_helpers)
-{
+BOOST_AUTO_TEST_CASE(multi_simplex_tree_helpers) {
   Multi_tree<double> multi_st = build_multi_simplex_tree<double>();
   Std_tree<int> std_st = build_std_simplex_tree<int>();
   Multi_tree<float> proj_multi_st = build_proj_multi_simplex_tree<float>();

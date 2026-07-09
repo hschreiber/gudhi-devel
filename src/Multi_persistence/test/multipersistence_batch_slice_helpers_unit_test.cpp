@@ -96,8 +96,7 @@ using list_of_tested_slicer_variants = boost::mpl::list<
            Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>>;
 
 template <class Fil>
-Multi_parameter_filtered_complex<Fil, I, D> build_simple_input_complex()
-{
+Multi_parameter_filtered_complex<Fil, I, D> build_simple_input_complex() {
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
   using FC = typename Complex::Filtration_value_container;
   using BC = typename Complex::Boundary_container;
@@ -119,8 +118,7 @@ Multi_parameter_filtered_complex<Fil, I, D> build_simple_input_complex()
   return Complex(bc, dc, fc);
 }
 
-Test_multi_dimensional_barcode get_barcode(const Multi_dimensional_flat_barcode& barcode)
-{
+Test_multi_dimensional_barcode get_barcode(const Multi_dimensional_flat_barcode& barcode) {
   Test_multi_dimensional_barcode out(barcode.size());
   for (unsigned int i = 0; i < barcode.size(); ++i) {
     out[i].resize(barcode[i].size());
@@ -134,8 +132,7 @@ Test_multi_dimensional_barcode get_barcode(const Multi_dimensional_flat_barcode&
 }
 
 template <class Slicer>
-void test_slicer_batch_persistence(Slicer& s)
-{
+void test_slicer_batch_persistence(Slicer& s) {
   using Index = typename Slicer::Index;
   T inf = std::numeric_limits<T>::infinity();
 
@@ -179,8 +176,7 @@ void test_slicer_batch_persistence(Slicer& s)
   BOOST_CHECK(orderedBarcodes[2][1][0] == (std::pair<T, T>(5, 6)));
   BOOST_CHECK_EQUAL(orderedBarcodes[2][2].size(), 0);
 
-  barcodes =
-      persistence_on_slices<T>(s, {{0, 1, 1}, {2, 4, 2}, {2, 1, 0}}, {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}}, false);
+  barcodes = persistence_on_slices<T>(s, {{0, 1, 1}, {2, 4, 2}, {2, 1, 0}}, {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}}, false);
   std::vector<Test_multi_dimensional_barcode> orderedBarcodes2(barcodes.size());
   i = 0;
   for (const auto& dgm : barcodes) {
@@ -191,8 +187,7 @@ void test_slicer_batch_persistence(Slicer& s)
   BOOST_CHECK(orderedBarcodes == orderedBarcodes2);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_batch_persistence, Slicer, list_of_tested_slicer_variants)
-{
+BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_batch_persistence, Slicer, list_of_tested_slicer_variants) {
   using Fil = typename Slicer::Filtration_value;
 
   auto cpx = build_simple_input_complex<Fil>();

@@ -68,10 +68,8 @@ struct Simplex_tree_options_multidimensional_filtration : Simplex_tree_options_d
  */
 template <class MultiDimSimplexTreeOptions, class OneDimSimplexTree>
 Simplex_tree<MultiDimSimplexTreeOptions> make_multi_dimensional(
-    const OneDimSimplexTree &st,
-    const typename MultiDimSimplexTreeOptions::Filtration_value &default_value,
-    const std::size_t dimension = 0)
-{
+    const OneDimSimplexTree &st, const typename MultiDimSimplexTreeOptions::Filtration_value &default_value,
+    const std::size_t dimension = 0) {
   using OneDimF = typename OneDimSimplexTree::Options::Filtration_value;
   using MultiDimF = typename MultiDimSimplexTreeOptions::Filtration_value;
 
@@ -119,8 +117,7 @@ Simplex_tree<MultiDimSimplexTreeOptions> make_multi_dimensional(
  */
 template <class OneDimSimplexTreeOptions, class MultiDimSimplexTree>
 Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimplexTree &st,
-                                                            const std::size_t dimension = 0)
-{
+                                                            const std::size_t dimension = 0) {
   using OneDimF = typename OneDimSimplexTreeOptions::Filtration_value;
   using MultiDimF = typename MultiDimSimplexTree::Options::Filtration_value;
 

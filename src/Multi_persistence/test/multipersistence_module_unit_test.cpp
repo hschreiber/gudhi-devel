@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(module_serialization, T, list_of_tested_variants) 
   BOOST_CHECK_EQUAL(serSize, c_ptr - buffer);
   BOOST_CHECK(m == copy);
 
-  delete [] buffer;
+  delete[] buffer;
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(module_helpers, T, list_of_tested_variants) {

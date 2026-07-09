@@ -51,7 +51,7 @@ namespace multi_persistence {
  *
  * @private
  * @brief Builds an approximation of the multi-parameter module from the given multi-parameter filtration.
- * 
+ *
  * @tparam T Has to be signed.
  */
 template <typename T>
@@ -296,9 +296,8 @@ class Multiparameter_module_approximator {
   template <int axis, bool sign, class Slicer>
   void _rec_iterate_over_lines(Module<T>& module, Point_t&& basepoint, std::size_t gridSizeIdx, int paramToIterate,
                                Slicer& currentPersistence) const {
-    LineIterator<sign> line_iterator(
-        std::move(basepoint), direction_, precision_,
-        static_cast<int>(gridSizeIdx) == paramToIterate ? 0 : gridSize_[paramToIterate]);
+    LineIterator<sign> line_iterator(std::move(basepoint), direction_, precision_,
+                                     static_cast<int>(gridSizeIdx) == paramToIterate ? 0 : gridSize_[paramToIterate]);
 
     if (paramToIterate <= axis) {
       _add_vineyard_trajectory_to_module<axis, sign>(module, currentPersistence, line_iterator);
@@ -315,8 +314,7 @@ class Multiparameter_module_approximator {
   }
 
   template <int axis, bool sign, class Slicer>
-  void _add_vineyard_trajectory_to_module(Module<T>& module, Slicer& slicer,
-                                          LineIterator<sign>& line_iterator) const {
+  void _add_vineyard_trajectory_to_module(Module<T>& module, Slicer& slicer, LineIterator<sign>& line_iterator) const {
     // Line iterator should be on the biggest axis
     while (!line_iterator.is_finished()) {
       const Line<T>& new_line = *(line_iterator.next(axis));
@@ -354,7 +352,7 @@ class Multiparameter_module_approximator {
  * within the given box.
  *
  * The algorithm is based on @cite mma.
- * 
+ *
  * @tparam MultiFiltrationValue First template parameter of @ref Slicer.
  * @tparam PersistenceAlgorithm Second template parameter of @ref Slicer.
  * @tparam CoordinateRange Range of an arithmetic value convertible to @ref MultiFiltrationValue::value_type.

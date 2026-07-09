@@ -307,7 +307,7 @@ class Module {
   /**
    * @brief For all lines in the range, computes the intersection of the (positive slope) line with the summands.
    * That corresponds to the barcodes of the 1-dimensional filtrations along those lines in the module.
-   * 
+   *
    * @tparam LineRange Range of @ref Line with a size(), begin() and end() method.
    * @param lines Range of lines with positive slope.
    * @param dimension If specified, only the barcodes in that dimension are stored in the output. Otherwise,
@@ -318,7 +318,7 @@ class Module {
    * (number of lines x number of summands in that dim). If the argument @p dimension was given, the first axis will
    * still contain all dimensions, but all except one sub-vector will be empty.
    */
-  template <class LineRange = std::initializer_list<Line<T> > >
+  template <class LineRange = std::initializer_list<Line<T>>>
   std::vector<std::vector<Bar>> get_barcode_from_range_of_lines(
       const LineRange &lines, Dimension dimension = get_null_value<Dimension>()) const {
     std::vector<std::vector<Bar>> barcode(get_max_dimension() + 1);

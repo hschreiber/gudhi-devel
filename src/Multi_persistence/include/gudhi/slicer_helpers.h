@@ -74,11 +74,7 @@ namespace multi_persistence {
  */
 template <class MultiFiltrationValue, typename I = std::uint32_t, typename D = int>
 inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_complex_from_scc_file(
-    const std::string& inFilePath,
-    bool isRivetCompatible = false,
-    bool isReversed = false,
-    int shiftDimensions = 0)
-{
+    const std::string& inFilePath, bool isRivetCompatible = false, bool isReversed = false, int shiftDimensions = 0) {
   using Fil = MultiFiltrationValue;
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
   using Index = typename Complex::Index;
@@ -159,8 +155,8 @@ inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_comple
   unsigned int nextShift = isReversed ? 0 : (counts.size() - dimIt) == 1 ? 0 : counts[dimIt + 1];
   unsigned int tmpNextShift = counts[dimIt];
 
-  auto get_boundary = [&isReversed, &numberOfCells](
-                          const std::string& line, std::size_t start, std::size_t shift) -> std::vector<Index> {
+  auto get_boundary = [&isReversed, &numberOfCells](const std::string& line, std::size_t start,
+                                                    std::size_t shift) -> std::vector<Index> {
     std::vector<Index> res;
     res.reserve(line.size() - start);
     std::size_t current = line.find_first_not_of(' ', start);
@@ -255,12 +251,8 @@ inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_comple
 template <class MultiFiltrationValue, typename I, typename D>
 inline void write_complex_to_scc_file(const std::string& outFilePath,
                                       const Multi_parameter_filtered_complex<MultiFiltrationValue, I, D>& complex,
-                                      int degree = -1,
-                                      bool rivetCompatible = false,
-                                      bool ignoreLastGenerators = false,
-                                      bool stripComments = false,
-                                      bool reverse = false)
-{
+                                      int degree = -1, bool rivetCompatible = false, bool ignoreLastGenerators = false,
+                                      bool stripComments = false, bool reverse = false) {
   if (!complex.is_ordered_by_dimension()) {
     // other solution would be to call build_permuted_complex ourself, but this is a good way to make the
     // user aware of it.
@@ -301,7 +293,7 @@ inline void write_complex_to_scc_file(const std::string& outFilePath,
   int minDim = maxDim;
   const auto& dimensions = complex.get_dimensions();
 
-  std::vector<std::vector<std::size_t> > indicesByDim(maxDim + 1);
+  std::vector<std::vector<std::size_t>> indicesByDim(maxDim + 1);
   std::vector<std::size_t> shiftedIndices(complex.get_number_of_cycle_generators());
   for (std::size_t i = 0; i < complex.get_number_of_cycle_generators(); ++i) {
     auto dim = dimensions[i];
@@ -412,9 +404,7 @@ inline void write_complex_to_scc_file(const std::string& outFilePath,
  */
 template <class OneCriticalMultiFiltrationValue, typename I = std::uint32_t, typename D = int>
 inline Multi_parameter_filtered_complex<OneCriticalMultiFiltrationValue, I, D> build_complex_from_bitmap(
-    const std::vector<OneCriticalMultiFiltrationValue>& vertexValues,
-    const std::vector<unsigned int>& shape)
-{
+    const std::vector<OneCriticalMultiFiltrationValue>& vertexValues, const std::vector<unsigned int>& shape) {
   using Fil = OneCriticalMultiFiltrationValue;
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
   using Index = typename Complex::Index;
@@ -495,8 +485,7 @@ inline Multi_parameter_filtered_complex<OneCriticalMultiFiltrationValue, I, D> b
  */
 template <class MultiFiltrationValue, class SimplexTreeOptions, typename I = std::uint32_t, typename D = int>
 inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_complex_from_simplex_tree(
-    Simplex_tree<SimplexTreeOptions>& simplexTree)
-{
+    Simplex_tree<SimplexTreeOptions>& simplexTree) {
   // declared here to enable custom `as_type` methods which are not in this namespace.
   using namespace Gudhi::multi_filtration;
 
@@ -530,9 +519,8 @@ inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_comple
   std::vector<unsigned int> oldToNewIndex(numberOfSimplices);
   std::iota(newToOldIndex.begin(), newToOldIndex.end(), 0);
   // stable sort to make the new complex more predicable and closer to a lexicographical sort in addition to dimension
-  std::stable_sort(newToOldIndex.begin(), newToOldIndex.end(), [&dimensions](unsigned int i, unsigned int j) {
-    return dimensions[i] < dimensions[j];
-  });
+  std::stable_sort(newToOldIndex.begin(), newToOldIndex.end(),
+                   [&dimensions](unsigned int i, unsigned int j) { return dimensions[i] < dimensions[j]; });
   // Is there a way to directly get oldToNewIndex without constructing newToOldIndex?
   for (unsigned int k = 0; k < numberOfSimplices; ++k) {
     oldToNewIndex[newToOldIndex[k]] = k;
@@ -578,15 +566,11 @@ inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_comple
  * the file are ignored and the smallest remaining dimension is interpreted as 0. Default value: 0.
  */
 template <class Slicer>
-inline Slicer build_slicer_from_scc_file(const std::string& inFilePath,
-                                         bool isRivetCompatible = false,
-                                         bool isReversed = false,
-                                         int shiftDimensions = 0)
-{
-  auto cpx = build_complex_from_scc_file<typename Slicer::Filtration_value,
-                                         typename Slicer::Index,
-                                         typename Slicer::Dimension>(
-      inFilePath, isRivetCompatible, isReversed, shiftDimensions);
+inline Slicer build_slicer_from_scc_file(const std::string& inFilePath, bool isRivetCompatible = false,
+                                         bool isReversed = false, int shiftDimensions = 0) {
+  auto cpx = build_complex_from_scc_file<typename Slicer::Filtration_value, typename Slicer::Index,
+                                         typename Slicer::Dimension>(inFilePath, isRivetCompatible, isReversed,
+                                                                     shiftDimensions);
   return Slicer(std::move(cpx));
 }
 
@@ -609,8 +593,7 @@ inline Slicer build_slicer_from_scc_file(const std::string& inFilePath,
  */
 template <class Slicer>
 inline Slicer build_slicer_from_bitmap(const std::vector<typename Slicer::Filtration_value>& vertexValues,
-                                       const std::vector<unsigned int>& shape)
-{
+                                       const std::vector<unsigned int>& shape) {
   auto cpx =
       build_complex_from_bitmap<typename Slicer::Filtration_value, typename Slicer::Index, typename Slicer::Dimension>(
           vertexValues, shape);
@@ -628,12 +611,9 @@ inline Slicer build_slicer_from_bitmap(const std::vector<typename Slicer::Filtra
  * @param simplexTree Simplex tree to convert.
  */
 template <class Slicer, class SimplexTreeOptions>
-inline Slicer build_slicer_from_simplex_tree(Simplex_tree<SimplexTreeOptions>& simplexTree)
-{
-  auto cpx = build_complex_from_simplex_tree<typename Slicer::Filtration_value,
-                                             SimplexTreeOptions,
-                                             typename Slicer::Index,
-                                             typename Slicer::Dimension>(simplexTree);
+inline Slicer build_slicer_from_simplex_tree(Simplex_tree<SimplexTreeOptions>& simplexTree) {
+  auto cpx = build_complex_from_simplex_tree<typename Slicer::Filtration_value, SimplexTreeOptions,
+                                             typename Slicer::Index, typename Slicer::Dimension>(simplexTree);
   return Slicer(std::move(cpx));
 }
 
@@ -641,9 +621,8 @@ inline Slicer build_slicer_from_simplex_tree(Simplex_tree<SimplexTreeOptions>& s
  * @private
  */
 template <bool idx, class U, class Slicer, class F>
-inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>>
-persistence_on_slices_(Slicer& slicer, F&& ini_slicer, unsigned int size, [[maybe_unused]] bool ignoreInf = false)
-{
+inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> persistence_on_slices_(
+    Slicer& slicer, F&& ini_slicer, unsigned int size, [[maybe_unused]] bool ignoreInf = false) {
   using Barcode = typename Slicer::template Multi_dimensional_flat_barcode<U>;
 
   if (size == 0) return {};
@@ -706,8 +685,8 @@ persistence_on_slices_(Slicer& slicer, F&& ini_slicer, unsigned int size, [[mayb
  * potentially in less storage use and better performance. But the parameter will be ignored if
  * PersistenceAlgorithm::is_vine is true. Default value: false.
  */
-template <class U, bool idx = false, class Slicer, class PointRange = std::vector<std::vector<int> >,
-          class DirectionRange = std::vector<std::vector<int> > >
+template <class U, bool idx = false, class Slicer, class PointRange = std::vector<std::vector<int>>,
+          class DirectionRange = std::vector<std::vector<int>>>
 inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> persistence_on_slices(
     Slicer& slicer, const PointRange& basePoints, const DirectionRange& directions, bool ignoreInf = false) {
   if (basePoints.size() == 0) return {};
@@ -748,10 +727,9 @@ inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> 
  * potentially in less storage use and better performance. But the parameter will be ignored if
  * PersistenceAlgorithm::is_vine is true. Default value: false.
  */
-template <class U, bool idx = false, class Slicer, class SliceRange = std::vector<std::vector<int> > >
+template <class U, bool idx = false, class Slicer, class SliceRange = std::vector<std::vector<int>>>
 inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> persistence_on_slices(
-    Slicer& slicer, const SliceRange& slices, bool ignoreInf = false)
-{
+    Slicer& slicer, const SliceRange& slices, bool ignoreInf = false) {
   GUDHI_CHECK(slices.size() == 0 || slices[0].size() == slicer.get_number_of_cycle_generators(),
               "There should be as many elements in a slice than cells in the slicer.");
 

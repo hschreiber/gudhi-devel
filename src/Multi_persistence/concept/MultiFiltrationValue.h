@@ -27,8 +27,7 @@ namespace multi_persistence {
  * @ref Gudhi::multi_filtration::Dynamic_multi_parameter_filtration and
  * @ref Gudhi::multi_filtration::Degree_rips_bifiltration.
  */
-class MultiFiltrationValue
-{
+class MultiFiltrationValue {
  public:
   using value_type = unspecified;           /**< Signed numerical value type. */
   using Underlying_container = unspecified; /**< Underlying container for values. */

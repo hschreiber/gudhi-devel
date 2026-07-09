@@ -63,7 +63,7 @@ inline auto _compute_distance_to_front(const RandomAccessValueRange &x, const Co
  *
  * @brief Computes the distance from the given point `x` to the given Summand `sum`.
  * TODO: proper definition of the distance.
- * 
+ *
  * @tparam T First template argument of @ref Summand.
  * @tparam Out Arithmetic type for the resulting output. Default: signed version of `T`.
  * @tparam D Second template argument of @ref Summand. Default: int.
@@ -154,7 +154,7 @@ inline Distance _get_summand_diagonal(const RandomAccessValueRange1 &birth, cons
  * @brief For a birth and death corner in the summand, let the diagonal between those two be
  * \f$ min\{death[p] - birth[p]\} \f$ for all parameters \f$ p \f$. This method returns the maximal diagonal
  * of all birth-death pairs in the summand projected to the box.
- * 
+ *
  * @tparam T First template argument of @ref Summand.
  * @tparam Out Arithmetic type for the resulting output. Default: signed version of `T`.
  * @tparam D Second template argument of @ref Summand. Default: int.

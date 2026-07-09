@@ -29,13 +29,11 @@ using Gudhi::multi_persistence::Multi_parameter_filtered_complex;
 using I = std::uint32_t;
 using D = int;
 
-using list_of_tested_variants = boost::mpl::list<Multi_parameter_filtration<double>,
-                                                 Dynamic_multi_parameter_filtration<double>,
-                                                 Multi_parameter_filtration<int>,
-                                                 Dynamic_multi_parameter_filtration<int> >;
+using list_of_tested_variants =
+    boost::mpl::list<Multi_parameter_filtration<double>, Dynamic_multi_parameter_filtration<double>,
+                     Multi_parameter_filtration<int>, Dynamic_multi_parameter_filtration<int>>;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_variants)
-{
+BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_variants) {
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
   using FC = typename Complex::Filtration_value_container;
   using BC = typename Complex::Boundary_container;
@@ -161,8 +159,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
   // BOOST_CHECK_EQUAL(copyCC2.get_dimension(5), 2);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_sorts, Fil, list_of_tested_variants)
-{
+BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_sorts, Fil, list_of_tested_variants) {
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
   using FC = typename Complex::Filtration_value_container;
   using BC = typename Complex::Boundary_container;
@@ -203,8 +200,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_sorts, Fil, list_of_tested_variants)
   BOOST_CHECK(lexC.get_filtration_values() == fc);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_other, Fil, list_of_tested_variants)
-{
+BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_other, Fil, list_of_tested_variants) {
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
   using FC = typename Complex::Filtration_value_container;
   using BC = typename Complex::Boundary_container;
@@ -220,7 +216,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_other, Fil, list_of_tested_variants)
   Multi_parameter_filtered_complex<Fil, I, D> cpxToGrid(bc, dc, fc);
   Multi_parameter_filtered_complex<Fil, I, D> cpxToGridCoord(bc, dc, fc);
 
-  std::vector<std::vector<typename Fil::value_type> > grid = {{0, 2, 4, 8}, {0, 3, 6, 9}, {0, 4, 8, 16}};
+  std::vector<std::vector<typename Fil::value_type>> grid = {{0, 2, 4, 8}, {0, 3, 6, 9}, {0, 4, 8, 16}};
   fc = {ini{0, 3, 0}, ini{0, 0, 4}, ini{2, 3, 4}, ini{0, 3, 4}, ini{2, 3, 4}, ini{4, 3, 4}, ini{8, 3, 4}};
 
   cpxToGrid.coarsen_on_grid(grid, false);
@@ -253,8 +249,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_other, Fil, list_of_tested_variants)
   BOOST_CHECK_EQUAL(idx, 5);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_friend, Fil, list_of_tested_variants)
-{
+BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_friend, Fil, list_of_tested_variants) {
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
   using FC = typename Complex::Filtration_value_container;
   using BC = typename Complex::Boundary_container;
@@ -284,7 +279,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_friend, Fil, list_of_tested_variants
   BOOST_CHECK(byDimC2.get_dimensions() == dc);
   BOOST_CHECK(byDimC2.get_filtration_values() == fc);
 
-  std::vector<std::vector<typename Fil::value_type> > grid = {{0, 2, 4, 8}, {0, 3, 6, 9}, {0, 4, 8, 16}};
+  std::vector<std::vector<typename Fil::value_type>> grid = {{0, 2, 4, 8}, {0, 3, 6, 9}, {0, 4, 8, 16}};
 
   auto cpxToGridCoord = build_complex_coarsen_on_grid(byDimC, grid);
 

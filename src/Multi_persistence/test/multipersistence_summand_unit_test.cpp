@@ -23,12 +23,12 @@
 #include <gudhi/Multi_persistence/Line.h>
 
 using Gudhi::multi_persistence::Box;
-using Gudhi::multi_persistence::Line;
-using Gudhi::multi_persistence::Summand;
 using Gudhi::multi_persistence::compute_summand_distance_to;
 using Gudhi::multi_persistence::compute_summand_interleaving;
-using Gudhi::multi_persistence::compute_summand_local_weight;
 using Gudhi::multi_persistence::compute_summand_landscape_value;
+using Gudhi::multi_persistence::compute_summand_local_weight;
+using Gudhi::multi_persistence::Line;
+using Gudhi::multi_persistence::Summand;
 
 template <typename T>
 using B = typename Summand<T>::Births;
@@ -328,5 +328,5 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(summand_serialization, T, list_of_tested_variants)
   BOOST_CHECK_EQUAL(serSize, c_ptr - buffer);
   BOOST_CHECK(sum == copy);
 
-  delete [] buffer;
+  delete[] buffer;
 }
