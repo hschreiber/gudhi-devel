@@ -8,8 +8,10 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
+#include <array>
 #include <initializer_list>
 #include <utility>
+#include <vector>
 
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE "multi_persistence"
@@ -38,7 +40,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
   using FC = typename Complex::Filtration_value_container;
   using BC = typename Complex::Boundary_container;
   using DC = typename Complex::Dimension_container;
-  using ini = std::initializer_list<typename Fil::value_type>;
+  using T = typename Fil::value_type;
+  using ini = std::initializer_list<T>;
 
   Multi_parameter_filtered_complex<Fil, I, D> emptyC;
   BOOST_CHECK_EQUAL(emptyC.get_number_of_cycle_generators(), 0);
@@ -86,6 +89,46 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
   // BOOST_CHECK_EQUAL(moveC.get_dimension(3), 0);
   // BOOST_CHECK_EQUAL(moveC.get_dimension(4), 1);
   // BOOST_CHECK_EQUAL(moveC.get_dimension(5), 2);
+
+  std::array<std::vector<T>, 6> bc2 = {std::vector<T>{},     std::vector<T>{},     std::vector<T>{},
+                                       std::vector<T>{0, 1}, std::vector<T>{0, 2}, std::vector<T>{3, 4}};
+  std::vector<std::vector<T>> fc20 = {{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, {3, 4, 5}, {3, 4, 5}, {6, 7, 8}};
+  std::vector<std::vector<std::vector<T>>> fc21 = {{{0, 1, 2}, {1, 2, 3}},
+                                                   {{0, 1, 2}, {0, 3, 1}},
+                                                   {{0, 1, 2}},
+                                                   {{3, 4, 5}, {1, 5, 2}},
+                                                   {{3, 4, 5}, {1, 5, 2}, {4, 1, 9}},
+                                                   {{6, 7, 8}, {5, 6, 7}}};
+
+  Multi_parameter_filtered_complex<Fil, I, D> any1(bc2, ini{0, 0, 0, 1, 1, 2}, fc20);
+  BOOST_CHECK_EQUAL(any1.get_number_of_cycle_generators(), 6);
+  BOOST_CHECK_EQUAL(any1.get_number_of_parameters(), 3);
+  BOOST_CHECK(any1.is_ordered_by_dimension());
+  BOOST_CHECK_EQUAL(any1.get_filtration_values().size(), 6);
+  BOOST_CHECK_EQUAL(any1.get_filtration_values()[0].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any1.get_filtration_values()[1].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any1.get_filtration_values()[2].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any1.get_filtration_values()[3].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any1.get_filtration_values()[4].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any1.get_filtration_values()[5].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any1.get_dimensions().size(), 6);
+  BOOST_CHECK_EQUAL(any1.get_boundaries().size(), 6);
+  BOOST_CHECK_EQUAL(any1.get_max_dimension(), 2);
+
+  Multi_parameter_filtered_complex<Fil, I, D> any2(bc2, ini{0, 0, 0, 1, 1, 2}, fc21);
+  BOOST_CHECK_EQUAL(any2.get_number_of_cycle_generators(), 6);
+  BOOST_CHECK_EQUAL(any2.get_number_of_parameters(), 3);
+  BOOST_CHECK(any2.is_ordered_by_dimension());
+  BOOST_CHECK_EQUAL(any2.get_filtration_values().size(), 6);
+  BOOST_CHECK_EQUAL(any2.get_filtration_values()[0].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any2.get_filtration_values()[1].num_generators(), 2);
+  BOOST_CHECK_EQUAL(any2.get_filtration_values()[2].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any2.get_filtration_values()[3].num_generators(), 2);
+  BOOST_CHECK_EQUAL(any2.get_filtration_values()[4].num_generators(), 3);
+  BOOST_CHECK_EQUAL(any2.get_filtration_values()[5].num_generators(), 1);
+  BOOST_CHECK_EQUAL(any2.get_dimensions().size(), 6);
+  BOOST_CHECK_EQUAL(any2.get_boundaries().size(), 6);
+  BOOST_CHECK_EQUAL(any2.get_max_dimension(), 2);
 
   Multi_parameter_filtered_complex<Multi_parameter_filtration<long int>, I, D> copyCC(copyC);
   BOOST_CHECK_EQUAL(copyCC.get_number_of_cycle_generators(), 6);

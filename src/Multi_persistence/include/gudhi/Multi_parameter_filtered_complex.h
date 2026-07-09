@@ -18,11 +18,13 @@
 #ifndef MP_FILTERED_COMPLEX_H_INCLUDED
 #define MP_FILTERED_COMPLEX_H_INCLUDED
 
+#include <cstddef>
 #include <cstdint>  //std::uint32_t
 #include <algorithm>
 #include <numeric>
 #include <ostream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -62,6 +64,8 @@ class Multi_parameter_filtered_complex
   using Dimension = D;                                /**< Dimension type. */
   using Dimension_container = std::vector<Dimension>; /**< Dimension container type. */
 
+  static constexpr Dimension nullDimension = -1;      /**< Dimension default null value. */
+
   /**
    * @brief Default constructor. Constructs an empty complex.
    */
@@ -85,7 +89,7 @@ class Multi_parameter_filtered_complex
       : boundaries_(boundaries),
         dimensions_(dimensions),
         filtrationValues_(filtrationValues),
-        maxDimension_(-1),
+        maxDimension_(nullDimension),
         isOrderedByDimension_(false)
   {
     _initialize_dimension_utils();
@@ -109,9 +113,79 @@ class Multi_parameter_filtered_complex
       : boundaries_(std::move(boundaries)),
         dimensions_(std::move(dimensions)),
         filtrationValues_(std::move(filtrationValues)),
-        maxDimension_(0),
+        maxDimension_(nullDimension),
         isOrderedByDimension_(false)
   {
+    _initialize_dimension_utils();
+  }
+
+  /**
+   * @brief Constructs the complex from the given containers.
+   * 
+   * @tparam BoundaryRange Boundary range with a size() and operator[] method. The boundary returned by operator[]
+   * has to have a begin() and end() method returning `LegacyForwardIterator` iterators dereferencing into a type
+   * convertible into @ref MultiFiltrationValue::value_type.
+   * @tparam DimensionRange Dimension range with a begin() and end() method returning `LegacyForwardIterator` iterators
+   * dereferencing into a type convertible into `D`.
+   * @tparam FiltrationRange Filtration value range with a size(), begin(), end() and operator[] method: the value
+   * returned can either be a range of a type convertible into @ref MultiFiltrationValue::value_type, or a range of
+   * ranges of a type convertible into @ref MultiFiltrationValue::value_type. The middle range also have to have the
+   * same methods than the outer range. The very inner range, if existing, has to have a begin() and end() method.
+   * @param boundaries Container of boundaries. A boundary has to be described by the indices of its faces in this
+   * container. E.g., if a vertex \f$ v \f$ is stored at index \f$ i \f$ and another vertex at index \f$ j \f$, then
+   * `boundaries[i]` and `boundaries[j]` are both empty and if the edge \f$ (v,u) \f$ is at index \f$ k \f$, then
+   * `boundaries[k]` is equal to `{i, j}`. All boundaries are expected to be ordered by increasing index value.
+   * @param dimensions Dimension container. The value at index \f$ i \f$ has to correspond to the dimension of the
+   * cell at index \f$ i \f$ in `boundaries`.
+   * @param filtrationValues Filtration value container. The value at index \f$ i \f$ has to correspond to the
+   * filtration value of the cell at index \f$ i \f$ in `boundaries`.
+   */
+  template <class BoundaryRange, class DimensionRange, class FiltrationRange>
+  Multi_parameter_filtered_complex(const BoundaryRange& boundaries, const DimensionRange& dimensions,
+                                   const FiltrationRange& filtrationValues)
+      : boundaries_(boundaries.size()),
+        dimensions_(dimensions.begin(), dimensions.end()),
+        filtrationValues_(),
+        maxDimension_(nullDimension),
+        isOrderedByDimension_(false)
+  {
+    GUDHI_CHECK(boundaries.size() == dimensions.size(),
+                std::invalid_argument("There should be as many boundaries as dimensions."));
+    GUDHI_CHECK(boundaries.size() == filtrationValues.size(),
+                std::invalid_argument("There should be as many boundaries as filtration values."));
+
+    for (std::size_t i = 0; i < boundaries.size(); ++i) {
+      const auto& b = boundaries[i];
+      boundaries_[i] = Boundary(b.begin(), b.end());
+    }
+    if (filtrationValues.size() != 0) {
+      int numParam = 0;
+      const auto& fil = filtrationValues[0];
+      if (fil.size() != 0) {
+        if constexpr (std::is_arithmetic_v<std::remove_reference_t<decltype(fil[0])> >) {
+          // 1-critical
+          numParam = fil.size();
+          filtrationValues_.reserve(filtrationValues.size());
+          for (const auto& f : filtrationValues) {
+            filtrationValues_.push_back({f.begin(), f.end()});
+          }
+        } else {
+          // k-critical: assuming fil[0] is a range of same sized ranges
+          if (fil[0].size() != 0) {
+            numParam = fil[0].size();
+          }
+          filtrationValues_ = Filtration_value_container(filtrationValues.size(), Filtration_value::inf(numParam));
+          for (std::size_t i = 0; i < filtrationValues.size(); ++i) {
+            const auto& f = filtrationValues[i];
+            for (const auto& g : f) {
+              // TODO: or add_guaranteed_generator?
+              filtrationValues_[i].add_generator(g.begin(), g.end());
+            }
+          }
+        }
+      }
+    }
+
     _initialize_dimension_utils();
   }
 
@@ -307,7 +381,7 @@ class Multi_parameter_filtered_complex
     boundaries_.resize(i);
     dimensions_.resize(i);
     filtrationValues_.resize(i);
-    maxDimension_ = dimensions_.empty() ? -1 : dimensions_.back();
+    maxDimension_ = dimensions_.empty() ? nullDimension : dimensions_.back();
     return i;
   }
 

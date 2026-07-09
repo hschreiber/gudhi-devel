@@ -139,7 +139,7 @@ void test_slicer_batch_persistence(Slicer& s)
   using Index = typename Slicer::Index;
   T inf = std::numeric_limits<T>::infinity();
 
-  auto barcodes = persistence_on_slices<Slicer, T>(s, {{0, 1, 1}, {2, 4, 2}, {2, 1, 0}}, {}, false);
+  auto barcodes = persistence_on_slices<T>(s, {{0, 1, 1}, {2, 4, 2}, {2, 1, 0}}, {}, false);
   std::vector<Test_multi_dimensional_barcode> orderedBarcodes(barcodes.size());
   Index i = 0;
   for (const auto& dgm : barcodes) {
@@ -180,7 +180,7 @@ void test_slicer_batch_persistence(Slicer& s)
   BOOST_CHECK_EQUAL(orderedBarcodes[2][2].size(), 0);
 
   barcodes =
-      persistence_on_slices<Slicer, T>(s, {{0, 1, 1}, {2, 4, 2}, {2, 1, 0}}, {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}}, false);
+      persistence_on_slices<T>(s, {{0, 1, 1}, {2, 4, 2}, {2, 1, 0}}, {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}}, false);
   std::vector<Test_multi_dimensional_barcode> orderedBarcodes2(barcodes.size());
   i = 0;
   for (const auto& dgm : barcodes) {
@@ -189,17 +189,6 @@ void test_slicer_batch_persistence(Slicer& s)
   }
 
   BOOST_CHECK(orderedBarcodes == orderedBarcodes2);
-
-  std::vector<T> slices = {1, 1, 2, 3, 4, 6, 6, 7, 7, 0, -1, 1, 1, 3, 4, 4, 6, 6, 2, 1, 3, 3, 5, 5, 6, 8, 8};
-  barcodes = persistence_on_slices(s, slices.data(), 3, false);
-  std::vector<Test_multi_dimensional_barcode> orderedBarcodes3(barcodes.size());
-  i = 0;
-  for (const auto& dgm : barcodes) {
-    orderedBarcodes3[i] = get_barcode(dgm);
-    ++i;
-  }
-
-  BOOST_CHECK(orderedBarcodes == orderedBarcodes3);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_batch_persistence, Slicer, list_of_tested_slicer_variants)

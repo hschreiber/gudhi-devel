@@ -662,6 +662,11 @@ class Slicer
     return stream;
   }
 
+  /**
+   * @brief Equality operator. Tests only equality of the underlying complexes.
+   */
+  friend bool operator==(const Slicer& a, const Slicer& b) { return a.complex_ == b.complex_; }
+
  protected:
   friend Thread_safe;  // Thread_safe will use the "_*" methods below instead of "*".
 

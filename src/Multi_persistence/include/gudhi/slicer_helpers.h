@@ -689,11 +689,14 @@ persistence_on_slices_(Slicer& slicer, F&& ini_slicer, unsigned int size, [[mayb
  * a point on the line and the second element a vector giving the positive direction of the line. The direction
  * container can be empty: then the slope is assumed to be 1.
  *
- * @tparam Slicer Either @ref Slicer or @ref Thread_safe_slicer class with any valid template combination.
- * @tparam T Type of a coordinate element.
- * @tparam U Type of filtration values in the output barcode. Default value: T.
+ * @tparam U Type of filtration values in the output barcode.
  * @tparam idx If true, the complex indices instead of the actual filtration values are used for the bars. It is
  * recommended to use an integer type for `U` in that case. Default value: false.
+ * @tparam Slicer Either @ref Slicer or @ref Thread_safe_slicer class with any valid template combination.
+ * @tparam PointRange Range with size() and operator[] method. The operator[] method must return a
+ * type with the same methods and an arithmetic value type. Default: std::vector<std::vector<int>>.
+ * @tparam DirectionRange Range with size() and operator[] method. The operator[] method must return a
+ * type with the same methods and an arithmetic value type. Default: std::vector<std::vector<int>>.
  * @param slicer Slicer from which to compute persistence.
  * @param basePoints Vector of base points for the lines. The dimension of a point has to correspond to the number
  * of parameters in the slicer.
@@ -703,28 +706,28 @@ persistence_on_slices_(Slicer& slicer, F&& ini_slicer, unsigned int size, [[mayb
  * potentially in less storage use and better performance. But the parameter will be ignored if
  * PersistenceAlgorithm::is_vine is true. Default value: false.
  */
-template <class Slicer, class T, class U = T, bool idx = false>
+template <class U, bool idx = false, class Slicer, class PointRange = std::vector<std::vector<int> >,
+          class DirectionRange = std::vector<std::vector<int> > >
 inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> persistence_on_slices(
-    Slicer& slicer,
-    const std::vector<std::vector<T>>& basePoints,
-    const std::vector<std::vector<T>>& directions,
-    bool ignoreInf = false)
-{
-  GUDHI_CHECK(directions.empty() || directions.size() == basePoints.size(),
+    Slicer& slicer, const PointRange& basePoints, const DirectionRange& directions, bool ignoreInf = false) {
+  if (basePoints.size() == 0) return {};
+
+  GUDHI_CHECK(directions.size() == 0 || directions.size() == basePoints.size(),
               "There should be as many directions than base points.");
-  GUDHI_CHECK(basePoints.empty() || basePoints[0].size() == slicer.get_number_of_parameters(),
+  GUDHI_CHECK(basePoints[0].size() == slicer.get_number_of_parameters(),
               "There should be as many directions than base points.");
 
-  std::vector<T> dummy;
-  auto get_direction = [&](std::size_t i) -> const std::vector<T>& {
-    return directions.empty() ? dummy : directions[i];
-  };
+  using T = std::decay_t<decltype(basePoints[0][0])>;
 
   return persistence_on_slices_<idx, U>(
       slicer,
-      [&](auto& s, std::size_t i) { s.push_to(Line<T>(basePoints[i], get_direction(i))); },
-      basePoints.size(),
-      ignoreInf);
+      [&](auto& s, std::size_t i) {
+        if (directions.size() == 0)
+          s.push_to(Line<T>(basePoints[i]));
+        else
+          s.push_to(Line<T>(basePoints[i], directions[i]));
+      },
+      basePoints.size(), ignoreInf);
 }
 
 /**
@@ -732,62 +735,28 @@ inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> 
  *
  * @brief Returns the barcodes of all the given slices.
  *
- * @tparam Slicer Either @ref Slicer or @ref Thread_safe_slicer class with any valid template combination.
- * @tparam T Type of a slice element.
- * @tparam U Type of filtration values in the output barcode. Default value: T.
+ * @tparam U Type of filtration values in the output barcode.
  * @tparam idx If true, the complex indices instead of the actual filtration values are used for the bars. It is
  * recommended to use an integer type for `U` in that case. Default value: false.
+ * @tparam Slicer Either @ref Slicer or @ref Thread_safe_slicer class with any valid template combination.
+ * @tparam SliceRange Range with size() and operator[] method. The operator[] method must return a
+ * type with the same methods and a value type convertible to @ref Slicer::value_type.
+ * Default: std::vector<std::vector<int>>.
  * @param slicer Slicer from which to compute persistence.
  * @param slices Vector of slices. A slice has to has as many elements than cells in the slicer.
  * @param ignoreInf If true, all cells at infinity filtration values are ignored when computing, resulting
  * potentially in less storage use and better performance. But the parameter will be ignored if
  * PersistenceAlgorithm::is_vine is true. Default value: false.
  */
-template <class Slicer, class T, class U = T, bool idx = false>
-inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>>
-persistence_on_slices(Slicer& slicer, const std::vector<std::vector<T>>& slices, bool ignoreInf = false)
+template <class U, bool idx = false, class Slicer, class SliceRange = std::vector<std::vector<int> > >
+inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> persistence_on_slices(
+    Slicer& slicer, const SliceRange& slices, bool ignoreInf = false)
 {
-  GUDHI_CHECK(slices.empty() || slices[0].size() == slicer.get_number_of_cycle_generators(),
+  GUDHI_CHECK(slices.size() == 0 || slices[0].size() == slicer.get_number_of_cycle_generators(),
               "There should be as many elements in a slice than cells in the slicer.");
 
   return persistence_on_slices_<idx, U>(
       slicer, [&](auto& s, std::size_t i) { s.set_slice(slices[i]); }, slices.size(), ignoreInf);
-}
-
-// Mostly for python
-/**
- * @ingroup multi_persistence
- *
- * @brief Returns the barcodes of all the given slices.
- *
- * @tparam Slicer Either @ref Slicer or @ref Thread_safe_slicer class with any valid template combination.
- * @tparam T Type of a slice element.
- * @tparam U Type of filtration values in the output barcode. Default value: T.
- * @tparam idx If true, the complex indices instead of the actual filtration values are used for the bars. It is
- * recommended to use an integer type for `U` in that case. Default value: false.
- * @param slicer Slicer from which to compute persistence.
- * @param slices Pointer to the begining of slices continuously aligned after another in the memory.
- * @param numberOfSlices Number of slices represented by the pointer.
- * @param ignoreInf If true, all cells at infinity filtration values are ignored when computing, resulting
- * potentially in less storage use and better performance. But the parameter will be ignored if
- * PersistenceAlgorithm::is_vine is true. Default value: false.
- */
-template <class Slicer, class T, class U = T, bool idx = false, class = std::enable_if_t<std::is_arithmetic_v<T>>>
-inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>>
-persistence_on_slices(Slicer& slicer, T* slices, unsigned int numberOfSlices, bool ignoreInf = false)
-{
-  auto num_gen = slicer.get_number_of_cycle_generators();
-  auto view = Gudhi::Simple_mdspan(slices, numberOfSlices, num_gen);
-
-  return persistence_on_slices_<idx, U>(
-      slicer,
-      [&](auto& s, std::size_t i) {
-        T* start = &view(i, 0);
-        auto r = boost::iterator_range<T*>(start, start + num_gen);
-        s.set_slice(r);
-      },
-      numberOfSlices,
-      ignoreInf);
 }
 
 }  // namespace multi_persistence
