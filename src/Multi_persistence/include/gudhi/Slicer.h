@@ -391,6 +391,8 @@ class Slicer {
     complex_.coarsen_on_grid(grid, coordinate);
   }
 
+  void make_filtration_non_decreasing() { complex_.make_filtration_non_decreasing(); }
+
   // PERSISTENCE
 
   /**

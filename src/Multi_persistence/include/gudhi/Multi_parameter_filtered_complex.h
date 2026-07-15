@@ -399,6 +399,25 @@ class Multi_parameter_filtered_complex {
 #endif
   }
 
+  void make_filtration_non_decreasing() {
+    auto order = [&]() -> bool {
+      bool modified = false;
+      for (std::size_t i = 1; i < boundaries_.size(); ++i) {
+        for (auto b : boundaries_[i]) {
+          modified |= intersect_lifetimes(filtrationValues_[i], filtrationValues_[b]);
+        }
+      }
+      return modified;
+    };
+
+    if (isOrderedByDimension_) {
+      order();
+      return;
+    }
+
+    while (order());  // should always stop
+  }
+
   /**
    * @brief Builds a new complex by reordering the cells in the given complex with the given permutation map.
    */

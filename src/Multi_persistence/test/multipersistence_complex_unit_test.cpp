@@ -247,6 +247,34 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_other, Fil, list_of_tested_variants)
   BOOST_CHECK(cpx.get_filtration_values() == fc);
   BOOST_CHECK_EQUAL(cpx.get_max_dimension(), 1);
   BOOST_CHECK_EQUAL(idx, 5);
+
+  BC bc2 = {{}, {}, {}, {0, 1}, {1, 2}, {3, 4}, {5}};
+  DC dc2 = {0, 0, 0, 1, 1, 2, 3};
+  FC fc2 = {ini{0, 2, 1}, ini{0, 1, 2}, ini{3, 4, 5}, ini{0, 2, 0}, ini{1, 2, 4}, ini{3, 4, 3}, ini{6, 4, 2}};
+
+  Multi_parameter_filtered_complex<Fil, I, D> cpxIncr(bc2, dc2, fc2);
+  cpxIncr.make_filtration_non_decreasing();
+
+  fc2 = {ini{0, 2, 1}, ini{0, 1, 2}, ini{3, 4, 5}, ini{0, 2, 2}, ini{3, 4, 5}, ini{3, 4, 5}, ini{6, 4, 5}};
+
+  BOOST_CHECK(cpxIncr.is_ordered_by_dimension());
+  BOOST_CHECK(cpxIncr.get_boundaries() == bc2);
+  BOOST_CHECK(cpxIncr.get_dimensions() == dc2);
+  BOOST_CHECK(cpxIncr.get_filtration_values() == fc2);
+
+  bc2 = {{}, {0, 2}, {}, {}, {5}, {1, 6}, {2, 3}};
+  dc2 = {0, 1, 0, 0, 3, 2, 2};
+  fc2 = {ini{0, 2, 1}, ini{0, 2, 0}, ini{0, 1, 2}, ini{3, 4, 5}, ini{6, 4, 2}, ini{3, 4, 3}, ini{1, 2, 4}};
+
+  Multi_parameter_filtered_complex<Fil, I, D> cpxIncr2(bc2, dc2, fc2);
+  cpxIncr2.make_filtration_non_decreasing();
+
+  fc2 = {ini{0, 2, 1}, ini{0, 2, 2}, ini{0, 1, 2}, ini{3, 4, 5}, ini{6, 4, 5}, ini{3, 4, 5}, ini{3, 4, 5}};
+
+  BOOST_CHECK(!cpxIncr2.is_ordered_by_dimension());
+  BOOST_CHECK(cpxIncr2.get_boundaries() == bc2);
+  BOOST_CHECK(cpxIncr2.get_dimensions() == dc2);
+  BOOST_CHECK(cpxIncr2.get_filtration_values() == fc2);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_friend, Fil, list_of_tested_variants) {
