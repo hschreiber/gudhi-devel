@@ -8,9 +8,8 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
-#include <array>
-#include <cstddef>
-#include <vector>
+#include <cstdint>
+#include <initializer_list>
 
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE "multi_persistence"
@@ -118,20 +117,4 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(mma, Slicer_t, list_of_tested_variants) {
   BOOST_CHECK(mod.get_summand(2) == s13);
   BOOST_CHECK(mod.get_summand(3) == s14);
   BOOST_CHECK(mod.get_summand(4) == s15);
-
-  // S s16({0, 2, 1, 1.1, 1, 3}, {5, 8, 8}, numParam, 0);
-  // S s17({0, 2.1, 2, 2.1, 2, 2.1}, {3, 8, 8, 5, 8, 3}, numParam, 0);
-  // S s18({0, 2.1, 3, 2.1, 2, 3.2}, {3, 8, 8, 5, 4, 8, 5, 8, 5}, numParam, 0);
-  // S s19({6.1, 6, 8}, {5, 7, 8}, numParam, 0);
-  // S s20({6, 4, 5}, {5, 5, 8, 5, 8, 6}, numParam, 1);
-
-  // mod = multiparameter_module_approximation(slicer, 0.1, {0, 1, 0}, {5, 8, 8}, {}, true, true);
-  // std::cout << mod << "\n";
-  // BOOST_CHECK_EQUAL(mod.get_number_of_parameters(), numParam);
-  // BOOST_CHECK_EQUAL(mod.size(), 5);
-  // BOOST_CHECK(mod.get_summand(0) == s16);
-  // BOOST_CHECK(mod.get_summand(1) == s17);
-  // BOOST_CHECK(mod.get_summand(2) == s18);
-  // BOOST_CHECK(mod.get_summand(3) == s19);
-  // BOOST_CHECK(mod.get_summand(4) == s20);
 }
