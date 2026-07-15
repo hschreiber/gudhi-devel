@@ -504,6 +504,17 @@ class Multi_parameter_filtered_complex {
   }
 
   /**
+   * @brief Equality operator.
+   */
+  friend bool operator==(const Multi_parameter_filtered_complex& a, const Multi_parameter_filtered_complex& b) {
+    if (&a == &b) return true;
+    if (a.maxDimension_ != b.maxDimension_) return false;
+    // TODO: test up to permutation instead ?
+    return a.isOrderedByDimension_ == b.isOrderedByDimension_ && a.boundaries_ == b.boundaries_ &&
+           a.dimensions_ == b.dimensions_ && a.filtrationValues_ == b.filtrationValues_;
+  }
+
+  /**
    * @brief Outstream operator.
    */
   friend std::ostream& operator<<(std::ostream& stream, const Multi_parameter_filtered_complex& complex) {
