@@ -351,25 +351,32 @@ class Vineyard_base {
    * @param dim If given (with a positive integer), only returns the cycles of this dimension. By default, returns all
    * cycles in all dimension.
    */
-  auto get_all_current_representative_cycles(bool update = true, Dimension dim = nullDimension) {
+  std::vector<Cycle> get_all_current_representative_cycles(bool update = true, Dimension dim = nullDimension) {
     static_assert(Matrix_options::can_retrieve_representative_cycles,
                   "Underlying matrix has to support representative cycles.");
 
     if (update) matrix_.update_all_representative_cycles(dim);
     const auto& cycles = matrix_.get_all_representative_cycles();
-    return boost::adaptors::transform(cycles, [&](const Cycle& cycle) -> Cycle {
-      Cycle c(cycle.size());
-      for (Index i = 0; i < cycle.size(); ++i) {
-        if constexpr (Matrix_options::is_of_boundary_type) {
-          // works for RU because id == pos, but does not work for chain with vine
-          // we need a id to pos map in that case
-          c[i] = order_[cycle[i]];
-        } else {
-          c[i] = order_[(*idToPos_)[cycle[i]]];
-        }
+    std::vector<Cycle> out;
+    if (dim == nullDimension) out.reserve(cycles.size());
+    // if update is false, there could be more than the right cycles in `cycles`
+    for (const auto& c : cycles) {
+      // c should never be empty
+      if (dim == nullDimension || matrix_.get_column_dimension(c[0]) == dim) {
+        out.emplace_back();
+        out.back().reserve(c.size());
+        std::transform(c.begin(), c.end(), std::back_inserter(out.back()), [&](Index i) {
+          if constexpr (Matrix_options::is_of_boundary_type) {
+            // works for RU because id == pos, but does not work for chain with vine
+            // we need a id to pos map in that case
+            return order_[i];
+          } else {
+            return order_[(*idToPos_)[i]];
+          }
+        });
       }
-      return c;
-    });
+    }
+    return out;
   }
 
   /**
