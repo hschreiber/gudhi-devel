@@ -611,9 +611,48 @@ void test_slicer_rep_cycles(Slicer& s) {
 
   BOOST_CHECK_EQUAL(cycles[2].size(), 0);
 
+  std::vector<Cycle> cyclesDim = s.get_representative_cycles_in_dim(0, false);
+
+  BOOST_CHECK_EQUAL(cyclesDim.size(), 5);
+  BOOST_CHECK(cyclesDim[0] == Cycle({0}));
+  BOOST_CHECK(cyclesDim[1] == Cycle({0, 1}));
+  BOOST_CHECK(cyclesDim[2] == Cycle({0, 2}));
+  BOOST_CHECK(cyclesDim[3] == Cycle({0, 3}));
+  BOOST_CHECK(cyclesDim[4] == Cycle({0, 4}));
+
+  cyclesDim = s.get_representative_cycles_in_dim(1, false);
+
+  BOOST_CHECK_EQUAL(cyclesDim.size(), 3);
+  BOOST_CHECK(cyclesDim[0] == Cycle({5, 6, 7}));
+  BOOST_CHECK(cyclesDim[1] == Cycle({8, 9, 10}));
+  BOOST_CHECK(cyclesDim[2] == Cycle({6, 9, 11}));
+
+  cyclesDim = s.get_representative_cycles_in_dim(2, false);
+
+  BOOST_CHECK_EQUAL(cyclesDim.size(), 0);
+
   BOOST_CHECK((s.get_most_persistent_cycle(0, false) == Cycle({0})));
   BOOST_CHECK((s.get_most_persistent_cycle(1, false) == Cycle({6, 9, 11})));
   BOOST_CHECK((s.get_most_persistent_cycle(2, false) == Cycle()));
+
+  BOOST_CHECK((s.get_n_most_persistent_cycles(0, 1, false)[0] == Cycle({0})));
+  BOOST_CHECK((s.get_n_most_persistent_cycles(1, 1, false)[0] == Cycle({6, 9, 11})));
+  BOOST_CHECK((s.get_n_most_persistent_cycles(2, 1, false).empty()));
+
+  std::vector<Cycle> persCycles = s.get_n_most_persistent_cycles(0, 3, false);
+  BOOST_CHECK_EQUAL(persCycles.size(), 3);
+  BOOST_CHECK(persCycles[0] == Cycle({0}));
+  BOOST_CHECK(persCycles[1] == Cycle({0, 3}) || persCycles[1] == Cycle({0, 2}));  // same length
+  BOOST_CHECK((persCycles[2] == Cycle({0, 2}) || persCycles[2] == Cycle({0, 3})) && persCycles[2] != persCycles[1]);
+
+  persCycles = s.get_n_most_persistent_cycles(1, 3, false);
+  BOOST_CHECK_EQUAL(persCycles.size(), 3);
+  BOOST_CHECK(persCycles[0] == Cycle({6, 9, 11}));
+  BOOST_CHECK(persCycles[1] == Cycle({5, 6, 7}));
+  BOOST_CHECK(persCycles[2] == Cycle({8, 9, 10}));
+
+  persCycles = s.get_n_most_persistent_cycles(2, 3, false);
+  BOOST_CHECK_EQUAL(persCycles.size(), 0);
 }
 
 template <class Slicer>
@@ -626,6 +665,25 @@ void test_slicer_rep_cycles2(Slicer& s) {
   BOOST_CHECK((s.get_most_persistent_cycle(0, true) == Cycle({0})));
   BOOST_CHECK((s.get_most_persistent_cycle(1, true) == Cycle({5, 6, 7})));
   BOOST_CHECK((s.get_most_persistent_cycle(2, true) == Cycle()));
+
+  BOOST_CHECK((s.get_n_most_persistent_cycles(0, 1, false)[0] == Cycle({0})));
+  BOOST_CHECK((s.get_n_most_persistent_cycles(1, 1, false)[0] == Cycle({5, 6, 7})));
+  BOOST_CHECK((s.get_n_most_persistent_cycles(2, 1, false).empty()));
+
+  std::vector<Cycle> persCycles = s.get_n_most_persistent_cycles(0, 3, true);
+  BOOST_CHECK_EQUAL(persCycles.size(), 3);
+  BOOST_CHECK(persCycles[0] == Cycle({0}));
+  BOOST_CHECK(persCycles[1] == Cycle({0, 3}) || persCycles[1] == Cycle({0, 2}));  // same length
+  BOOST_CHECK((persCycles[2] == Cycle({0, 2}) || persCycles[2] == Cycle({0, 3})) && persCycles[2] != persCycles[1]);
+
+  persCycles = s.get_n_most_persistent_cycles(1, 3, true);
+  BOOST_CHECK_EQUAL(persCycles.size(), 3);
+  BOOST_CHECK(persCycles[0] == Cycle({5, 6, 7}));
+  BOOST_CHECK(persCycles[1] == Cycle({8, 9, 10}));
+  BOOST_CHECK(persCycles[2] == Cycle({6, 9, 11}));
+
+  persCycles = s.get_n_most_persistent_cycles(2, 3, true);
+  BOOST_CHECK_EQUAL(persCycles.size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_rep_cycles, Slicer, list_of_tested_variants2) {

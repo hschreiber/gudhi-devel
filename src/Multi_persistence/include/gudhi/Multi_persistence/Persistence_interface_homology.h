@@ -136,19 +136,26 @@ class Persistence_interface_homology {
     });
   }
 
-  auto get_all_representative_cycles(bool update = true, Dimension dim = nullDimension) {
+  std::vector<Cycle> get_all_representative_cycles(bool update = true, Dimension dim = nullDimension) {
     static_assert(has_rep_cycles, "`get_all_representative_cycles` is not enabled with the given options.");
     GUDHI_CHECK(is_initialized(), std::logic_error("Representative cycles can not be computed uninitialized."));
 
     if (update) matrix_.update_all_representative_cycles(dim);
     const auto& cycles = matrix_.get_all_representative_cycles();
-    return boost::adaptors::transform(cycles, [&](const Cycle& cycle) -> Cycle {
-      Cycle c(cycle.size());
-      for (Index i = 0; i < cycle.size(); ++i) {
-        c[i] = order_[cycle[i]];
+    std::vector<Cycle> out;
+    if (dim == nullDimension) out.reserve(cycles.size());
+    // if update is false, there could be more than the right cycles in `cycles`
+    for (const auto& c : cycles) {
+      // c should never be empty
+      if (dim == nullDimension || matrix_.get_column_dimension(c[0]) == dim) {
+        out.emplace_back();
+        out.back().reserve(c.size());
+        std::transform(c.begin(), c.end(), std::back_inserter(out.back()), [&](Index i) {
+          return order_[i];
+        });
       }
-      return c;
-    });
+    }
+    return out;
   }
 
   auto get_representative_cycle(Index barcodeIndex, bool update = true) {

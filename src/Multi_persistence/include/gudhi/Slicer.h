@@ -18,6 +18,7 @@
 #ifndef MP_SLICER_H_INCLUDED
 #define MP_SLICER_H_INCLUDED
 
+#include <algorithm>
 #include <array>
 #include <initializer_list>
 #include <limits>
@@ -382,12 +383,16 @@ class Slicer {
    * An index \f$ i \f$ of the grid corresponds to the same parameter as the index \f$ i \f$ in a generator of the
    * filtration value. The internal vectors correspond to the possible values of the parameters, ordered by increasing
    * value, forming therefore all together a 2D grid.
-   *
-   * @param grid Vector of vector with size at least number of filtration parameters.
+   * 
+   * @tparam OneDimArray A range of values \f$ U \f$ convertible into `T`. Has to implement
+   * a begin, end and operator[] method and a `value_type` definition equal to \f$ U \f$.
+   * @param grid Vector of @p OneDimArray with size at least number of filtration parameters. Each array has to be
+   * ordered by increasing value.
    * @param coordinate If true, the values are set to the coordinates of the projection in the grid. If false,
    * the values are set to the values at the coordinates of the projection. Default value: true.
    */
-  void coarsen_on_grid(const std::vector<std::vector<T>>& grid, bool coordinate = true) {
+  template <typename OneDimArray>
+  void coarsen_on_grid(const std::vector<OneDimArray>& grid, bool coordinate = true) {
     complex_.coarsen_on_grid(grid, coordinate);
   }
 
@@ -479,18 +484,70 @@ class Slicer {
    * @brief Returns the representative cycles of the current slice. All cycles of dimension \f$ d \f$ are stored at
    * index \f$ d \f$ of the returned vector. A cycle is represented by a vector of boundary indices. That is, the index
    * \f$ i \f$ in a cycle represents the cell which boundary can be retrieved by @ref get_boundary "get_boundary(i)".
+   * The cycles are stored in the same order than the bars are in the multi-dimensional barcode.
    *
    * Only available if PersistenceAlgorithm::has_rep_cycles is true.
    *
    * @pre @ref initialize_persistence_computation has to be called at least once before.
    *
    * @param update If true, updates the stored representative cycles, otherwise just returns the container in its
-   * current state. So should be true at least the first time the method is used.
+   * current state. So should be true at least the first time the method is used. Default: true.
    */
   std::vector<std::vector<Cycle>> get_representative_cycles(bool update = true) {
     return _get_representative_cycles(complex_, update);
   }
 
+  /**
+   * @brief Returns the representative cycles of given dimension of the current slice. A cycle is represented by a
+   * vector of boundary indices. That is, the index \f$ i \f$ in a cycle represents the cell which boundary can be
+   * retrieved by @ref get_boundary "get_boundary(i)". The cycles are stored in the same order than the bars are in
+   * the multi-dimensional barcode.
+   *
+   * Only available if PersistenceAlgorithm::has_rep_cycles is true.
+   *
+   * @pre @ref initialize_persistence_computation has to be called at least once before.
+   * 
+   * @param dimension Dimension of the cycles.
+   * @param update If true, updates the stored representative cycles, otherwise just returns the container in its
+   * current state. So should be true at least the first time the method is used. Default: true.
+   */
+  std::vector<Cycle> get_representative_cycles_in_dim(Dimension dimension, bool update = true) {
+    static_assert(Persistence::has_rep_cycles,
+                  "Representative cycles not enabled by the chosen PersistenceAlgorithm class.");
+
+    GUDHI_CHECK(dimension >= 0, std::invalid_argument("Given dimension is not valid."));
+
+    // to trigger global update which is faster with parallelization
+    auto cycleKeys = persistence_.get_all_representative_cycles(update, dimension);
+    std::vector<Cycle> out(cycleKeys.size());
+    Index i = 0;
+    Index curr = 0;
+    // to ensure same order than for barcode by dim
+    for (const auto& bar : persistence_.get_barcode()) {
+      if (bar.dim == dimension) {
+        auto cycle = persistence_.get_representative_cycle(i, false);
+        out[curr].assign(cycle.begin(), cycle.end());
+        ++curr;
+      }
+      ++i;
+    }
+    return out;
+  }
+
+  /**
+   * @brief Returns the longest living representative cycles of the current slice in the given dimension. A cycle is
+   * represented by a vector of boundary indices. That is, the index \f$ i \f$ in a cycle represents the cell which
+   * boundary can be retrieved by @ref get_boundary "get_boundary(i)". If no cycle existed at given dimension, the
+   * returned cycle will be empty.
+   *
+   * Only available if PersistenceAlgorithm::has_rep_cycles is true.
+   *
+   * @pre @ref initialize_persistence_computation has to be called at least once before.
+   * 
+   * @param dim Dimension of the cycle. Default: 1.
+   * @param update If true, updates the representative cycle before returning it, otherwise just returns the cycle
+   * in its current state. So should be true at least the first time the method is used. Default: true.
+   */
   Cycle get_most_persistent_cycle(Dimension dim = 1, bool update = true) {
     static_assert(Persistence::has_rep_cycles,
                   "Representative cycles not enabled by the chosen PersistenceAlgorithm class.");
@@ -524,6 +581,104 @@ class Slicer {
 
     auto cycle = persistence_.get_representative_cycle(maxIndex, update);
     return {cycle.begin(), cycle.end()};
+  }
+
+  /**
+   * @brief Returns the `n` longest living representative cycles of the current slice in the given dimension. A cycle is
+   * represented by a vector of boundary indices. That is, the index \f$ i \f$ in a cycle represents the cell which
+   * boundary can be retrieved by @ref get_boundary "get_boundary(i)". If no cycle existed at given dimension, the
+   * returned container will be empty. The cycles are ordered by bar length in decreasing order.
+   *
+   * Only available if PersistenceAlgorithm::has_rep_cycles is true.
+   *
+   * @pre @ref initialize_persistence_computation has to be called at least once before.
+   * 
+   * @param dim Dimension of the cycle. Default: 1.
+   * @param n Number of cycles to return. If 0, no cycle is returned. If higher than the number of available cycles,
+   * it is set down to this number and all cycles are returned. Default: 1.
+   * @param update If true, updates the representative cycles before returning them, otherwise just returns the cycles
+   * in their current state. So should be true at least the first time the method is used. Default: true.
+   */
+  std::vector<Cycle> get_n_most_persistent_cycles(Dimension dim = 1, Index n = 1, bool update = true) {
+    static_assert(Persistence::has_rep_cycles,
+                  "Representative cycles not enabled by the chosen PersistenceAlgorithm class.");
+
+    if (n < 1) return {};
+    if (n == 1) {
+      auto cycle = get_most_persistent_cycle(dim, update);
+      if (cycle.empty()) return {};
+      return {std::move(cycle)};
+    }
+
+    auto barcodeIndices = persistence_.get_barcode();
+
+    Index numberOfBars = 0;
+    for (const auto& bar : barcodeIndices) {
+      if (bar.dim == dim) {
+        ++numberOfBars;
+      }
+    }
+
+    if (numberOfBars < 1) return {};
+    if (numberOfBars == 1) {
+      Index i = 0;
+      for (const auto& bar : barcodeIndices) {
+        if (bar.dim == dim) {
+          auto cycle = persistence_.get_representative_cycle(i, update);
+          return {cycle.begin(), cycle.end()};
+        }
+        ++i;
+      }
+    }
+
+    n = std::min(n, numberOfBars);
+
+    // max s.t. you can substract from it and differentiate essential cycles
+    const T inf = std::numeric_limits<T>::max();
+#ifdef GUDHI_USE_TBB
+    std::vector<T> lengths(barcodeIndices.size(), std::numeric_limits<T>::lowest());  // negative should be sufficient
+    tbb::parallel_for(static_cast<Index>(0), static_cast<Index>(barcodeIndices.size()), [&](Index i) {
+      const auto& bar = barcodeIndices[i];
+      if (bar.dim == dim) {
+        lengths[i] = std::abs((bar.death == Persistence::nullDeath ? inf : slice_[bar.death]) - slice_[bar.birth]);
+      }
+    });
+#else
+    // Not so clear if numberOfBars is really small enough compared to barcodeIndices.size() to be worth it here
+    std::vector<Index> barcodeIdx(numberOfBars);
+    std::vector<T> lengths(numberOfBars);
+    Index i = 0;
+    Index curr = 0;
+    for (const auto& bar : barcodeIndices) {
+      if (bar.dim == dim) {
+        lengths[curr] = std::abs((bar.death == Persistence::nullDeath ? inf : slice_[bar.death]) - slice_[bar.birth]);
+        barcodeIdx[curr] = i;
+        ++curr;
+      }
+      ++i;
+    }
+#endif
+
+    std::vector<Index> lengthIdx(lengths.size());
+    std::iota(lengthIdx.begin(), lengthIdx.end(), 0);
+    auto cmp = [&lengths](Index a, Index b) { return lengths[a] > lengths[b]; };
+    // puts the n largest elements in front (unordered)
+    std::nth_element(lengthIdx.begin(), lengthIdx.begin() + n, lengthIdx.end(), cmp);
+
+    // to sort cycles. Useful?
+    std::sort(lengthIdx.begin(), lengthIdx.begin() + n, cmp);
+
+    std::vector<Cycle> cycles(n);
+    for (Index i = 0; i < n; ++i) {
+#ifdef GUDHI_USE_TBB
+      // when update is true, this method cannot be parallelized... But n should be relatively small anyway.
+      auto cycle = persistence_.get_representative_cycle(lengthIdx[i], update);
+#else
+      auto cycle = persistence_.get_representative_cycle(barcodeIdx[lengthIdx[i]], update);
+#endif
+      cycles[i] = {cycle.begin(), cycle.end()};
+    }
+    return cycles;
   }
 
   // FRIENDS
@@ -667,14 +822,17 @@ class Slicer {
                   "Representative cycles not enabled by the chosen PersistenceAlgorithm class.");
 
     const auto& dimensions = complex.get_dimensions();
+    // to trigger global update which is faster with parallelization
     auto cycleKeys = persistence_.get_all_representative_cycles(update);
     auto numCycles = cycleKeys.size();
     std::vector<std::vector<Cycle>> out(complex.get_max_dimension() + 1);
     for (auto& cyclesDim : out) cyclesDim.reserve(numCycles);
-    for (const auto& cycle : cycleKeys) {
+    // to ensure same order than for barcode by dim
+    for (Index i = 0; i < numCycles; ++i) {
+      auto cycle = persistence_.get_representative_cycle(i, false);
       GUDHI_CHECK(!cycle.empty(), std::runtime_error("A cycle should not be empty..."));
       // assumes cycle to be never empty & all faces have same dimension
-      out[dimensions[cycle[0]]].push_back(cycle);
+      out[dimensions[cycle[0]]].push_back({cycle.begin(), cycle.end()});
     }
     return out;
   }

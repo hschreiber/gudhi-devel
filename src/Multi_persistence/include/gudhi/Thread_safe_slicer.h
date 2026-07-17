@@ -335,8 +335,60 @@ class Thread_safe_slicer : private Slicer {
     return Slicer::_get_representative_cycles(slicer_->complex_, update);
   }
 
+  /**
+   * @brief Returns the representative cycles of given dimension of the current slice. A cycle is represented by a
+   * vector of boundary indices. That is, the index \f$ i \f$ in a cycle represents the cell which boundary can be
+   * retrieved by @ref get_boundary "get_boundary(i)". The cycles are stored in the same order than the bars are in
+   * the multi-dimensional barcode.
+   *
+   * Only available if PersistenceAlgorithm::has_rep_cycles is true.
+   *
+   * @pre @ref initialize_persistence_computation has to be called at least once before.
+   * 
+   * @param dimension Dimension of the cycles.
+   * @param update If true, updates the stored representative cycles, otherwise just returns the container in its
+   * current state. So should be true at least the first time the method is used. Default: true.
+   */
+  std::vector<Cycle> get_representative_cycles_in_dim(Dimension dimension, bool update = true) {
+    return Slicer::get_representative_cycles_in_dim(dimension, update);
+  }
+
+  /**
+   * @brief Returns the longest living representative cycles of the current slice in the given dimension. A cycle is
+   * represented by a vector of boundary indices. That is, the index \f$ i \f$ in a cycle represents the cell which
+   * boundary can be retrieved by @ref get_boundary "get_boundary(i)". If no cycle existed at given dimension, the
+   * returned cycle will be empty.
+   *
+   * Only available if PersistenceAlgorithm::has_rep_cycles is true.
+   *
+   * @pre @ref initialize_persistence_computation has to be called at least once before.
+   * 
+   * @param dim Dimension of the cycle. Default: 1.
+   * @param update If true, updates the representative cycle before returning it, otherwise just returns the cycle
+   * in its current state. So should be true at least the first time the method is used. Default: true.
+   */
   Cycle get_most_persistent_cycle(Dimension dim = 1, bool update = true) {
     return Slicer::get_most_persistent_cycle(dim, update);
+  }
+
+  /**
+   * @brief Returns the `n` longest living representative cycles of the current slice in the given dimension. A cycle is
+   * represented by a vector of boundary indices. That is, the index \f$ i \f$ in a cycle represents the cell which
+   * boundary can be retrieved by @ref get_boundary "get_boundary(i)". If no cycle existed at given dimension, the
+   * returned container will be empty. The cycles are ordered by bar length in decreasing order.
+   *
+   * Only available if PersistenceAlgorithm::has_rep_cycles is true.
+   *
+   * @pre @ref initialize_persistence_computation has to be called at least once before.
+   * 
+   * @param dim Dimension of the cycle. Default: 1.
+   * @param n Number of cycles to return. If 0, no cycle is returned. If higher than the number of available cycles,
+   * it is set down to this number and all cycles are returned. Default: 1.
+   * @param update If true, updates the representative cycles before returning them, otherwise just returns the cycles
+   * in their current state. So should be true at least the first time the method is used. Default: true.
+   */
+  std::vector<Cycle> get_n_most_persistent_cycles(Dimension dim = 1, Index n = 1, bool update = true) {
+    return Slicer::get_n_most_persistent_cycles(dim, n, update);
   }
 
   // FRIENDS

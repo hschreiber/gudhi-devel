@@ -230,14 +230,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(interface_rep_cycles, Interface, list_of_tested_va
     const auto& cycles = inter.get_all_representative_cycles(true);
     BOOST_CHECK_EQUAL(cycles.size(), 8);
 
-    BOOST_CHECK((cycles(0) == Cy{0}));
-    BOOST_CHECK((cycles(1) == Cy{0, 5}));
-    BOOST_CHECK((cycles(2) == Cy{0, 2}));
-    BOOST_CHECK((cycles(3) == Cy{0, 3}));
-    BOOST_CHECK((cycles(4) == Cy{0, 4}));
-    BOOST_CHECK((cycles(5) == Cy{6, 8, 1}));
-    BOOST_CHECK((cycles(6) == Cy{10, 11, 9}));
-    BOOST_CHECK((cycles(7) == Cy{8, 11, 7}));
+    BOOST_CHECK((cycles[0] == Cy{0}));
+    BOOST_CHECK((cycles[1] == Cy{0, 5}));
+    BOOST_CHECK((cycles[2] == Cy{0, 2}));
+    BOOST_CHECK((cycles[3] == Cy{0, 3}));
+    BOOST_CHECK((cycles[4] == Cy{0, 4}));
+    BOOST_CHECK((cycles[5] == Cy{6, 8, 1}));
+    BOOST_CHECK((cycles[6] == Cy{10, 11, 9}));
+    BOOST_CHECK((cycles[7] == Cy{8, 11, 7}));
 
     BOOST_CHECK((inter.get_representative_cycle(0, false) == Cy{0}));
     BOOST_CHECK((inter.get_representative_cycle(1, false) == Cy{0, 5}));

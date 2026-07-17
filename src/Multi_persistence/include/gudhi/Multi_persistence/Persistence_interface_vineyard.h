@@ -102,7 +102,7 @@ class Persistence_interface_vineyard {
     return vineyard_.get_current_barcode();
   }
 
-  auto get_all_representative_cycles(bool update = true, Dimension dim = Vineyard::nullDimension) {
+  std::vector<Cycle> get_all_representative_cycles(bool update = true, Dimension dim = Vineyard::nullDimension) {
     GUDHI_CHECK(is_initialized(), std::logic_error("Representative cycles can not be computed uninitialized."));
 
     return vineyard_.get_all_current_representative_cycles(update, dim);

@@ -54,11 +54,34 @@ nanobind::tuple _build_tuple(std::size_t n, F &&construct_row) {
   return nanobind::steal<nanobind::tuple>(out);
 }
 
-template <typename Integer, typename Floating,
-          class = std::enable_if_t<std::is_floating_point_v<Floating> && std::is_integral_v<Integer>>>
-bool _is_and_fits_in_int(Floating x) {
-  return std::isfinite(x) && std::trunc(x) == x && x >= static_cast<Floating>(std::numeric_limits<Integer>::min()) &&
-         x <= static_cast<Floating>(std::numeric_limits<Integer>::max());
+template <typename Integer, typename Arithmetic,
+          class = std::enable_if_t<std::is_integral_v<Integer> && std::is_arithmetic_v<Arithmetic>>>
+bool _is_and_fits_in_int(Arithmetic x) {
+  using Out_limits = std::numeric_limits<Integer>;
+
+  if constexpr (std::is_floating_point_v<Arithmetic>) {
+    return std::isfinite(x) && std::trunc(x) == x && x >= static_cast<Arithmetic>(Out_limits::min()) &&
+           x <= static_cast<Arithmetic>(Out_limits::max());
+  } else {
+    if constexpr (std::is_signed_v<Arithmetic> == std::is_signed_v<Integer>) {
+      return x >= Out_limits::min() && x <= Out_limits::max();
+    } else if constexpr (std::is_signed_v<Arithmetic>) {
+      if (x < 0) return false;
+      return static_cast<std::make_unsigned_t<Arithmetic>>(x) <= Out_limits::max();
+    } else {
+      using Wider_unsigned =
+          std::make_unsigned_t<std::conditional_t<(sizeof(Arithmetic) > sizeof(Integer)), Arithmetic, Integer>>;
+      return static_cast<Wider_unsigned>(x) <= static_cast<Wider_unsigned>(Out_limits::max());
+    }
+  }
+}
+
+template <typename Integer, typename Arithmetic,
+          class = std::enable_if_t<std::is_integral_v<Integer> && std::is_arithmetic_v<Arithmetic>>>
+Integer _cast_to_int(Arithmetic x,
+                     const std::string &errorMsg = "Given value does not represent or fits into an integer.") {
+  if (!_is_and_fits_in_int<Integer>(x)) throw std::runtime_error(errorMsg.c_str());
+  return static_cast<Integer>(x);
 }
 
 template <typename T>

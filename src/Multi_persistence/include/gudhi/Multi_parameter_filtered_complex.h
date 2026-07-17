@@ -380,12 +380,16 @@ class Multi_parameter_filtered_complex {
    * An index \f$ i \f$ of the grid corresponds to the same parameter as the index \f$ i \f$ in a generator of the
    * filtration value. The internal vectors correspond to the possible values of the parameters, ordered by increasing
    * value, forming therefore all together a 2D grid.
-   *
-   * @param grid Vector of vector with size at least number of filtration parameters.
+   * 
+   * @tparam OneDimArray A range of values \f$ U \f$ convertible into `T`. Has to implement
+   * a begin, end and operator[] method and a `value_type` definition equal to \f$ U \f$.
+   * @param grid Vector of @p OneDimArray with size at least number of filtration parameters. Each array has to be
+   * ordered by increasing value.
    * @param coordinate If true, the values are set to the coordinates of the projection in the grid. If false,
    * the values are set to the values at the coordinates of the projection.
    */
-  void coarsen_on_grid(const std::vector<std::vector<T> >& grid, bool coordinate = true) {
+  template <typename OneDimArray>
+  void coarsen_on_grid(const std::vector<OneDimArray>& grid, bool coordinate = true) {
 #ifdef GUDHI_USE_TBB
     tbb::parallel_for(Index(0), Index(filtrationValues_.size()), [&](Index gen) {
       // TODO : preallocate for tbb
