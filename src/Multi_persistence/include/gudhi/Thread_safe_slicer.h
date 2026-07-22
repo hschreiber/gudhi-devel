@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <gudhi/Multi_persistence/Line.h>
+#include <gudhi/Multi_persistence/Box.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -167,7 +168,7 @@ class Thread_safe_slicer : private Slicer {
    * @brief Returns two filtration values representing respectively the greatest common lower bound of all filtration
    * values in the filtration and the lowest common upper bound of them.
    */
-  std::pair<Filtration_value, Filtration_value> get_bounding_box() const { return slicer_->get_bounding_box(); }
+  Box<T> get_bounding_box() const { return slicer_->get_bounding_box(); }
 
   /**
    * @brief Returns a const reference to the filtration value container. A filtration value at index \$f i \$f

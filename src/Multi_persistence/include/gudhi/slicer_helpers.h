@@ -20,6 +20,8 @@
 #define MP_SLICER_HELPERS_H_
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstddef>
 #include <numeric>
 #include <ostream>
@@ -735,6 +737,164 @@ inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> 
 
   return persistence_on_slices_<idx, U>(
       slicer, [&](auto& s, std::size_t i) { s.set_slice(slices[i]); }, slices.size(), ignoreInf);
+}
+
+/**
+ * @private
+ */
+template <typename T>
+inline void _get_top_values(const std::vector<std::array<T, 2>>& bars, double t, std::vector<double>& top) {
+  std::fill(top.begin(), top.end(), 0.0);
+  for (const auto& bar : bars) {
+    const double value = std::max(0.0, std::min(t - static_cast<double>(bar[0]), static_cast<double>(bar[1]) - t));
+    if (value <= top.back()) continue;
+
+    // if top.size() is very large, it could be even worth it to use std::pop_heap/std::push_heap instead
+    std::size_t pos = top.size() - 1;
+    while (pos > 0 && top[pos - 1] < value) {
+      top[pos] = top[pos - 1];
+      --pos;
+    }
+    top[pos] = value;
+  }
+}
+
+/**
+ * @private
+ */
+template <class Slicer, typename T>
+inline std::vector<std::array<T, 2>> _compute_barcode_on_line(Slicer& slicer, T xBasePoint, T yBasePoint, T xDirection,
+                                                              T yDirection, int degree, bool initialize,
+                                                              bool ignoreInf) {
+  slicer.push_to(Line<T>(std::move({xBasePoint, yBasePoint}), std::move({xDirection, yDirection})));
+
+  if (initialize) {
+    slicer.initialize_persistence_computation(ignoreInf);
+  } else {
+    // when non-vine, does same then initialize_persistence_computation
+    slicer.update_persistence_computation(ignoreInf);
+  }
+  auto barcode = slicer.template get_flat_barcode<true, T, false>();
+  GUDHI_CHECK(degree >= 0 && static_cast<std::size_t>(degree) < barcode.size(),
+              std::out_of_range("Landscape degree is outside barcode degree range."));
+  // if the slicer contains more than just dimension degree and degree + 1, this feels quite wasteful...
+  return barcode[degree];
+}
+
+/**
+ * @brief TODO
+ * 
+ * @tparam Slicer Either @ref Slicer or @ref Thread_safe_slicer class with any valid template combination.
+ * @tparam GridAxisRange Range with size() and operator[] method returning a value convertible into @ref Slicer::T.
+ * @tparam DirectionRange Range with size() and operator[] method returning a value convertible into @ref Slicer::T.
+ * @tparam IndexRange Integer range with size() and operator[] method returning a value convertible into `std::size_t`.
+ * @param mainSlicer 
+ * @param xGrid 
+ * @param yGrid 
+ * @param direction 
+ * @param xStride 
+ * @param yStride 
+ * @param dt 
+ * @param degree 
+ * @param ks 
+ * @param ignoreInf 
+ * @param n_jobs If TBB is linked, allows to specify the number of threads that should be used for parallelization.
+ */
+template <class Slicer, class GridAxisRange, class DirectionRange, class IndexRange>
+inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer, const GridAxisRange& xGrid,
+                                                             const GridAxisRange& yGrid,
+                                                             const DirectionRange& direction, std::size_t xStride,
+                                                             std::size_t yStride, double dt, int degree,
+                                                             const IndexRange& ks, bool ignoreInf,
+                                                             [[maybe_unused]] int n_jobs = 0) {
+  using T = typename Slicer::T;
+  using Barcode = typename Slicer::template Multi_dimensional_flat_barcode<>;
+
+  const std::size_t xSize = xGrid.size();
+  const std::size_t ySize = yGrid.size();
+
+  GUDHI_CHECK(xGrid.size() > 0 && yGrid.size() > 0, std::invalid_argument("Grid axis have to be non empty."));
+  GUDHI_CHECK(direction.size() == 2, std::invalid_argument("Direction has to be 2-dimensional."));
+  GUDHI_CHECK(xStride > 0 && yStride > 0, std::invalid_argument("Grid strides have to be strictly positive."));
+  GUDHI_CHECK(std::isfinite(dt) && dt > 0, std::invalid_argument("Grid step has to be finite and strictly positive."));
+  GUDHI_CHECK(xGrid.size() > std::numeric_limits<std::size_t>::max() / yGrid.size(),
+              std::invalid_argument("Grid is too large."));
+
+  std::vector<double> out(ks.size() * xGrid.size() * yGrid.size(), 0.0);
+
+  if (ks.size() == 0) return out;
+
+  Gudhi::Simple_mdspan view(out.data(), ks.size(), xGrid.size(), yGrid.size());
+  const std::size_t numberOfLines =
+      (std::min(xStride, xSize) * ySize) + (xStride < xSize ? (xSize - xStride) * std::min(yStride, ySize) : 0);
+  auto maxKValue = *std::max_element(ks.begin(), ks.end());
+
+  GUDHI_CHECK(maxKValue >= 0, std::invalid_argument("Landscape ks must be positive"));
+
+  auto get_grid_line_start = [xSize, ySize, xStride, yStride](std::size_t lineIdx) -> std::array<std::size_t, 2> {
+    const std::size_t block1_size = std::min(xStride, xSize) * ySize;
+    if (lineIdx < block1_size) {
+      const std::size_t q = lineIdx / ySize;
+      return {q, lineIdx - (q * ySize)};
+    }
+    const std::size_t idx2 = lineIdx - block1_size;
+    const std::size_t b = std::min(yStride, ySize);
+    const std::size_t q = idx2 / b;
+    return {xStride + q, idx2 - (q * b)};
+  };
+
+  auto retrieve_landscape_values = [&](std::size_t x, std::size_t y, const Barcode& bars, double t,
+                                       std::vector<double>& top) {
+    _get_top_values(bars, t, top);
+    for (std::size_t k = 0; k < ks.size(); ++k) {
+      view(k, x, y) = top[static_cast<std::size_t>(ks[k])];
+    }
+  };
+
+  auto compute_values_on_line = [&](auto& slicer, std::size_t lineIdx, bool initialize, std::vector<double>& top) {
+    const auto [i0, j0] = get_grid_line_start(lineIdx);
+    std::vector<std::array<T, 2>> barcode = _compute_barcode_on_line(slicer, xGrid[i0], yGrid[j0], direction[0],
+                                                                     direction[1], degree, initialize, ignoreInf);
+    const std::size_t length = std::min(((xSize - 1 - i0) / xStride) + 1, ((ySize - 1 - j0) / yStride) + 1);
+    for (std::size_t step = 0; step < length; ++step) {
+      retrieve_landscape_values(i0 + (step * xStride), j0 + (step * yStride), barcode, dt * static_cast<double>(step),
+                                top);
+    }
+  };
+
+  auto compute_value_in_line_range = [&](auto& slicer, std::size_t begin, std::size_t end) {
+    bool initialize = true;
+    std::vector<double> top(static_cast<std::size_t>(maxKValue) + 1, 0.0);
+    for (std::size_t lineIdx = begin; lineIdx < end; ++lineIdx) {
+      compute_values_on_line(mainSlicer, lineIdx, initialize, top);
+      initialize = false;
+    }
+  };
+
+#if defined(GUDHI_USE_TBB)
+  if (n_jobs == 1) {
+    compute_value_in_line_range(mainSlicer, 0, numberOfLines);
+  } else {
+    const std::size_t target_chunks = n_jobs > 0 ? static_cast<std::size_t>(n_jobs) * 4 : std::size_t(64);
+    const std::size_t grainSize = std::max<std::size_t>(1, (numberOfLines + target_chunks - 1) / target_chunks);
+    auto run = [&] {
+      tbb::parallel_for(tbb::blocked_range<std::size_t>(0, numberOfLines, grainSize), [&](const auto& range) {
+        tbb::this_task_arena::isolate(
+            [&] { compute_value_in_line_range(mainSlicer.weak_copy(), range.begin(), range.end()); });
+      });
+    };
+    if (n_jobs > 0) {
+      tbb::task_arena arena(n_jobs);
+      arena.execute(run);
+    } else {
+      run();
+    }
+  }
+#else
+  compute_value_in_line_range(mainSlicer, 0, numberOfLines);
+#endif
+
+  return out;
 }
 
 }  // namespace multi_persistence

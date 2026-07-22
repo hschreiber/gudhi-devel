@@ -9,6 +9,7 @@
  */
 
 #include <array>
+#include <cstddef>
 #include <initializer_list>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/mpl/list.hpp>
 
+#include <gudhi/simple_mdspan.h>
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
 #include <gudhi/Multi_parameter_filtration.h>
@@ -36,6 +38,7 @@ using Gudhi::multi_persistence::Persistence_interface_cohomology;
 using Gudhi::multi_persistence::Persistence_interface_homology;
 using Gudhi::multi_persistence::Persistence_interface_vineyard;
 using Gudhi::multi_persistence::persistence_on_slices;
+using Gudhi::multi_persistence::compute_slicer_landscapes_on_grid;
 using Gudhi::multi_persistence::Slicer;
 using Gudhi::multi_persistence::Thread_safe_slicer;
 
@@ -198,4 +201,66 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_batch_persistence, Slicer, list_of_tested_s
   test_slicer_batch_persistence(wc);
   Thread_safe_slicer tss(s);
   test_slicer_batch_persistence(tss);
+}
+
+template <class Fil>
+Multi_parameter_filtered_complex<Fil, I, D> build_simple_input_complex2() {
+  using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
+  using FC = typename Complex::Filtration_value_container;
+  using BC = typename Complex::Boundary_container;
+  using DC = typename Complex::Dimension_container;
+  using ini = std::initializer_list<T>;
+
+  BC bc = {{},     {},     {},     {},     {},     {},     {},     {},     {},     {},           {0, 2},      {0, 3},
+           {0, 5}, {0, 6}, {0, 8}, {1, 3}, {1, 9}, {2, 3}, {3, 7}, {4, 5}, {5, 6}, {10, 11, 17}, {12, 13, 20}};
+  DC dc = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2};
+  FC fc = {ini{0, 3},  ini{0, 2}, ini{0, 5}, ini{0, 2}, ini{0, 1},  ini{0, 0}, ini{0, 6}, ini{0, 6},
+           ini{0, 4},  ini{0, 6}, ini{4, 5}, ini{9, 3}, ini{11, 3}, ini{8, 6}, ini{3, 4}, ini{2, 2},
+           ini{10, 6}, ini{5, 5}, ini{7, 6}, ini{1, 1}, ini{6, 6},  ini{9, 5}, ini{11, 6}};
+
+  return Complex(bc, dc, fc);
+}
+
+template <class Slicer>
+void test_slicer_landscapes(Slicer& s) {
+  std::vector<T> xGrid = {0, 2, 4, 6, 8, 10, 12};
+  std::vector<T> yGrid = {0, 3, 6, 9, 12, 15};
+  std::vector<T> direction = {2, 1};
+  std::vector<T> ks = {0, 1, 2};
+
+  std::vector<double> landscapes = compute_slicer_landscapes_on_grid(s, xGrid, yGrid, direction, 2, 3, 1, 0, ks, true);
+  BOOST_CHECK_EQUAL(landscapes.size(), ks.size() * xGrid.size() * yGrid.size());
+  Gudhi::Simple_mdspan view(landscapes.data(), ks.size(), xGrid.size(), yGrid.size());
+
+  std::vector<std::vector<std::vector<double>>> realLS = {{{0., 0., 0., 0., 0., 0.},
+                                                           {0., 1., 1., 1., 1., 1.},
+                                                           {0., 2., 2., 1., 1., 1.},
+                                                           {0., 3., 3., 1., 2., 2.},
+                                                           {0., 3., 4., 1., 3., 3.},
+                                                           {0., 3., 5., 1., 4., 4.},
+                                                           {0., 3., 6., 1., 4., 5.}},
+
+                                                          {{0., 0., 0., 0., 0., 0.},
+                                                           {0., 1., 1., 1., 1., 1.},
+                                                           {0., 1., 2., 0., 1., 1.},
+                                                           {0., 1., 1., 0., 2., 2.},
+                                                           {0., 1., 0., 0., 2., 1.},
+                                                           {0., 0.5, 0., 0., 1.5, 1.},
+                                                           {0., 0., 0., 0., 0.5, 0.}},
+
+                                                          {{0., 0., 0., 0., 0., 0.},
+                                                           {0., 0., 1., 1., 1., 1.},
+                                                           {0., 0., 0.5, 0., 1., 1.},
+                                                           {0., 0., 0., 0., 1., 1.},
+                                                           {0., 0., 0., 0., 1., 1.},
+                                                           {0., 0., 0., 0., 0.5, 0.},
+                                                           {0., 0., 0., 0., 0., 0.}}};
+
+  for (std::size_t i = 0; i < ks.size(); ++i) {
+    for (std::size_t j = 0; j < xGrid.size(); ++j) {
+      for (std::size_t k = 0; k < yGrid.size(); ++k) {
+        BOOST_CHECK_EQUAL(view(i, j, k), realLS[i][j][k]);
+      }
+    }
+  }
 }

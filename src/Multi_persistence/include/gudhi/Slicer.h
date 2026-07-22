@@ -36,8 +36,10 @@
 #endif
 
 #include <gudhi/Debug_utils.h>
+#include <gudhi/Degree_rips_bifiltration.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
+#include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Line.h>
 #include <gudhi/Thread_safe_slicer.h>
 #include <gudhi/Projective_cover_kernel.h>
@@ -238,25 +240,32 @@ class Slicer {
   const Persistence& get_persistence_algorithm() const { return persistence_; }
 
   /**
-   * @brief Returns two filtration values representing respectively the greatest common lower bound of all filtration
-   * values in the filtration and the lowest common upper bound of them.
+   * @brief Returns a box which corners are respectively the greatest common lower bound of all finite filtration
+   * values in the filtration and the lowest common upper bound of them. If at some parameter, there where no finite
+   * values, the lower corner at that parameter will be inf and the upper corner -inf.
    */
-  std::pair<Filtration_value, Filtration_value> get_bounding_box() const {
-    Filtration_value a = Filtration_value::inf(get_number_of_parameters());
-    Filtration_value b = Filtration_value::minus_inf(get_number_of_parameters());
-    for (const Filtration_value& fil : complex_.get_filtration_values()) {
-      if (fil.num_generators() > 1) {
-        a.pull_to_greatest_common_lower_bound(factorize_below(fil));
-        // Because of Degree_rips_bifiltration
-        Filtration_value above = factorize_above(fil);
-        auto g = above.num_generators() - 1;
-        b.push_to_least_common_upper_bound({above(g, 0), above(g, 1)});
-      } else {
-        a.pull_to_greatest_common_lower_bound(fil);
-        b.push_to_least_common_upper_bound(fil);
+  Box<T> get_bounding_box() const {
+    const auto numParam = get_number_of_parameters();
+
+    if (get_number_of_cycle_generators() == 0 || numParam == 0) return {};
+
+    std::vector<T> lower(numParam, Filtration_value::T_inf);
+    std::vector<T> upper(numParam, Filtration_value::T_m_inf);
+
+    for (const auto& f : get_filtration_values()) {
+      GUDHI_CHECK(f.num_parameters() == numParam, std::runtime_error("Number of parameters are inconsistent."));
+      for (Index g = 0; g < f.num_generators(); ++g) {
+        for (Index p = 0; p < numParam; ++p) {
+          const T v = f(g, p);
+          if (!Gudhi::multi_filtration::_is_nan(v) && v != Filtration_value::T_inf && v != Filtration_value::T_m_inf) {
+            lower[p] = std::min(lower[p], v);
+            upper[p] = std::max(upper[p], v);
+          }
+        }
       }
     }
-    return std::make_pair(std::move(a), std::move(b));
+
+    return {std::move(lower), std::move(upper)};
   }
 
   /**
@@ -396,7 +405,71 @@ class Slicer {
     complex_.coarsen_on_grid(grid, coordinate);
   }
 
+  /**
+   * @brief Modifies the filtration values such that at each parameters, the values of a generator is higher or equal
+   * than the values at that parameter of its faces.
+   */
   void make_filtration_non_decreasing() { complex_.make_filtration_non_decreasing(); }
+
+  /**
+   * @brief Normalizes the finite filtration values with respect to the given box. If no box is given or the given
+   * box is trivial, the current bounding box is used (computed with @ref get_bounding_box) and its corner values at
+   * infinity are rescaled to respectively 0 (lower corner) and 1 (upper corner).
+   *
+   * Not enabled for @ref Gudhi::multi_filtration::Degree_rips_bifiltration as the second parameter cannot be
+   * properly mapped.
+   * 
+   * @tparam U Box template parameter
+   * @param box Box. Default: trivial box.
+   */
+  template <typename U = T>
+  void normalize_filtration_values(const Box<U>& box = {}) {
+    static_assert(
+        !std::is_same_v<Filtration_value,
+                        Gudhi::multi_filtration::Degree_rips_bifiltration<T, Filtration_value::has_negative_cones(),
+                                                                          Filtration_value::ensures_1_criticality()>>,
+        "`normalize_filtration_values` not possible for Degree_rips_filtration");
+
+    const auto numParam = get_number_of_parameters();
+    if (numParam == 0 || get_number_of_cycle_generators() == 0) return;
+
+    Box<T> bounds;
+    if (box.is_trivial()) {
+      bounds = get_bounding_box();
+      auto& lower = bounds.get_lower_corner();
+      auto& upper = bounds.get_upper_corner();
+      for (Index p = 0; p < numParam; ++p) {
+        // lower is inf if and only if upper is -inf
+        if (lower[p] == Filtration_value::T_inf) {
+          lower[p] = 0;
+          upper[p] = 1;
+        }
+      }
+    } else {
+      GUDHI_CHECK(box.get_number_of_coordinates() == numParam,
+                  std::invalid_argument(
+                      "Box does not have the same number of coordinates than number of parameters in the Slicer."));
+      const auto& lower = box.get_lower_corner();
+      const auto& upper = box.get_upper_corner();
+      bounds = {lower.begin(), lower.end(), upper.begin(), upper.end()};
+    }
+
+    const auto& lower = bounds.get_lower_corner();
+    const auto& upper = bounds.get_upper_corner();
+
+    for (auto& f : complex_.get_filtration_values()) {
+      GUDHI_CHECK(f.num_parameters() == numParam, std::runtime_error("Number of parameters are inconsistent."));
+      for (Index p = 0; p < numParam; ++p) {
+        T scale = upper[p] > lower[p] ? upper[p] - lower[p] : static_cast<T>(1);
+        for (Index g = 0; g < f.num_generators(); ++g) {
+          T& v = f(g, p);
+          if (!Gudhi::multi_filtration::_is_nan(v) && v != Filtration_value::T_inf && v != Filtration_value::T_m_inf) {
+            v = (v - lower[p]) / scale;
+          }
+        }
+      }
+    }
+  }
 
   // PERSISTENCE
 

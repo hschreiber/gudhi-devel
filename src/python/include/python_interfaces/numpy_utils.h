@@ -12,10 +12,7 @@
 #define INCLUDE_NUMPY_UTILS_PYTHON_H_
 
 #include <cstddef>
-#include <optional>
-#include <string>
 #include <type_traits>
-#include <variant>
 #include <vector>
 
 #include <nanobind/ndarray.h>
@@ -77,6 +74,12 @@ class Numpy_span
   using size_type = std::size_t;
 
   Numpy_span(const nanobind::ndarray<const T, nanobind::ndim<1>, nanobind::any_contig> &array)
+      : begin_(array.data()), end_(begin_ + array.shape(0)) {};
+
+  Numpy_span(const nanobind::ndarray<const T, nanobind::ndim<1>, nanobind::c_contig> &array)
+      : begin_(array.data()), end_(begin_ + array.shape(0)) {};
+
+  Numpy_span(const nanobind::ndarray<const T, nanobind::ndim<1>, nanobind::f_contig> &array)
       : begin_(array.data()), end_(begin_ + array.shape(0)) {};
 
   Numpy_span(const_pointer begin, const_pointer end) : begin_(begin), end_(end) {};
@@ -183,7 +186,9 @@ class Numpy_2d_span
   using iterator = const_iterator;
   using const_reference = boost::iterator_range<Numpy_array_element_iterator<T> >;
 
-  Numpy_2d_span(const Array &array) : array_view_(array.view()) {};
+  // careful to use with a 2D array, no check is done in Array(...)
+  template <typename... Args>
+  Numpy_2d_span(const nanobind::ndarray<const T, Args...> &array) : array_view_(Array(array).view()){};
 
   const_iterator begin() const noexcept { return iterator(get_start_ptr(), get_end_ptr(), array_view_.stride(0)); }
 

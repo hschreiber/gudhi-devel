@@ -9,6 +9,7 @@
  */
 
 #include <array>
+#include <cstddef>
 #include <initializer_list>
 #include <limits>
 #include <utility>
@@ -27,6 +28,7 @@
 #include <gudhi/Multi_persistence/Persistence_interface_homology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_cohomology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_vineyard.h>
+#include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Line.h>
 
 using Gudhi::multi_filtration::Dynamic_multi_parameter_filtration;
@@ -248,8 +250,16 @@ void test_slicer_accessors(const Slicer& s) {
   using B = std::vector<typename Slicer::Index>;
 
   auto box = s.get_bounding_box();
-  BOOST_CHECK(box.first == Fil({0, 1, 1}));
-  BOOST_CHECK(box.second == Fil({6, 7, 8}));
+  const auto& lower = box.get_lower_corner();
+  const auto& upper = box.get_upper_corner();
+  BOOST_CHECK_EQUAL(lower.size(), 3);
+  BOOST_CHECK_EQUAL(lower[0], 0);
+  BOOST_CHECK_EQUAL(lower[1], 1);
+  BOOST_CHECK_EQUAL(lower[2], 1);
+  BOOST_CHECK_EQUAL(upper.size(), 3);
+  BOOST_CHECK_EQUAL(upper[0], 6);
+  BOOST_CHECK_EQUAL(upper[1], 7);
+  BOOST_CHECK_EQUAL(upper[2], 8);
   BOOST_CHECK_EQUAL(s.get_dimension(0), 0);
   BOOST_CHECK_EQUAL(s.get_dimension(1), 0);
   BOOST_CHECK_EQUAL(s.get_dimension(2), 0);
@@ -354,6 +364,34 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_modifiers, Slicer, list_of_tested_variants)
   BOOST_CHECK(s2.get_boundary(1).empty());
   BOOST_CHECK(s2.get_boundary(2).empty());
   BOOST_CHECK(s2.get_boundary(3).empty());
+
+  Slicer s3(cpx);
+  std::vector<std::vector<T>> real = {{0., 1. / 6., 1. / 7.},      {0., 1. / 6., 0.},           {0., 0., 2. / 7.},
+                                      {1. / 2., 1. / 6., 2. / 7.}, {1. / 2., 1. / 2., 4. / 7.}, {1., 1. / 3., 4. / 7.},
+                                      {1., 2. / 3., 5. / 7.},      {5. / 6., 5. / 6., 1.},      {5. / 6., 1., 1.}};
+  s3.normalize_filtration_values();
+  const auto& fils1 = s3.get_filtration_values();
+  BOOST_CHECK_EQUAL(fils1.size(), real.size());
+  for (std::size_t i = 0; i < real.size(); ++i) {
+    BOOST_CHECK_EQUAL(fils1[i].num_parameters(), real[i].size());
+    for (std::size_t j = 0; j < real[i].size(); ++j) {
+      BOOST_CHECK_EQUAL(fils1[i](0, j), real[i][j]);
+    }
+  }
+
+  Slicer s4(cpx);
+  real = {{0., 1. / 2., 1. / 2.},      {0., 1. / 2., 1. / 4.}, {0., 1. / 4., 3. / 4.},
+          {3. / 4., 1. / 2., 3. / 4.}, {3. / 4., 1., 5. / 4.}, {3. / 2., 3. / 4., 5. / 4.},
+          {3. / 2., 5. / 4., 3. / 2.}, {5. / 4., 3. / 2., 2.}, {5. / 4., 7. / 4., 2.}};
+  s4.normalize_filtration_values(Gudhi::multi_persistence::Box<T>({0, 0, 0}, {4, 4, 4}));
+  const auto& fils2 = s4.get_filtration_values();
+  BOOST_CHECK_EQUAL(fils2.size(), real.size());
+  for (std::size_t i = 0; i < real.size(); ++i) {
+    BOOST_CHECK_EQUAL(fils2[i].num_parameters(), real[i].size());
+    for (std::size_t j = 0; j < real[i].size(); ++j) {
+      BOOST_CHECK_EQUAL(fils2[i](0, j), real[i][j]);
+    }
+  }
 }
 
 Test_multi_dimensional_barcode get_barcode(const Barcode& barcode) {
