@@ -20,6 +20,15 @@
 
 using Distance_matrix = std::vector<std::vector<double>>;
 
+BOOST_AUTO_TEST_CASE( invalid_distance_matrix_file )
+{
+  const std::string filename = "missing_distance_matrix.csv";
+  BOOST_CHECK_EXCEPTION(Gudhi::read_lower_triangular_matrix_from_csv_file<double>(filename), std::invalid_argument,
+                        [&filename](const std::invalid_argument& exception) {
+                          return std::string(exception.what()).find(filename) != std::string::npos;
+                        });
+}
+
 BOOST_AUTO_TEST_CASE( lower_triangular_distance_matrix )
 {
   Distance_matrix from_lower_triangular;

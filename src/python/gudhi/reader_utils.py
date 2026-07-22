@@ -11,13 +11,12 @@
 __license__ = "MIT"
 
 
-from os import path
 from numpy import array as np_array
 
 from gudhi import _reader_utils_ext as t
 
 
-def read_lower_triangular_matrix_from_csv_file(csv_file="", separator=";"):
+def read_lower_triangular_matrix_from_csv_file(csv_file, separator=";"):
     """Read lower triangular matrix from a CSV style file.
 
     :param csv_file: A CSV file style name.
@@ -27,15 +26,13 @@ def read_lower_triangular_matrix_from_csv_file(csv_file="", separator=";"):
 
     :returns:  The lower triangular matrix.
     :rtype: List[List[float]]
+
+    :raises ValueError: If the file cannot be opened.
     """
-    if csv_file:
-        if path.isfile(csv_file):
-            return t._read_matrix_from_csv_file(csv_file, separator[0])
-    print("file " + csv_file + " not set or not found.")
-    return []
+    return t._read_matrix_from_csv_file(csv_file, separator[0])
 
 
-def read_persistence_intervals_grouped_by_dimension(persistence_file=""):
+def read_persistence_intervals_grouped_by_dimension(persistence_file):
     """Reads a file containing persistence intervals.
     Each line might contain 2, 3 or 4 values: [[field] dimension] birth death
     The return value is a `dict(dim, list(tuple(birth, death)))`
@@ -47,15 +44,13 @@ def read_persistence_intervals_grouped_by_dimension(persistence_file=""):
 
     :returns:  The persistence pairs grouped by dimension.
     :rtype: Dict[int, List[Tuple[float, float]]]
+
+    :raises ValueError: If the file cannot be opened.
     """
-    if persistence_file:
-        if path.isfile(persistence_file):
-            return t._read_pers_intervals_grouped_by_dimension(persistence_file)
-    print("file " + persistence_file + " not set or not found.")
-    return []
+    return t._read_pers_intervals_grouped_by_dimension(persistence_file)
 
 
-def read_persistence_intervals_in_dimension(persistence_file="", only_this_dim=-1):
+def read_persistence_intervals_in_dimension(persistence_file, only_this_dim=-1):
     """Reads a file containing persistence intervals.
     Each line of persistence_file might contain 2, 3 or 4 values:
     [[field] dimension] birth death
@@ -71,11 +66,7 @@ def read_persistence_intervals_in_dimension(persistence_file="", only_this_dim=-
 
     :returns:  The persistence intervals.
     :rtype: numpy array of dimension 2
+
+    :raises ValueError: If the file cannot be opened.
     """
-    if persistence_file:
-        if path.isfile(persistence_file):
-            return np_array(
-                t._read_pers_intervals_in_dimension(persistence_file, only_this_dim)
-            )
-    print("file " + persistence_file + " not set or not found.")
-    return []
+    return np_array(t._read_pers_intervals_in_dimension(persistence_file, only_this_dim))
