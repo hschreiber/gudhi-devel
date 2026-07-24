@@ -36,6 +36,7 @@
 #include <gudhi/Debug_utils.h>
 #include <gudhi/Multi_parameter_filtration.h>  //for lex order
 #include <gudhi/Multi_filtration/multi_filtration_conversions.h>
+#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -156,7 +157,7 @@ class Multi_parameter_filtered_complex {
       int numParam = 0;
       const auto& fil = filtrationValues[0];
       if (fil.size() != 0) {
-        if constexpr (std::is_arithmetic_v<std::remove_reference_t<decltype(fil[0])> >) {
+        if constexpr (std::is_arithmetic_v<std::remove_cv_t<std::remove_reference_t<decltype(fil[0])> > >) {
           // 1-critical
           numParam = fil.size();
           filtrationValues_.reserve(filtrationValues.size());
@@ -171,9 +172,10 @@ class Multi_parameter_filtered_complex {
           filtrationValues_ = Filtration_value_container(filtrationValues.size(), Filtration_value::inf(numParam));
           for (std::size_t i = 0; i < filtrationValues.size(); ++i) {
             const auto& f = filtrationValues[i];
-            for (const auto& g : f) {
+            for (std::size_t g = 0; g < f.size(); ++g) {
+              const auto& gen = f[g];
               // TODO: or add_guaranteed_generator?
-              filtrationValues_[i].add_generator(g.begin(), g.end());
+              filtrationValues_[i].add_generator(gen.begin(), gen.end());
             }
           }
         }
@@ -516,6 +518,52 @@ class Multi_parameter_filtered_complex {
     // TODO: test up to permutation instead ?
     return a.isOrderedByDimension_ == b.isOrderedByDimension_ && a.boundaries_ == b.boundaries_ &&
            a.dimensions_ == b.dimensions_ && a.filtrationValues_ == b.filtrationValues_;
+  }
+
+  /**
+   * @brief Serialize given value into the buffer at given pointer.
+   *
+   * @param value Value to serialize.
+   * @param start Pointer to the start of the space in the buffer where to store the serialization.
+   * @return End position of the serialization in the buffer.
+   */
+  friend char* serialize_value_to_char_buffer(const Multi_parameter_filtered_complex& value, char* start) {
+    char* curr = start;
+    curr = serialize_value_to_char_buffer(value.boundaries_, curr);
+    curr = serialize_value_to_char_buffer(value.dimensions_, curr);
+    curr = serialize_value_to_char_buffer(value.filtrationValues_, curr);
+    curr = serialize_value_to_char_buffer(value.maxDimension_, curr);
+    curr = serialize_value_to_char_buffer(value.isOrderedByDimension_, curr);
+    return curr;
+  }
+
+  /**
+   * @brief Deserialize the value from a buffer at given pointer and stores it in given value.
+   *
+   * @param value Value to fill with the deserialized summand.
+   * @param start Pointer to the start of the space in the buffer where the serialization is stored.
+   * @return End position of the serialization in the buffer.
+   */
+  friend const char* deserialize_value_from_char_buffer(Multi_parameter_filtered_complex& value, const char* start) {
+    const char* curr = start;
+    curr = deserialize_value_from_char_buffer(value.boundaries_, curr);
+    curr = deserialize_value_from_char_buffer(value.dimensions_, curr);
+    curr = deserialize_value_from_char_buffer(value.filtrationValues_, curr);
+    curr = deserialize_value_from_char_buffer(value.maxDimension_, curr);
+    curr = deserialize_value_from_char_buffer(value.isOrderedByDimension_, curr);
+    return curr;
+  }
+
+  /**
+   * @brief Returns the serialization size of the given summand.
+   */
+  friend std::size_t get_serialization_size_of(const Multi_parameter_filtered_complex& value) {
+    std::size_t size = get_serialization_size_of(value.boundaries_);
+    size += get_serialization_size_of(value.dimensions_);
+    size += get_serialization_size_of(value.filtrationValues_);
+    size += get_serialization_size_of(value.maxDimension_);
+    size += get_serialization_size_of(value.isOrderedByDimension_);
+    return size;
   }
 
   /**

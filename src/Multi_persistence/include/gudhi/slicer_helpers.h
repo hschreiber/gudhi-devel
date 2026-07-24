@@ -766,7 +766,7 @@ template <class Slicer, typename T>
 inline std::vector<std::array<T, 2>> _compute_barcode_on_line(Slicer& slicer, T xBasePoint, T yBasePoint, T xDirection,
                                                               T yDirection, int degree, bool initialize,
                                                               bool ignoreInf) {
-  slicer.push_to(Line<T>(std::move({xBasePoint, yBasePoint}), std::move({xDirection, yDirection})));
+  slicer.push_to(Line<T>({xBasePoint, yBasePoint}, {xDirection, yDirection}));
 
   if (initialize) {
     slicer.initialize_persistence_computation(ignoreInf);
@@ -808,7 +808,6 @@ inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer,
                                                              const IndexRange& ks, bool ignoreInf,
                                                              [[maybe_unused]] int n_jobs = 0) {
   using T = typename Slicer::T;
-  using Barcode = typename Slicer::template Multi_dimensional_flat_barcode<>;
 
   const std::size_t xSize = xGrid.size();
   const std::size_t ySize = yGrid.size();
@@ -843,8 +842,8 @@ inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer,
     return {xStride + q, idx2 - (q * b)};
   };
 
-  auto retrieve_landscape_values = [&](std::size_t x, std::size_t y, const Barcode& bars, double t,
-                                       std::vector<double>& top) {
+  auto retrieve_landscape_values = [&](std::size_t x, std::size_t y, const std::vector<std::array<T, 2>>& bars,
+                                       double t, std::vector<double>& top) {
     _get_top_values(bars, t, top);
     for (std::size_t k = 0; k < ks.size(); ++k) {
       view(k, x, y) = top[static_cast<std::size_t>(ks[k])];
@@ -879,8 +878,10 @@ inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer,
     const std::size_t grainSize = std::max<std::size_t>(1, (numberOfLines + target_chunks - 1) / target_chunks);
     auto run = [&] {
       tbb::parallel_for(tbb::blocked_range<std::size_t>(0, numberOfLines, grainSize), [&](const auto& range) {
-        tbb::this_task_arena::isolate(
-            [&] { compute_value_in_line_range(mainSlicer.weak_copy(), range.begin(), range.end()); });
+        tbb::this_task_arena::isolate([&] {
+          auto s = mainSlicer.weak_copy();
+          compute_value_in_line_range(s, range.begin(), range.end());
+        });
       });
     };
     if (n_jobs > 0) {

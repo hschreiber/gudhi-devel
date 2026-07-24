@@ -29,7 +29,6 @@
 #include <cstdint>  //std::int32_t
 #include <vector>
 #include <ostream>
-// #include <sstream>  //std::stringstream, to remove when to_str gets removed
 
 #ifdef GUDHI_USE_TBB
 #include <oneapi/tbb/parallel_for.h>
@@ -41,6 +40,7 @@
 #include <gudhi/Multi_parameter_filtered_complex.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Line.h>
+#include <gudhi/Multi_persistence/utils.h>
 #include <gudhi/Thread_safe_slicer.h>
 #include <gudhi/Projective_cover_kernel.h>
 #include <gudhi/persistence_interval.h>
@@ -324,14 +324,6 @@ class Slicer {
    * @brief Returns the boundary of the generator at index \$f i \$f.
    */
   const typename Complex::Boundary& get_boundary(Index i) const { return complex_.get_boundaries()[i]; }
-
-  // // TODO: only used to print info in python, so put in some interface instead
-  // std::string to_str() const
-  // {
-  //   std::stringstream stream;
-  //   stream << *this;
-  //   return stream.str();
-  // }
 
   // MODIFIERS
 
@@ -824,6 +816,43 @@ class Slicer {
     write_complex_to_scc_file<typename Slicer::Filtration_value>(outFilePath, cpx, degree, rivetCompatible,
                                                                  ignoreLastGenerators, stripComments, reverse);
   };
+
+  /**
+   * @brief Serialize given value into the buffer at given pointer.
+   *
+   * @param value Value to serialize.
+   * @param start Pointer to the start of the space in the buffer where to store the serialization.
+   * @return End position of the serialization in the buffer.
+   */
+  friend char* serialize_value_to_char_buffer(const Slicer& value, char* start) {
+    char* curr = start;
+    curr = serialize_value_to_char_buffer(value.complex_, curr);
+    curr = serialize_value_to_char_buffer(value.slice_, curr);
+    return curr;
+  }
+
+  /**
+   * @brief Deserialize the value from a buffer at given pointer and stores it in given value.
+   *
+   * @param value Value to fill with the deserialized summand.
+   * @param start Pointer to the start of the space in the buffer where the serialization is stored.
+   * @return End position of the serialization in the buffer.
+   */
+  friend const char* deserialize_value_from_char_buffer(Slicer& value, const char* start) {
+    const char* curr = start;
+    curr = deserialize_value_from_char_buffer(value.complex_, curr);
+    curr = deserialize_value_from_char_buffer(value.slice_, curr);
+    return curr;
+  }
+
+  /**
+   * @brief Returns the serialization size of the given summand.
+   */
+  friend std::size_t get_serialization_size_of(const Slicer& value) {
+    std::size_t size = get_serialization_size_of(value.complex_);
+    size += get_serialization_size_of(value.slice_);
+    return size;
+  }
 
   /**
    * @brief Outstream operator.

@@ -23,6 +23,7 @@
 
 #include <gudhi/Debug_utils.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
+#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -811,12 +812,7 @@ class Point {
    * @return End position of the serialization in the buffer.
    */
   friend char *serialize_value_to_char_buffer(const Point &value, char *start) {
-    const size_type length = value.coordinates_.size();
-    const std::size_t argSize = sizeof(T) * length;
-    const std::size_t typeSize = sizeof(size_type);
-    memcpy(start, &length, typeSize);
-    memcpy(start + typeSize, value.coordinates_.data(), argSize);
-    return start + argSize + typeSize;
+    return serialize_value_to_char_buffer(value.coordinates_, start);
   }
 
   /**
@@ -827,20 +823,14 @@ class Point {
    * @return End position of the serialization in the buffer.
    */
   friend const char *deserialize_value_from_char_buffer(Point &value, const char *start) {
-    const std::size_t typeSize = sizeof(size_type);
-    size_type length;
-    memcpy(&length, start, typeSize);
-    std::size_t argSize = sizeof(T) * length;
-    value.coordinates_.resize(length);
-    memcpy(value.coordinates_.data(), start + typeSize, argSize);
-    return start + argSize + typeSize;
+    return deserialize_value_from_char_buffer(value.coordinates_, start);
   }
 
   /**
    * @brief Returns the serialization size of the given point.
    */
   friend std::size_t get_serialization_size_of(const Point &value) {
-    return sizeof(size_type) + (sizeof(T) * value.coordinates_.size());
+    return get_serialization_size_of(value.coordinates_);
   }
 
   /**

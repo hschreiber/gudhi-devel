@@ -323,3 +323,31 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_friend, Fil, list_of_tested_variants
   BOOST_CHECK(cpxToGridCoord.get_filtration_values() == fc2);
   BOOST_CHECK_EQUAL(cpxToGridCoord.get_max_dimension(), 3);
 }
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_serialization, Fil, list_of_tested_variants) {
+  using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
+  using FC = typename Complex::Filtration_value_container;
+  using BC = typename Complex::Boundary_container;
+  using DC = typename Complex::Dimension_container;
+  using ini = std::initializer_list<typename Fil::value_type>;
+
+  BC bc = {{2, 6}, {}, {1, 3}, {}, {}, {0}, {1, 4}};
+  DC dc = {2, 0, 1, 0, 0, 3, 1};
+  FC fc = {ini{3, 4, 5}, ini{0, 1, 2}, ini{0, 2, 2}, ini{0, 2, 1}, ini{1, 2, 3}, ini{6, 4, 5}, ini{1, 3, 3}};
+
+  Multi_parameter_filtered_complex<Fil, I, D> cpx(bc, dc, fc);
+  char* buffer = new char[1024];
+  char* ptr = buffer;
+
+  std::size_t serSize = get_serialization_size_of(cpx);
+  ptr = serialize_value_to_char_buffer(cpx, ptr);
+  BOOST_CHECK_EQUAL(serSize, ptr - buffer);
+
+  Multi_parameter_filtered_complex<Fil, I, D> copy;
+  const char* c_ptr = buffer;
+  c_ptr = deserialize_value_from_char_buffer(copy, c_ptr);
+  BOOST_CHECK_EQUAL(serSize, c_ptr - buffer);
+  BOOST_CHECK(cpx == copy);
+
+  delete[] buffer;
+}

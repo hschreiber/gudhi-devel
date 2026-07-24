@@ -745,3 +745,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_rep_cycles, Slicer, list_of_tested_variants
   Thread_safe_slicer tss2(s2);
   test_slicer_rep_cycles2(tss2);
 }
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_serialization, Slicer, list_of_tested_variants) {
+  using Fil = typename Slicer::Filtration_value;
+
+  Slicer s(build_simple_input_complex<Fil>());
+  char* buffer = new char[1024];
+  char* ptr = buffer;
+
+  std::size_t serSize = get_serialization_size_of(s);
+  ptr = serialize_value_to_char_buffer(s, ptr);
+  BOOST_CHECK_EQUAL(serSize, ptr - buffer);
+
+  Slicer copy;
+  const char* c_ptr = buffer;
+  c_ptr = deserialize_value_from_char_buffer(copy, c_ptr);
+  BOOST_CHECK_EQUAL(serSize, c_ptr - buffer);
+
+  BOOST_CHECK(s == copy);
+  BOOST_CHECK(s.get_slice() == copy.get_slice());
+
+  delete[] buffer;
+}
