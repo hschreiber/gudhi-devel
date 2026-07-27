@@ -231,7 +231,6 @@ std::vector<std::vector<Filtration_value>> read_lower_triangular_matrix_from_csv
   if (!in.is_open()) {
     std::string error_str("read_lower_triangular_matrix_from_csv_file - Unable to open file ");
     error_str.append(filename);
-    std::cerr << error_str << std::endl;
     throw std::invalid_argument(error_str);
   }
 
