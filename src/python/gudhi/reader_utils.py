@@ -27,9 +27,12 @@ def read_lower_triangular_matrix_from_csv_file(csv_file, separator=";"):
     :returns:  The lower triangular matrix.
     :rtype: List[List[float]]
 
-    :raises ValueError: If the file cannot be opened.
+    :raises FileNotFoundError: If the file cannot be opened.
     """
-    return t._read_matrix_from_csv_file(csv_file, separator[0])
+    try:
+        return t._read_matrix_from_csv_file(csv_file, separator[0])
+    except ValueError as original_exception:
+        raise FileNotFoundError(f"{csv_file} not found") from original_exception
 
 
 def read_persistence_intervals_grouped_by_dimension(persistence_file):
@@ -45,9 +48,12 @@ def read_persistence_intervals_grouped_by_dimension(persistence_file):
     :returns:  The persistence pairs grouped by dimension.
     :rtype: Dict[int, List[Tuple[float, float]]]
 
-    :raises ValueError: If the file cannot be opened.
+    :raises FileNotFoundError: If the file cannot be opened.
     """
-    return t._read_pers_intervals_grouped_by_dimension(persistence_file)
+    try:
+        return t._read_pers_intervals_grouped_by_dimension(persistence_file)
+    except ValueError as original_exception:
+        raise FileNotFoundError(f"{persistence_file} not found") from original_exception
 
 
 def read_persistence_intervals_in_dimension(persistence_file, only_this_dim=-1):
@@ -67,6 +73,9 @@ def read_persistence_intervals_in_dimension(persistence_file, only_this_dim=-1):
     :returns:  The persistence intervals.
     :rtype: numpy array of dimension 2
 
-    :raises ValueError: If the file cannot be opened.
+    :raises FileNotFoundError: If the file cannot be opened.
     """
-    return np_array(t._read_pers_intervals_in_dimension(persistence_file, only_this_dim))
+    try:
+        return np_array(t._read_pers_intervals_in_dimension(persistence_file, only_this_dim))
+    except ValueError as original_exception:
+        raise FileNotFoundError(f"{persistence_file} not found") from original_exception

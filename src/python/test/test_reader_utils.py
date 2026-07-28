@@ -26,7 +26,7 @@ def test_file_arguments_are_required():
 
 def test_non_existing_csv_file():
     # Try to open a non existing file
-    with raises(ValueError, match="pouetpouettralala.toubiloubabdou"):
+    with raises(FileNotFoundError, match="pouetpouettralala.toubiloubabdou"):
         gd.read_lower_triangular_matrix_from_csv_file(
             csv_file="pouetpouettralala.toubiloubabdou"
         )
@@ -56,11 +56,11 @@ def test_lower_triangular_distance_matrix_csv_file():
 
 def test_non_existing_persistence_file():
     # Try to open a non existing file
-    with raises(ValueError, match="pouetpouettralala.toubiloubabdou"):
+    with raises(FileNotFoundError, match="pouetpouettralala.toubiloubabdou"):
         gd.read_persistence_intervals_grouped_by_dimension(
             persistence_file="pouetpouettralala.toubiloubabdou"
         )
-    with raises(ValueError, match="pouetpouettralala.toubiloubabdou"):
+    with raises(FileNotFoundError, match="pouetpouettralala.toubiloubabdou"):
         gd.read_persistence_intervals_in_dimension(
             persistence_file="pouetpouettralala.toubiloubabdou", only_this_dim=1
         )
