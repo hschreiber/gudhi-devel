@@ -61,6 +61,64 @@ inline auto _wrap_as_numpy_array(std::vector<std::array<T, I> > &&tensor, Shape.
                                                }));
 }
 
+template <bool ro = true, class T, typename... Shape>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, std::vector<T> &tensor, Shape... shapes) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {static_cast<std::size_t>(shapes)...}, owner);
+}
+
+// tensor has to be declared with 'new []'
+template <bool ro = true, class T, typename... Shape>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, T *tensor, Shape... shapes) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor, {static_cast<std::size_t>(shapes)...}, owner);
+}
+
+template <bool ro = true, class T, std::size_t I>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, std::vector<std::array<T, I> > &tensor) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {tensor.size(), I}, owner);
+}
+
+template <bool ro = true, class T, std::size_t I, typename... Shape>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, std::vector<std::array<T, I> > &tensor,
+                                          Shape... shapes) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {static_cast<std::size_t>(shapes)...}, owner);
+}
+
+// For the following wrappers, be sure that the pointer out-lives the python use
+// otherwise just use one of the above or nanobind::ndarray<nanobind::numpy, T>(...) which will trigger a copy
+
+template <bool ro = true, class T, typename... Shape>
+inline auto _wrap_view_as_numpy_array(std::vector<T> &tensor, Shape... shapes) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {static_cast<std::size_t>(shapes)...},
+                                                 nanobind::capsule(&tensor, [](void *) noexcept {}));
+}
+
+// tensor has to be declared with 'new []'
+template <bool ro = true, class T, typename... Shape>
+inline auto _wrap_view_as_numpy_array(T *tensor, Shape... shapes) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor, {static_cast<std::size_t>(shapes)...},
+                                                 nanobind::capsule(tensor, [](void *) noexcept {}));
+}
+
+template <bool ro = true, class T, std::size_t I>
+inline auto _wrap_view_as_numpy_array(std::vector<std::array<T, I> > &tensor) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {tensor.size(), I},
+                                                 nanobind::capsule(&tensor, [](void *) noexcept {}));
+}
+
+template <bool ro = true, class T, std::size_t I, typename... Shape>
+inline auto _wrap_view_as_numpy_array(std::vector<std::array<T, I> > &tensor, Shape... shapes) {
+  using T_t = std::conditional_t<ro, const T, T>;
+  return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {static_cast<std::size_t>(shapes)...},
+                                                 nanobind::capsule(&tensor, [](void *) noexcept {}));
+}
+
 template <typename T, class = std::enable_if<std::is_arithmetic_v<T> > >
 class Numpy_span
 {

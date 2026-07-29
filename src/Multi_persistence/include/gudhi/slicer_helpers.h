@@ -816,8 +816,10 @@ inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer,
   GUDHI_CHECK(direction.size() == 2, std::invalid_argument("Direction has to be 2-dimensional."));
   GUDHI_CHECK(xStride > 0 && yStride > 0, std::invalid_argument("Grid strides have to be strictly positive."));
   GUDHI_CHECK(std::isfinite(dt) && dt > 0, std::invalid_argument("Grid step has to be finite and strictly positive."));
-  GUDHI_CHECK(xGrid.size() > std::numeric_limits<std::size_t>::max() / yGrid.size(),
-              std::invalid_argument("Grid is too large."));
+  GUDHI_CHECK(xGrid.size() < std::numeric_limits<std::size_t>::max() / yGrid.size(),
+              std::invalid_argument("Grid is too large: " + std::to_string(xGrid.size()) + " * " +
+                                    std::to_string(yGrid.size()) + " >= " +
+                                    std::to_string(std::numeric_limits<std::size_t>::max()) + "."));
 
   std::vector<double> out(ks.size() * xGrid.size() * yGrid.size(), 0.0);
 
@@ -865,7 +867,7 @@ inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer,
     bool initialize = true;
     std::vector<double> top(static_cast<std::size_t>(maxKValue) + 1, 0.0);
     for (std::size_t lineIdx = begin; lineIdx < end; ++lineIdx) {
-      compute_values_on_line(mainSlicer, lineIdx, initialize, top);
+      compute_values_on_line(slicer, lineIdx, initialize, top);
       initialize = false;
     }
   };
@@ -874,8 +876,8 @@ inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer,
   if (n_jobs == 1) {
     compute_value_in_line_range(mainSlicer, 0, numberOfLines);
   } else {
-    const std::size_t target_chunks = n_jobs > 0 ? static_cast<std::size_t>(n_jobs) * 4 : std::size_t(64);
-    const std::size_t grainSize = std::max<std::size_t>(1, (numberOfLines + target_chunks - 1) / target_chunks);
+    const std::size_t targetChunks = n_jobs > 0 ? static_cast<std::size_t>(n_jobs) * 4 : std::size_t(64);
+    const std::size_t grainSize = std::max<std::size_t>(1, (numberOfLines + targetChunks - 1) / targetChunks);
     auto run = [&] {
       tbb::parallel_for(tbb::blocked_range<std::size_t>(0, numberOfLines, grainSize), [&](const auto& range) {
         tbb::this_task_arena::isolate([&] {
