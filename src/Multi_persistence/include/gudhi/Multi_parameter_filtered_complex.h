@@ -123,7 +123,7 @@ class Multi_parameter_filtered_complex {
    * convertible into @ref MultiFiltrationValue::value_type.
    * @tparam DimensionRange Dimension range with a begin() and end() method returning `LegacyForwardIterator` iterators
    * dereferencing into a type convertible into `D`.
-   * @tparam FiltrationRange Filtration value range with a size(), begin(), end() and operator[] method: the value
+   * @tparam FiltrationRange Filtration value range with a size() and operator[] method: the value
    * returned can either be a range of a type convertible into @ref MultiFiltrationValue::value_type, or a range of
    * ranges of a type convertible into @ref MultiFiltrationValue::value_type. The middle range also have to have the
    * same methods than the outer range. The very inner range, if existing, has to have a begin() and end() method.
@@ -161,7 +161,8 @@ class Multi_parameter_filtered_complex {
           // 1-critical
           numParam = fil.size();
           filtrationValues_.reserve(filtrationValues.size());
-          for (const auto& f : filtrationValues) {
+          for (std::size_t i = 0; i < filtrationValues.size(); ++i) {
+            const auto& f = filtrationValues[i];  // no for (auto& f: ...) because of Numpy_2D_span
             filtrationValues_.push_back({f.begin(), f.end()});
           }
         } else {
