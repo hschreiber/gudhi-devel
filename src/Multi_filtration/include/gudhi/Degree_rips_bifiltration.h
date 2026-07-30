@@ -290,7 +290,7 @@ class Degree_rips_bifiltration
   using size_type = typename Underlying_container::size_type;                           /**< Size type. */
   using difference_type = typename Underlying_container::difference_type;               /**< Difference type. */
   using reference = value_type &;                                                       /**< Reference type. */
-  using const_reference = const value_type &;                                           /**< Const reference type. */
+  using const_reference = value_type;                                                   /**< Const reference type. */
   using pointer = typename Underlying_container::pointer;                               /**< Pointer type. */
   using const_pointer = typename Underlying_container::const_pointer;                   /**< Const pointer type. */
   using iterator = typename Underlying_container::iterator;                             /**< Iterator type. */
@@ -321,10 +321,7 @@ class Degree_rips_bifiltration
   const_reference operator()(size_type g, size_type p) const
   {
     GUDHI_CHECK(g < generators_.size() && p < 2, std::out_of_range("Out of bound index."));
-    if (p == 1) {
-      dummy_g_ = g;
-      return dummy_g_;
-    }
+    if (p == 1) return g;
     return generators_[g];
   }
 
@@ -2099,7 +2096,7 @@ class Degree_rips_bifiltration
 
  private:
   Underlying_container generators_; /**< Container of the filtration value elements. */
-  mutable T dummy_g_;               /**< Dummy value for the first parameter, such that a reference can be returned. */
+  T dummy_g_;                       /**< Dummy value for the first parameter, such that a reference can be returned. */
 
   /**
    * @brief Default value of an element in the filtration value.
