@@ -183,11 +183,12 @@ class Summand {
     for (Index g = 0; g < deathCorners_.num_generators(); ++g) {
       for (Index p = 0; p < numParam; ++p) {
         auto corner_i = deathCorners_(g, p);
-        if (corner_i != T_inf) M[p] = std::max(M[p], corner_i);
+        if (corner_i == T_inf) M[p] = T_inf;
+        else if (M[p] != T_inf) M[p] = std::max(M[p], corner_i);
       }
     }
 
-    return Box<value_type>(m, M);
+    return Box<value_type>(std::move(m), std::move(M));
   }
 
   /**

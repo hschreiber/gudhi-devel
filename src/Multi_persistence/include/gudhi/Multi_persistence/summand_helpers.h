@@ -14,8 +14,7 @@
  * @author David Loiseaux
  * @brief Contains the helper methods @ref Gudhi::multi_persistence::compute_summand_distance_to,
  * @ref Gudhi::multi_persistence::compute_summand_interleaving,
- * @ref Gudhi::multi_persistence::compute_summand_local_weight and
- * @ref Gudhi::multi_persistence::compute_summand_landscape_value.
+ * @ref Gudhi::multi_persistence::compute_summand_local_weight.
  */
 
 #ifndef MP_SUMMAND_HELPERS_H_
@@ -23,7 +22,6 @@
 
 #include <algorithm>  //std::max
 #include <cstddef>    //std::size_t
-#include <stdexcept>  //std::invalid_argument
 #include <type_traits>
 #include <vector>
 
@@ -36,9 +34,10 @@
 namespace Gudhi {
 namespace multi_persistence {
 
+namespace detail {
+
 /**
  * @ingroup multi_persistence
- *
  * @private
  */
 template <typename Distance, class Summand, class RandomAccessValueRange, class Corners, typename F>
@@ -60,37 +59,6 @@ inline auto _compute_distance_to_front(const RandomAccessValueRange &x, const Co
 
 /**
  * @ingroup multi_persistence
- *
- * @brief Computes the distance from the given point `x` to the given Summand `sum`.
- * TODO: proper definition of the distance.
- *
- * @tparam T First template argument of @ref Summand.
- * @tparam Out Arithmetic type for the resulting output. Default: signed version of `T`.
- * @tparam D Second template argument of @ref Summand. Default: int.
- * @tparam RandomAccessValueRange Range of `T` with a size() and operator[] method. Default: std::vector<T>.
- * @param sum Summand.
- * @param x Point.
- * @param negative If true, the distance is allowed to be signed.
- *
- * @note The values in the summand and in the point have to fit in the `Out` type, otherwise the behaviour is
- * undefined. E.g., if `T` is `unsigned int` and `Out` is `int`, the values should not exceed `INT_MAX`.
- */
-template <typename T, typename Out = maybe_make_signed_t<T>, typename D = int,
-          class RandomAccessValueRange = std::vector<T>>
-inline Out compute_summand_distance_to(const Summand<T, D> &sum, const RandomAccessValueRange &x, bool negative) {
-  GUDHI_CHECK(x.size() >= static_cast<std::size_t>(sum.get_number_of_parameters()),
-              std::invalid_argument("The given point does not have enough coordinates compared to the given Summand."));
-
-  Out lowerDist = _compute_distance_to_front<Out, Summand<T, D>>(
-      x, sum.get_upset(), negative, [](Out cornerVal, Out xVal) -> Out { return cornerVal - xVal; });
-  Out upperDist = _compute_distance_to_front<Out, Summand<T, D>>(
-      x, sum.get_downset(), negative, [](Out cornerVal, Out xVal) -> Out { return xVal - cornerVal; });
-  return std::max(lowerDist, upperDist);
-}
-
-/**
- * @ingroup multi_persistence
- *
  * @private
  */
 template <typename Distance, class RandomAccessValueRange1, class RandomAccessValueRange2>
@@ -115,7 +83,6 @@ inline Distance _get_summand_diagonal(const RandomAccessValueRange1 &birth, cons
 
 /**
  * @ingroup multi_persistence
- *
  * @private
  */
 template <typename Distance, class RandomAccessValueRange1, class RandomAccessValueRange2, class Box>
@@ -150,41 +117,6 @@ inline Distance _get_summand_diagonal(const RandomAccessValueRange1 &birth, cons
 
 /**
  * @ingroup multi_persistence
- *
- * @brief For a birth and death corner in the summand, let the diagonal between those two be
- * \f$ min\{death[p] - birth[p]\} \f$ for all parameters \f$ p \f$. This method returns the maximal diagonal
- * of all birth-death pairs in the summand projected to the box.
- *
- * @tparam T First template argument of @ref Summand.
- * @tparam Out Arithmetic type for the resulting output. Default: signed version of `T`.
- * @tparam D Second template argument of @ref Summand. Default: int.
- * @tparam U Template argument of @ref Box. Has to be either T or std::make_signed_t<T>. Default: T.
- * @param sum Summand.
- * @param box Box to intersect with. The box is ignored if trivial.
- *
- * @note The values in the summand and in the box have to fit in the `Out` type, otherwise the behaviour is
- * undefined. E.g., if `T` is `unsigned int` and `Out` is `int`, the values should not exceed `INT_MAX`.
- */
-template <typename T, typename Out = maybe_make_signed_t<T>, typename D = int, typename U = T>
-inline Out compute_summand_interleaving(const Summand<T, D> &sum, const Box<U> &box) {
-  static_assert(std::is_same_v<U, T> || std::is_same_v<U, maybe_make_signed_t<T>>,
-                "Box template parameter is not compatible with Summand value type.");
-
-  Out interleaving = 0;
-  for (const auto &birth : sum.get_upset()) {
-    for (const auto &death : sum.get_downset()) {
-      // TODO: if the types of Births and Deaths in Summand changes (to become a template for example)
-      // the input to _get_summand_diagonal has to get adapted to it, as it makes use of
-      // Dynamic_multi_parameter_filtration::Generator working like a vector
-      interleaving = std::max(interleaving, _get_summand_diagonal<Out>(birth, death, box));
-    }
-  }
-  return interleaving;
-}
-
-/**
- * @ingroup multi_persistence
- *
  * @private
  */
 template <class BirthGenerator, class DeathGenerator, typename Distance>
@@ -211,7 +143,6 @@ inline Distance _summand_rectangle_volume(const BirthGenerator &birth, const Dea
 
 /**
  * @ingroup multi_persistence
- *
  * @private
  */
 template <typename T, class RandomAccessValueRange>
@@ -238,6 +169,72 @@ inline auto _get_local_weight_threshold(const RandomAccessValueRange &x, double 
   return Box<signedT>(std::move(mini), std::move(maxi));
 }
 
+}  // namespace detail
+
+/**
+ * @ingroup multi_persistence
+ *
+ * @brief Computes the distance from the given point `x` to the given Summand `sum`.
+ * TODO: proper definition of the distance.
+ *
+ * @tparam T First template argument of @ref Summand.
+ * @tparam Out Arithmetic type for the resulting output. Default: signed version of `T`.
+ * @tparam D Second template argument of @ref Summand. Default: int.
+ * @tparam RandomAccessValueRange Range of `T` with a size() and operator[] method. Default: std::vector<T>.
+ * @param sum Summand.
+ * @param x Point.
+ * @param negative If true, the distance is allowed to be signed.
+ *
+ * @note The values in the summand and in the point have to fit in the `Out` type, otherwise the behaviour is
+ * undefined. E.g., if `T` is `unsigned int` and `Out` is `int`, the values should not exceed `INT_MAX`.
+ */
+template <typename T, typename Out = maybe_make_signed_t<T>, typename D = int,
+          class RandomAccessValueRange = std::vector<T>>
+inline Out compute_summand_distance_to(const Summand<T, D> &sum, const RandomAccessValueRange &x, bool negative) {
+  GUDHI_CHECK(x.size() >= static_cast<std::size_t>(sum.get_number_of_parameters()),
+              std::invalid_argument("The given point does not have enough coordinates compared to the given Summand."));
+
+  Out lowerDist = detail::_compute_distance_to_front<Out, Summand<T, D>>(
+      x, sum.get_upset(), negative, [](Out cornerVal, Out xVal) -> Out { return cornerVal - xVal; });
+  Out upperDist = detail::_compute_distance_to_front<Out, Summand<T, D>>(
+      x, sum.get_downset(), negative, [](Out cornerVal, Out xVal) -> Out { return xVal - cornerVal; });
+  return std::max(lowerDist, upperDist);
+}
+
+/**
+ * @ingroup multi_persistence
+ *
+ * @brief For a birth and death corner in the summand, let the diagonal between those two be
+ * \f$ min\{death[p] - birth[p]\} \f$ for all parameters \f$ p \f$. This method returns the maximal diagonal
+ * of all birth-death pairs in the summand projected to the box.
+ *
+ * @tparam T First template argument of @ref Summand.
+ * @tparam Out Arithmetic type for the resulting output. Default: signed version of `T`.
+ * @tparam D Second template argument of @ref Summand. Default: int.
+ * @tparam U Template argument of @ref Box. Has to be either T or std::make_signed_t<T>. Default: T.
+ * @param sum Summand.
+ * @param box Box to intersect with. The box is ignored if trivial.
+ *
+ * @note The values in the summand and in the box have to fit in the `Out` type, otherwise the behaviour is
+ * undefined. E.g., if `T` is `unsigned int` and `Out` is `int`, the values should not exceed `INT_MAX`.
+ */
+template <typename T, typename Out = maybe_make_signed_t<T>, typename D = int, typename U = T>
+inline Out compute_summand_interleaving(const Summand<T, D> &sum, const Box<U> &box) {
+  static_assert(std::is_same_v<U, T> || std::is_same_v<U, maybe_make_signed_t<T>>,
+                "Box template parameter is not compatible with Summand value type.");
+
+  Out interleaving = 0;
+  for (const auto &birth : sum.get_upset()) {
+    for (const auto &death : sum.get_downset()) {
+      // TODO: if the types of Births and Deaths in Summand changes (to become a template for example)
+      // the input to _get_summand_diagonal has to get adapted to it, as it makes use of
+      // Dynamic_multi_parameter_filtration::Generator working like a vector
+      interleaving = std::max(interleaving, detail::_get_summand_diagonal<Out>(birth, death, box));
+    }
+  }
+  return interleaving;
+}
+
 /**
  * @ingroup multi_persistence
  *
@@ -259,7 +256,7 @@ inline double compute_summand_local_weight(const Summand<T, D> &sum, const Rando
               std::invalid_argument("Input range does not have the right size."));
 
   // box on which to compute the local weight
-  auto threshold = _get_local_weight_threshold<T>(x, delta);
+  auto threshold = detail::_get_local_weight_threshold<T>(x, delta);
 
   double localWeight = 0.;
   const double normCoef = 2.;
@@ -271,7 +268,8 @@ inline double compute_summand_local_weight(const Summand<T, D> &sum, const Rando
         // TODO: if the types of Births and Deaths in Summand changes (to become a template for example)
         // _summand_rectangle_volume has to get adapted to it, as it makes use of
         // Dynamic_multi_parameter_filtration::Generator working like a vector
-        localWeight = std::max(localWeight, static_cast<double>(_summand_rectangle_volume(birth, death, threshold)));
+        localWeight =
+            std::max(localWeight, static_cast<double>(detail::_summand_rectangle_volume(birth, death, threshold)));
       }
     }
     return localWeight / std::pow(normCoef * std::abs(delta), x.size());
@@ -280,30 +278,6 @@ inline double compute_summand_local_weight(const Summand<T, D> &sum, const Rando
   // local weight is interleaving to 0 of module restricted to the square
   localWeight = compute_summand_interleaving<T, double>(sum, threshold);
   return localWeight / (normCoef * std::abs(delta));
-}
-
-/**
- * @ingroup multi_persistence
- *
- * @brief Computes the local landscape value of the summand at the given point.
- *
- * @tparam T First template argument of @ref Summand.
- * @tparam D Second template argument of @ref Summand.
- * @tparam RandomAccessValueRange Range of arithmetic type with a size() and operator[] method.
- * @param sum Summand.
- * @param x Local point. Assumed to have as many coordinates than there are parameters in the summand.
- */
-template <typename T, typename D, class RandomAccessValueRange>
-inline auto compute_summand_landscape_value(const Summand<T, D> &sum, const RandomAccessValueRange &x) {
-  using signedT = maybe_make_signed_t<T>;
-  signedT landscapeValue = 0;
-  for (const auto &birth : sum.get_upset()) {
-    for (const auto &death : sum.get_downset()) {
-      signedT value = std::min(_get_summand_diagonal<signedT>(birth, x), _get_summand_diagonal<signedT>(x, death));
-      landscapeValue = std::max(landscapeValue, value);
-    }
-  }
-  return landscapeValue;
 }
 
 }  // namespace multi_persistence

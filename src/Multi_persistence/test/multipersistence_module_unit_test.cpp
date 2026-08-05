@@ -17,6 +17,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/mpl/list.hpp>
 
+#include <gudhi/multi_persistence_landscapes.h>
 #include <gudhi/Multi_persistence/Module.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/module_helpers.h>

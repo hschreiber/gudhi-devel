@@ -27,6 +27,7 @@
 #include <gudhi/Slicer.h>
 #include <gudhi/Thread_safe_slicer.h>
 #include <gudhi/multi_simplex_tree_helpers.h>
+#include <gudhi/multi_persistence_landscapes.h>
 #include <gudhi/Multi_persistence/Persistence_interface_homology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_cohomology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_vineyard.h>
