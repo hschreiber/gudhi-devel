@@ -184,7 +184,7 @@ class Multi_parameter_filtration_value {
    * @tparam ValueRange Range of types convertible to `T`. Should have a begin() and end() method.
    * @param range Values of the generator.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin>>
   Multi_parameter_filtration_value(const ValueRange &range) : generators_(range.begin(), range.end()) {}
 
   /**
@@ -298,7 +298,7 @@ class Multi_parameter_filtration_value {
 
   /**
    * @brief Returns a copy as a @ref Multi_parameter_filtration_value with given template arguments.
-   * 
+   *
    * @tparam OtherStoragePolicy New `StoragePolicy` template of @ref Multi_parameter_filtration_value.
    * @tparam OtherCo New `Co` template of @ref Multi_parameter_filtration_value.
    * @tparam OtherEnsure1Criticality New `Ensure1Criticality` template of @ref Multi_parameter_filtration_value.
@@ -319,7 +319,7 @@ class Multi_parameter_filtration_value {
 
   /**
    * @brief Returns a copy by casting every filtration value element in the given type.
-   * 
+   *
    * @tparam U New desired @ref value_type.
    */
   template <typename U, class = std::enable_if_t<std::is_arithmetic_v<U>>>
@@ -368,7 +368,7 @@ class Multi_parameter_filtration_value {
    * the second element to the parameter number.
    */
   template <class IndexRange = std::initializer_list<size_type>,
-            class = std::enable_if_t<details::RangeTraits<IndexRange>::has_begin>>
+            class = std::enable_if_t<detail::RangeTraits<IndexRange>::has_begin>>
   reference operator[](const IndexRange &indices) {
     GUDHI_CHECK(indices.size() >= 2,
                 std::invalid_argument(
@@ -387,7 +387,7 @@ class Multi_parameter_filtration_value {
    * the second element to the parameter number.
    */
   template <class IndexRange = std::initializer_list<size_type>,
-            class = std::enable_if_t<details::RangeTraits<IndexRange>::has_begin>>
+            class = std::enable_if_t<detail::RangeTraits<IndexRange>::has_begin>>
   const_reference operator[](const IndexRange &indices) const {
     GUDHI_CHECK(indices.size() >= 2,
                 std::invalid_argument(
@@ -532,8 +532,8 @@ class Multi_parameter_filtration_value {
       }
       for (size_type p = 0U; p < a.num_parameters(); ++p) {
         if constexpr (inverse) p = a.num_parameters() - 1 - p;
-        if (details::_is_nan(a(gA, p)) && !details::_is_nan(b(gB, p))) return false;
-        if (details::_is_nan(b(gB, p))) return true;
+        if (detail::_is_nan(a(gA, p)) && !detail::_is_nan(b(gB, p))) return false;
+        if (detail::_is_nan(b(gB, p))) return true;
         if (a(gA, p) < b(gB, p)) return true;
         if (b(gB, p) < a(gA, p)) return false;
         if constexpr (inverse) p = a.num_parameters() - 1 - p;
@@ -573,8 +573,8 @@ class Multi_parameter_filtration_value {
       }
       for (size_type p = 0U; p < a.num_parameters(); ++p) {
         if constexpr (inverse) p = a.num_parameters() - 1 - p;
-        if (details::_is_nan(a(gA, p)) && !details::_is_nan(b(gB, p))) return false;
-        if (details::_is_nan(b(gB, p))) return true;
+        if (detail::_is_nan(a(gA, p)) && !detail::_is_nan(b(gB, p))) return false;
+        if (detail::_is_nan(b(gB, p))) return true;
         if (a(gA, p) < b(gB, p)) return true;
         if (b(gB, p) < a(gA, p)) return false;
         if constexpr (inverse) p = a.num_parameters() - 1 - p;
@@ -605,10 +605,10 @@ class Multi_parameter_filtration_value {
         if (p != StoragePolicy::implicit_axis()) {
           value_type threshold = a(0, p);
           for (size_type g = 0; g < b.num_generators(); ++g) {
-            if (details::_is_nan(b(g, p))) return false;
+            if (detail::_is_nan(b(g, p))) return false;
             if (g >= a.num_generators() && _strictly_dominates(threshold, b(g, p))) return false;
             if (g < a.num_generators()) {
-              if (details::_is_nan(a(g, p))) return false;
+              if (detail::_is_nan(a(g, p))) return false;
               threshold = _strictly_dominates(threshold, a(g, p)) ? a(g, p) : threshold;
               if constexpr (strict)
                 if (a(g, p) == threshold && b(g, p) == threshold) return false;
@@ -713,7 +713,7 @@ class Multi_parameter_filtration_value {
       for (size_type p = 0; p < a.num_parameters(); ++p) {
         value_type va = a(g, p);
         value_type vb = b(g, p);
-        if (details::_is_nan(va) || details::_is_nan(vb)) return false;
+        if (detail::_is_nan(va) || detail::_is_nan(vb)) return false;
         if (va != vb) return false;
       }
     }
@@ -785,8 +785,8 @@ class Multi_parameter_filtration_value {
    * @param f First element of the subtraction.
    * @param r Second element of the subtraction.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator-(Multi_parameter_filtration_value f, const ValueRange &r) {
     f -= r;
     return f;
@@ -811,12 +811,12 @@ class Multi_parameter_filtration_value {
    * @param r First element of the subtraction.
    * @param f Second element of the subtraction.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin &&
-                                                       !details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin &&
+                                                       !detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator-(const ValueRange &r, Multi_parameter_filtration_value f) {
     f._apply_operation(r, [](value_type &valF, const value_type &valR) -> bool {
       valF = -valF;
-      return details::_add(valF, valR);
+      return detail::_add(valF, valR);
     });
     return f;
   }
@@ -861,7 +861,7 @@ class Multi_parameter_filtration_value {
   friend Multi_parameter_filtration_value operator-(const value_type &val, Multi_parameter_filtration_value f) {
     f._apply_operation([val](value_type &valF) -> bool {
       valF = -valF;
-      return details::_add(valF, val);
+      return detail::_add(valF, val);
     });
     return f;
   }
@@ -885,11 +885,11 @@ class Multi_parameter_filtration_value {
    * @param f First element of the subtraction.
    * @param r Second element of the subtraction.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value &operator-=(Multi_parameter_filtration_value &f, const ValueRange &r) {
     f._apply_operation(r,
-                       [](value_type &valF, const value_type &valR) -> bool { return details::_subtract(valF, valR); });
+                       [](value_type &valF, const value_type &valR) -> bool { return detail::_subtract(valF, valR); });
     return f;
   }
 
@@ -910,7 +910,7 @@ class Multi_parameter_filtration_value {
    * @param val Second element of the subtraction.
    */
   friend Multi_parameter_filtration_value &operator-=(Multi_parameter_filtration_value &f, const value_type &val) {
-    f._apply_operation([val](value_type &valF) -> bool { return details::_subtract(valF, val); });
+    f._apply_operation([val](value_type &valF) -> bool { return detail::_subtract(valF, val); });
     return f;
   }
 
@@ -934,8 +934,8 @@ class Multi_parameter_filtration_value {
    * @param f First element of the addition.
    * @param r Second element of the addition.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator+(Multi_parameter_filtration_value f, const ValueRange &r) {
     f += r;
     return f;
@@ -960,8 +960,8 @@ class Multi_parameter_filtration_value {
    * @param r First element of the addition.
    * @param f Second element of the addition.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin &&
-                                                       !details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin &&
+                                                       !detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator+(const ValueRange &r, Multi_parameter_filtration_value f) {
     f += r;
     return f;
@@ -1028,10 +1028,10 @@ class Multi_parameter_filtration_value {
    * @param f First element of the addition.
    * @param r Second element of the addition.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value &operator+=(Multi_parameter_filtration_value &f, const ValueRange &r) {
-    f._apply_operation(r, [](value_type &valF, const value_type &valR) -> bool { return details::_add(valF, valR); });
+    f._apply_operation(r, [](value_type &valF, const value_type &valR) -> bool { return detail::_add(valF, valR); });
     return f;
   }
 
@@ -1052,7 +1052,7 @@ class Multi_parameter_filtration_value {
    * @param val Second element of the addition.
    */
   friend Multi_parameter_filtration_value &operator+=(Multi_parameter_filtration_value &f, const value_type &val) {
-    f._apply_operation([val](value_type &valF) -> bool { return details::_add(valF, val); });
+    f._apply_operation([val](value_type &valF) -> bool { return detail::_add(valF, val); });
     return f;
   }
 
@@ -1078,8 +1078,8 @@ class Multi_parameter_filtration_value {
    * @param f First element of the multiplication.
    * @param r Second element of the multiplication.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator*(Multi_parameter_filtration_value f, const ValueRange &r) {
     f *= r;
     return f;
@@ -1106,8 +1106,8 @@ class Multi_parameter_filtration_value {
    * @param r First element of the multiplication.
    * @param f Second element of the multiplication.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin &&
-                                                       !details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin &&
+                                                       !detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator*(const ValueRange &r, Multi_parameter_filtration_value f) {
     f *= r;
     return f;
@@ -1180,11 +1180,11 @@ class Multi_parameter_filtration_value {
    * @param f First element of the multiplication.
    * @param r Second element of the multiplication.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value &operator*=(Multi_parameter_filtration_value &f, const ValueRange &r) {
     f._apply_operation(r,
-                       [](value_type &valF, const value_type &valR) -> bool { return details::_multiply(valF, valR); });
+                       [](value_type &valF, const value_type &valR) -> bool { return detail::_multiply(valF, valR); });
     return f;
   }
 
@@ -1207,7 +1207,7 @@ class Multi_parameter_filtration_value {
    * @param val Second element of the multiplication.
    */
   friend Multi_parameter_filtration_value &operator*=(Multi_parameter_filtration_value &f, const value_type &val) {
-    f._apply_operation([val](value_type &valF) -> bool { return details::_multiply(valF, val); });
+    f._apply_operation([val](value_type &valF) -> bool { return detail::_multiply(valF, val); });
     return f;
   }
 
@@ -1236,8 +1236,8 @@ class Multi_parameter_filtration_value {
    * @param f First element of the division.
    * @param r Second element of the division.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator/(Multi_parameter_filtration_value f, const ValueRange &r) {
     f /= r;
     return f;
@@ -1267,13 +1267,13 @@ class Multi_parameter_filtration_value {
    * @param r First element of the division.
    * @param f Second element of the division.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin &&
-                                                       !details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin &&
+                                                       !detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value operator/(const ValueRange &r, Multi_parameter_filtration_value f) {
     f._apply_operation(r, [](value_type &valF, const value_type &valR) -> bool {
       value_type tmp = valF;
       valF = valR;
-      return details::_divide(valF, tmp);
+      return detail::_divide(valF, tmp);
     });
     return f;
   }
@@ -1329,7 +1329,7 @@ class Multi_parameter_filtration_value {
     f._apply_operation([val](value_type &valF) -> bool {
       value_type tmp = valF;
       valF = val;
-      return details::_divide(valF, tmp);
+      return detail::_divide(valF, tmp);
     });
     return f;
   }
@@ -1358,11 +1358,10 @@ class Multi_parameter_filtration_value {
    * @param f First element of the division.
    * @param r Second element of the division.
    */
-  template <class ValueRange, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin ||
-                                                       details::RangeTraits<ValueRange>::is_multi_filtration>>
+  template <class ValueRange, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin ||
+                                                       detail::RangeTraits<ValueRange>::is_multi_filtration>>
   friend Multi_parameter_filtration_value &operator/=(Multi_parameter_filtration_value &f, const ValueRange &r) {
-    f._apply_operation(r,
-                       [](value_type &valF, const value_type &valR) -> bool { return details::_divide(valF, valR); });
+    f._apply_operation(r, [](value_type &valF, const value_type &valR) -> bool { return detail::_divide(valF, valR); });
     return f;
   }
 
@@ -1388,7 +1387,7 @@ class Multi_parameter_filtration_value {
    * @param val Second element of the division.
    */
   friend Multi_parameter_filtration_value &operator/=(Multi_parameter_filtration_value &f, const value_type &val) {
-    f._apply_operation([val](value_type &valF) -> bool { return details::_divide(valF, val); });
+    f._apply_operation([val](value_type &valF) -> bool { return detail::_divide(valF, val); });
     return f;
   }
 
@@ -1440,7 +1439,7 @@ class Multi_parameter_filtration_value {
    * @return false Otherwise.
    */
   template <class GeneratorRange = std::initializer_list<value_type>,
-            class = std::enable_if_t<details::RangeTraits<GeneratorRange>::has_begin>>
+            class = std::enable_if_t<detail::RangeTraits<GeneratorRange>::has_begin>>
   bool add_generator(const GeneratorRange &x) {
     return add_generator(x.begin(), x.end());
   }
@@ -1504,7 +1503,7 @@ class Multi_parameter_filtration_value {
    * @param x New generator to add. Must have the same number of parameters than @ref num_parameters().
    */
   template <class GeneratorRange = std::initializer_list<value_type>,
-            class = std::enable_if_t<details::RangeTraits<GeneratorRange>::has_begin>>
+            class = std::enable_if_t<detail::RangeTraits<GeneratorRange>::has_begin>>
   void add_guaranteed_generator(const GeneratorRange &x) {
     static_assert(!Ensure1Criticality, "Cannot add additional generator to a 1-critical only filtration value.");
     add_guaranteed_generator(x.begin(), x.end());
@@ -1520,7 +1519,7 @@ class Multi_parameter_filtration_value {
    * @warning If @ref StoragePolicy::has_minimal_set_representation is true and the resulting set of generators is
    * not minimal or sorted after this modification, some methods will have an undefined behaviour. Be sure to
    * call @ref simplify() before using them. Same if the internal order is not preserved.
-   * 
+   *
    * @tparam Iterator Iterator class satisfying the requirements of the standard `LegacyForwardIterator`.
    * The dereferenced type has to be convertible to `T`.
    * @param genStart Iterator pointing to the begining of the range.
@@ -1578,11 +1577,11 @@ class Multi_parameter_filtration_value {
    * @return false Otherwise.
    */
   template <class GeneratorRange = std::initializer_list<value_type>,
-            class = std::enable_if_t<details::RangeTraits<GeneratorRange>::has_begin ||
-                                     details::RangeTraits<GeneratorRange>::is_multi_filtration>>
+            class = std::enable_if_t<detail::RangeTraits<GeneratorRange>::has_begin ||
+                                     detail::RangeTraits<GeneratorRange>::is_multi_filtration>>
   bool push_to_least_common_upper_bound(const GeneratorRange &x, bool exclude_infinite_values = false) {
     std::vector<value_type> pushTo;
-    if constexpr (details::RangeTraits<GeneratorRange>::is_multi_filtration) {
+    if constexpr (detail::RangeTraits<GeneratorRange>::is_multi_filtration) {
       if (x.num_generators() == 0) return false;
       GUDHI_CHECK(x.num_parameters() == num_parameters(),
                   std::invalid_argument("Wrong range size. Should correspond to the number of parameters."));
@@ -1625,13 +1624,12 @@ class Multi_parameter_filtration_value {
       auto implGen = static_cast<size_type>(implicitAxisGen);
       for (size_type p = 0; p < num_parameters(); ++p) {
         if (p != StoragePolicy::implicit_axis() &&
-            (!exclude_infinite_values || (pushTo[p] != T_inf && pushTo[p] != T_m_inf)) &&
-            !details::_is_nan(pushTo[p])) {
+            (!exclude_infinite_values || (pushTo[p] != T_inf && pushTo[p] != T_m_inf)) && !detail::_is_nan(pushTo[p])) {
           value_type newVal = _get_default_null_value();
 
           for (size_type i = 0; i < std::min(implGen, generators_.num_generators()); ++i) {
             auto &v = generators_(i, p);
-            if (!details::_is_nan(v)) {
+            if (!detail::_is_nan(v)) {
               value_type threshold = std::max(v, pushTo[p]);
               if (_dominates(newVal, threshold)) newVal = threshold;
               if (v != _get_default_null_value()) {
@@ -1651,7 +1649,7 @@ class Multi_parameter_filtration_value {
             }
             for (size_type i = implGen + 1; i < generators_.num_generators(); ++i) {
               auto &v = generators_(i, p);
-              if (!details::_is_nan(v) && v < pushTo[p]) {
+              if (!detail::_is_nan(v) && v < pushTo[p]) {
                 modified = true;
                 v = pushTo[p];
               }
@@ -1730,11 +1728,11 @@ class Multi_parameter_filtration_value {
    * @return false Otherwise.
    */
   template <class GeneratorRange = std::initializer_list<value_type>,
-            class = std::enable_if_t<details::RangeTraits<GeneratorRange>::has_begin ||
-                                     details::RangeTraits<GeneratorRange>::is_multi_filtration>>
+            class = std::enable_if_t<detail::RangeTraits<GeneratorRange>::has_begin ||
+                                     detail::RangeTraits<GeneratorRange>::is_multi_filtration>>
   bool pull_to_greatest_common_lower_bound(const GeneratorRange &x, bool exclude_infinite_values = false) {
     std::vector<value_type> pushTo;
-    if constexpr (details::RangeTraits<GeneratorRange>::is_multi_filtration) {
+    if constexpr (detail::RangeTraits<GeneratorRange>::is_multi_filtration) {
       if (x.num_generators() == 0) return false;
       GUDHI_CHECK(x.num_parameters() == num_parameters(),
                   std::invalid_argument("Wrong range size. Should correspond to the number of parameters."));
@@ -1760,13 +1758,12 @@ class Multi_parameter_filtration_value {
       auto implGen = static_cast<size_type>(implicitAxisGen);
       for (size_type p = 0; p < num_parameters(); ++p) {
         if (p != StoragePolicy::implicit_axis() &&
-            (!exclude_infinite_values || (pushTo[p] != T_m_inf && pushTo[p] != T_inf)) &&
-            !details::_is_nan(pushTo[p])) {
+            (!exclude_infinite_values || (pushTo[p] != T_m_inf && pushTo[p] != T_inf)) && !detail::_is_nan(pushTo[p])) {
           value_type newVal = _get_default_null_value();
 
           for (size_type i = 0; i < std::min(implGen, generators_.num_generators()); ++i) {
             auto &v = generators_(i, p);
-            if (!details::_is_nan(v) && v > pushTo[p]) {
+            if (!detail::_is_nan(v) && v > pushTo[p]) {
               modified = true;
               v = pushTo[p];
             }
@@ -1775,7 +1772,7 @@ class Multi_parameter_filtration_value {
           if (implGen < generators_.num_generators()) {
             for (size_type i = implGen; i < generators_.num_generators(); ++i) {
               auto v = generators_(i, p);
-              if (!details::_is_nan(v)) {
+              if (!detail::_is_nan(v)) {
                 value_type threshold = std::min(v, pushTo[p]);
                 if (_dominates(newVal, threshold)) newVal = threshold;
               }
@@ -1933,7 +1930,7 @@ class Multi_parameter_filtration_value {
         bool nan = true;
         for (size_type g = 0; g < f.num_generators() && gen[p] != (greatest ? T_inf : T_m_inf); ++g) {
           value_type val = f(g, p);
-          if (!details::_is_nan(val)) {
+          if (!detail::_is_nan(val)) {
             nan = false;
             if (val != _get_default_null_value()) {
               isInf = false;
@@ -1963,7 +1960,7 @@ class Multi_parameter_filtration_value {
         bool nan = true;
         for (size_type g = 0; g < f.num_generators() && result(0, p) != (greatest ? T_inf : T_m_inf); ++g) {
           value_type val = f(g, p);
-          if (!details::_is_nan(val)) {
+          if (!detail::_is_nan(val)) {
             nan = false;
             if constexpr (greatest) {
               result(0, p) = val > result(0, p) ? val : result(0, p);
@@ -2070,7 +2067,7 @@ class Multi_parameter_filtration_value {
    * values stored in the filtration value corresponds to indices existing in the given grid.
    *
    * It is equivalent to the other version when `U` corresponds to `RandomAccessArray::value_type`.
-   * 
+   *
    * @tparam RandomAccessArray A range with size and operator[] method and a `value_type` definition.
    * @param f Filtration value storing coordinates compatible with `grid`.
    * @param grid Vector of @p RandomAccessArray with size at least number of filtration parameters. Each array
@@ -2139,7 +2136,7 @@ class Multi_parameter_filtration_value {
     for (size_type i = 0; i < num_gen; ++i) {
       stream >> delimiter;  // [
       for (size_type j = 0; j < num_param; ++j) {
-        f(i, j) = details::_get_value<value_type>(stream);
+        f(i, j) = detail::_get_value<value_type>(stream);
         if (!stream.good())
           throw std::invalid_argument("Invalid incoming stream format for Multi_parameter_filtration_value.");
         stream >> delimiter;  // , or last ]
@@ -2344,7 +2341,7 @@ class Multi_parameter_filtration_value {
         a_i = a(g_a, i);
         b_i = b(g_b, i);
       }
-      if (a_i > b_i || details::_is_nan(a_i) || details::_is_nan(b_i)) return false;
+      if (a_i > b_i || detail::_is_nan(a_i) || detail::_is_nan(b_i)) return false;
       if (isSame && a_i != b_i) isSame = false;
     }
     return !isSame;
@@ -2363,8 +2360,8 @@ class Multi_parameter_filtration_value {
         a_i = a(g_a, i);
         b_i = b(g_b, i);
       }
-      if (a_i > b_i || (!details::_is_nan(a_i) && details::_is_nan(b_i)) ||
-          (details::_is_nan(a_i) && !details::_is_nan(b_i)))
+      if (a_i > b_i || (!detail::_is_nan(a_i) && detail::_is_nan(b_i)) ||
+          (detail::_is_nan(a_i) && !detail::_is_nan(b_i)))
         return false;
     }
     return true;
@@ -2395,7 +2392,7 @@ class Multi_parameter_filtration_value {
   /**
    * @brief Applies operation on the elements of the filtration value.
    */
-  template <class ValueRange, class F, class = std::enable_if_t<details::RangeTraits<ValueRange>::has_begin>>
+  template <class ValueRange, class F, class = std::enable_if_t<detail::RangeTraits<ValueRange>::has_begin>>
   void _apply_operation(const ValueRange &range, F &&operate) {
     if (is_nan()) return;
     bool isNaN = true;
@@ -2461,7 +2458,7 @@ class Multi_parameter_filtration_value {
       value_type v = *itB;
       if (v != T_inf) isInf = false;
       if (v != T_m_inf) isMinusInf = false;
-      if (!details::_is_nan(v)) isNaN = false;
+      if (!detail::_is_nan(v)) isNaN = false;
       if (!isInf && !isMinusInf && !isNaN) return;
     }
   }
@@ -2500,8 +2497,8 @@ class Multi_parameter_filtration_value {
         equal = false;
         allSmaller = false;
       }
-      if (!details::_is_nan(generators_(g, p))) allNaNA = false;
-      if (!details::_is_nan(*it)) allNaNB = false;
+      if (!detail::_is_nan(generators_(g, p))) allNaNA = false;
+      if (!detail::_is_nan(*it)) allNaNB = false;
       ++it;
     }
     if (allNaNA || allNaNB) return Rel::IS_DOMINATED;

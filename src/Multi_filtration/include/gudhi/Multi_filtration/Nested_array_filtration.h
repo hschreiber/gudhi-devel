@@ -73,10 +73,10 @@ class Nested_array_filtration {
   using As_type = Nested_array_filtration<U>;                 /**< Nested_array_filtration<U> */
 
   template <typename U = T>
-  constexpr static const U T_inf = details::MF_T_inf<U>;
+  constexpr static const U T_inf = detail::MF_T_inf<U>;
 
   template <typename U = T>
-  constexpr static const U T_m_inf = details::MF_T_m_inf<U>;
+  constexpr static const U T_m_inf = detail::MF_T_m_inf<U>;
 
   constexpr static const bool has_an_implicit_axis = false;
   constexpr static const bool has_lexicographical_storage = true;
@@ -244,7 +244,7 @@ class Nested_array_filtration {
       for (const T &v : g) {
         if (v != T_inf<>) isInf = false;
         if (v != T_m_inf<>) isMinusInf = false;
-        if (!details::_is_nan(v)) isNan = false;
+        if (!detail::_is_nan(v)) isNan = false;
         if (!isInf && !isMinusInf && !isNan) return true;
       }
     }
@@ -272,9 +272,9 @@ class Nested_array_filtration {
 
       // same size if reaching here
       for (size_type i = 0; i < g1.size(); ++i) {
-        if (details::_is_nan(g1[i]) && details::_is_nan(g2[i])) continue;
-        if (details::_is_nan(g2[i])) return true;
-        if (details::_is_nan(g1[i])) return false;
+        if (detail::_is_nan(g1[i]) && detail::_is_nan(g2[i])) continue;
+        if (detail::_is_nan(g2[i])) return true;
+        if (detail::_is_nan(g1[i])) return false;
         if (g1[i] != g2[i]) return g1[i] < g2[i];
       }
       return false;

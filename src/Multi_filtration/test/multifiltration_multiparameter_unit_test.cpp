@@ -627,7 +627,7 @@ void test_operators() {
   res = f * f3;
   BOOST_CHECK_EQUAL(res(0, 0), f4(0, 0));
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -646,7 +646,7 @@ void test_operators() {
   res = f * F::inf(num_param);
   BOOST_CHECK_EQUAL(res(0, 0), F::T_m_inf);
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -655,7 +655,7 @@ void test_operators() {
   res = F::inf(num_param) * f;
   BOOST_CHECK_EQUAL(res(0, 0), F::T_m_inf);
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -664,7 +664,7 @@ void test_operators() {
   res = f * F::minus_inf(num_param);
   BOOST_CHECK_EQUAL(res(0, 0), F::T_inf);
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -673,7 +673,7 @@ void test_operators() {
   res = F::minus_inf(num_param) * f;
   BOOST_CHECK_EQUAL(res(0, 0), F::T_inf);
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -704,7 +704,7 @@ void test_operators() {
   res = f3 / f;
   BOOST_CHECK_EQUAL(res(0, 0), f4(0, 0));
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -713,7 +713,7 @@ void test_operators() {
   res = T(5) / f;
   BOOST_CHECK_EQUAL(res(0, 0), static_cast<T>(-0.5));
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -731,7 +731,7 @@ void test_operators() {
   res = F::inf(num_param) / f;
   BOOST_CHECK_EQUAL(res(0, 0), F::T_m_inf);
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -744,7 +744,7 @@ void test_operators() {
   res = F::minus_inf(num_param) / f;
   BOOST_CHECK_EQUAL(res(0, 0), F::T_inf);
   if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
-    BOOST_CHECK(details::_is_nan(res(0, 1)));
+    BOOST_CHECK(detail::_is_nan(res(0, 1)));
   } else {
     BOOST_CHECK_EQUAL(res(0, 1), 0);
   }
@@ -1093,16 +1093,16 @@ void test_friends() {
       std::vector<T> v = {0, nan, 2, 2, nan, 4};
       F f2(v.begin(), v.end(), 3);
 
-      BOOST_CHECK(details::_is_nan(compute_norm(f2)));
-      BOOST_CHECK(details::_is_nan(compute_euclidean_distance_to(f2, {2, 3, 5})));
-      BOOST_CHECK(details::_is_nan(compute_linear_projection(f2, {2, 3, 5, 9})));
+      BOOST_CHECK(detail::_is_nan(compute_norm(f2)));
+      BOOST_CHECK(detail::_is_nan(compute_euclidean_distance_to(f2, {2, 3, 5})));
+      BOOST_CHECK(detail::_is_nan(compute_linear_projection(f2, {2, 3, 5, 9})));
       auto bf2 = factorize_below(f2);
       BOOST_CHECK_EQUAL(bf2(0, 0), 0);
-      BOOST_CHECK(details::_is_nan(bf2(0, 1)));
+      BOOST_CHECK(detail::_is_nan(bf2(0, 1)));
       BOOST_CHECK_EQUAL(bf2(0, 2), 2);
       auto af2 = factorize_above(f2);
       BOOST_CHECK_EQUAL(af2(0, 0), 2);
-      BOOST_CHECK(details::_is_nan(af2(0, 1)));
+      BOOST_CHECK(detail::_is_nan(af2(0, 1)));
       BOOST_CHECK_EQUAL(af2(0, 2), 4);
     }
   }

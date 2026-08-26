@@ -80,10 +80,10 @@ class Flat_array_filtration {
   using As_type = Flat_array_filtration<U>;                   /**< Flat_array_filtration<U> */
 
   template <typename U = T>
-  constexpr static const U T_inf = details::MF_T_inf<U>;
+  constexpr static const U T_inf = detail::MF_T_inf<U>;
 
   template <typename U = T>
-  constexpr static const U T_m_inf = details::MF_T_m_inf<U>;
+  constexpr static const U T_m_inf = detail::MF_T_m_inf<U>;
 
   constexpr static const bool has_an_implicit_axis = false;
   constexpr static const bool has_lexicographical_storage = true;
@@ -252,7 +252,7 @@ class Flat_array_filtration {
     for (const auto &v : generators_) {
       if (v != T_inf<>) isInf = false;
       if (v != T_m_inf<>) isMinusInf = false;
-      if (!details::_is_nan(v)) isNan = false;
+      if (!detail::_is_nan(v)) isNan = false;
       if (!isInf && !isMinusInf && !isNan) return true;
     }
     return false;
@@ -280,9 +280,9 @@ class Flat_array_filtration {
       for (auto it1 = begin(g1), it2 = begin(g2); it1 != end(g1); ++it1, ++it2) {
         value_type v1 = *it1;
         value_type v2 = *it2;
-        if (details::_is_nan(v1) && details::_is_nan(v2)) continue;
-        if (details::_is_nan(v2)) return true;
-        if (details::_is_nan(v1)) return false;
+        if (detail::_is_nan(v1) && detail::_is_nan(v2)) continue;
+        if (detail::_is_nan(v2)) return true;
+        if (detail::_is_nan(v1)) return false;
         if (v1 != v2) return v1 < v2;
       }
       return false;

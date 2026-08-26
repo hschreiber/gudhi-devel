@@ -27,7 +27,7 @@ namespace Gudhi {
 
 namespace multi_filtration {
 
-namespace details {
+namespace detail {
 
 /**
  * @ingroup multi_filtration
@@ -227,7 +227,7 @@ inline T _get_value(std::istream &stream) {
   return val;
 };
 
-}  // namespace details
+}  // namespace detail
 
 }  // namespace multi_filtration
 
