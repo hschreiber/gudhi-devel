@@ -23,7 +23,6 @@
 #include <boost/mpl/list.hpp>
 
 #include <gudhi/Simplex_tree.h>
-#include <gudhi/Simplex_tree/serialization_utils.h>  // for de/serialize_value_to_char_buffer
 #include <gudhi/Unitary_tests_utils.h>  // for GUDHI_TEST_FLOAT_EQUALITY_CHECK
 #include <gudhi/random.h>
 
