@@ -32,7 +32,7 @@ namespace Gudhi {
 
 namespace multi_filtration {
 
-namespace details {
+namespace detail {
 
 /**
  * @ingroup multi_filtration
@@ -42,8 +42,8 @@ namespace details {
 template <typename U>
 inline bool _is_less(U a, U b) {
   // workaround -Ofast optimization which is default on Windows, where x < NaN / NaN < x is not well defined
-  if (details::_is_nan(a)) return !details::_is_nan(b);
-  if (details::_is_nan(b)) return false;
+  if (detail::_is_nan(a)) return !detail::_is_nan(b);
+  if (detail::_is_nan(b)) return false;
   return a < b;
 };
 
@@ -76,13 +76,13 @@ inline T _compute_frobenius_norm(size_type number_of_elements, F &&norm) {
     T v = std::forward<F>(norm)(p);
     // workaround -Ofast optimization which is default on Windows
     // otherwise 0 += NaN can be equal to 0 with -Ofast which we don't want
-    if (details::_is_nan(v)) return v;
+    if (detail::_is_nan(v)) return v;
     out += v * v;
   }
   return out;
 }
 
-}  // namespace details
+}  // namespace detail
 
 /**
  * @ingroup multi_filtration
@@ -110,7 +110,7 @@ inline U compute_linear_projection(const MultiFiltrationValue &f, const Coeffici
     for (std::size_t i = 0; i < size; i++) {
       // workaround -Ofast optimization which is default on Windows
       // otherwise 0 += NaN can be equal to 0 with -Ofast which we don't want
-      if (details::_is_nan(f(g, i))) return f(g, i);
+      if (detail::_is_nan(f(g, i))) return f(g, i);
       projection += static_cast<U>(*it) * static_cast<U>(f(g, i));
       ++it;
     }
@@ -119,7 +119,7 @@ inline U compute_linear_projection(const MultiFiltrationValue &f, const Coeffici
 
   if (f.num_generators() == 1) return project_generator(0);
 
-  auto is_less = [](U a, U b) { return details::_is_less(a, b); };
+  auto is_less = [](U a, U b) { return detail::_is_less(a, b); };
 
 #ifdef GUDHI_USE_TBB
   std::vector<U> projections(f.num_generators());
@@ -195,21 +195,21 @@ inline U compute_euclidean_distance_to(const MultiFiltrationValue &f1, const Mul
 
   // TODO: verify if this really makes a differences in the 1-critical case, otherwise just keep the general case
   if constexpr (MultiFiltrationValue::ensures_1_criticality()) {
-    return details::_sqrt<U>(details::_compute_frobenius_norm<T>(
+    return detail::_sqrt<U>(detail::_compute_frobenius_norm<T>(
         f1.num_parameters(), [&](size_type p) -> T { return f1(0, p) - f2(0, p); }));
   } else {
-    auto is_less = [](U a, U b) { return details::_is_less(a, b); };
+    auto is_less = [](U a, U b) { return detail::_is_less(a, b); };
     U res = std::numeric_limits<U>::max();
     for (size_type g1 = 0; g1 < f1.num_generators(); ++g1) {
       for (size_type g2 = 0; g2 < f2.num_generators(); ++g2) {
         // Euclidean distance as a Frobenius norm with matrix 1 x p and values 'f(g1, p) - other(g2, p)'
         // Order in the min important to spread possible NaNs
-        res = std::min(static_cast<U>(details::_compute_frobenius_norm<T>(
+        res = std::min(static_cast<U>(detail::_compute_frobenius_norm<T>(
                            f1.num_parameters(), [&](size_type p) -> T { return f1(g1, p) - f2(g2, p); })),
                        res, is_less);
       }
     }
-    return details::_sqrt(res);
+    return detail::_sqrt(res);
   }
 }
 
@@ -256,13 +256,13 @@ inline U compute_norm(const MultiFiltrationValue &f) {
   // Frobenius norm with matrix g x p based on Euclidean norm
   U out = 0;
   for (size_type g = 0; g < f.num_generators(); ++g) {
-    auto v = details::_compute_frobenius_norm<T>(f.num_parameters(), [&](size_type p) -> T { return f(g, p); });
+    auto v = detail::_compute_frobenius_norm<T>(f.num_parameters(), [&](size_type p) -> T { return f(g, p); });
     // workaround -Ofast optimization which is default on Windows
     // otherwise 0 += NaN can be equal to 0 with -Ofast which we don't want
-    if (details::_is_nan(v)) return v;
+    if (detail::_is_nan(v)) return v;
     out += v;
   }
-  return details::_sqrt(out);
+  return detail::_sqrt(out);
 }
 
 // enables compute_norm<U>(...) as well as compute_norm(...) with default value

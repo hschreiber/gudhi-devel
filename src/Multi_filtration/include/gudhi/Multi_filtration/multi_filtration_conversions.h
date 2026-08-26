@@ -233,7 +233,7 @@ inline OutStoragePolicy as_type(const Degree_bifiltration<T>& f) {
   }
 }
 
-namespace details {
+namespace detail {
 
 /**
  * @private
@@ -274,7 +274,7 @@ bool _safe_equal(T t, U u) {
   }
 }
 
-}  // namespace details
+}  // namespace detail
 
 /**
  * @brief Compares for equality two filtration values potentially not of the same type.
@@ -295,7 +295,7 @@ inline bool are_equal_filtration_values(const MultiFiltrationValue1& f1, const M
 
   for (std::size_t p = 0; p < f1.num_parameters(); ++p) {
     for (std::size_t g = 0; g < f1.num_generators(); ++g) {
-      if (!details::_safe_equal(f1(g, p), f2(g, p))) return false;
+      if (!detail::_safe_equal(f1(g, p), f2(g, p))) return false;
     }
   }
   return true;

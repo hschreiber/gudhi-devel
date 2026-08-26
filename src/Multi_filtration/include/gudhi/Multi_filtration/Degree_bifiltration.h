@@ -141,10 +141,10 @@ class Degree_bifiltration {
   using As_type = Degree_bifiltration<U>; /**< Degree_bifiltration<U> */
 
   template <typename U = T>
-  constexpr static const U T_inf = details::MF_T_inf<U>;
+  constexpr static const U T_inf = detail::MF_T_inf<U>;
 
   template <typename U = T>
-  constexpr static const U T_m_inf = details::MF_T_m_inf<U>;
+  constexpr static const U T_m_inf = detail::MF_T_m_inf<U>;
 
   constexpr static const bool has_an_implicit_axis = true;
   constexpr static const bool has_lexicographical_storage = false;
@@ -238,7 +238,7 @@ class Degree_bifiltration {
   static constexpr size_type implicit_axis() noexcept { return 1; }
 
   static int get_generator_of_implicit_value(value_type val) {
-    if (details::_is_nan(val) || val == T_m_inf<>) return null_value<int>();
+    if (detail::_is_nan(val) || val == T_m_inf<>) return null_value<int>();
     if (val == T_inf<>) return T_inf<int>;
     auto g = static_cast<int>(val);
     if (g < 0) return null_value<int>();
@@ -328,7 +328,7 @@ class Degree_bifiltration {
 
     const size_type index = *startIt;
 
-    if (details::_is_nan(val)) return false;
+    if (detail::_is_nan(val)) return false;
 
     if (index < generators_.size()) {
       if (_dominates<Co>(val, generators_[index])) return false;

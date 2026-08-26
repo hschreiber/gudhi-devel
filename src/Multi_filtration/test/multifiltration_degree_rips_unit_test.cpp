@@ -1236,9 +1236,9 @@ void test_friends() {
     std::vector<T> v = {nan, 0, 2, 1, nan, 2};
     F f2(v.begin(), v.end(), 2);
 
-    BOOST_CHECK(details::_is_nan(compute_norm(f2)));
-    BOOST_CHECK(details::_is_nan(compute_euclidean_distance_to(f2, {2, 0})));
-    BOOST_CHECK(details::_is_nan(compute_linear_projection(f2, {3, 0})));
+    BOOST_CHECK(detail::_is_nan(compute_norm(f2)));
+    BOOST_CHECK(detail::_is_nan(compute_euclidean_distance_to(f2, {2, 0})));
+    BOOST_CHECK(detail::_is_nan(compute_linear_projection(f2, {3, 0})));
     F f2f = factorize_below(f2);
     BOOST_CHECK_EQUAL(f2f(0, 0), 2);
     BOOST_CHECK_EQUAL(f2f(0, 1), 0);
