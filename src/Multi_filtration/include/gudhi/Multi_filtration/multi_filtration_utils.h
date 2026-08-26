@@ -17,7 +17,6 @@
 #ifndef MF_UTILS_H_
 #define MF_UTILS_H_
 
-#include <cstddef>
 #include <istream>
 #include <stdexcept>
 #include <type_traits>
@@ -28,22 +27,19 @@ namespace Gudhi {
 
 namespace multi_filtration {
 
+namespace details {
+
 /**
  * @ingroup multi_filtration
  *
  * @private
  */
 template <typename T>
-class RangeTraits
-{
+class RangeTraits {
  private:
   static auto check_begin(...) -> std::false_type;
   template <typename U>
   static auto check_begin(U x) -> decltype(x.begin(), std::true_type{});
-
-  static auto check_dynamic_filtration(...) -> std::false_type;
-  template <typename U>
-  static auto check_dynamic_filtration(U x) -> decltype(x.operator[](std::size_t{}), std::true_type{});
 
   static auto check_filtration(...) -> std::false_type;
   template <typename U>
@@ -52,8 +48,6 @@ class RangeTraits
  public:
   static constexpr bool has_begin = decltype(check_begin(std::declval<T>()))::value;
   static constexpr bool is_multi_filtration = decltype(check_filtration(std::declval<T>()))::value;
-  static constexpr bool is_dynamic_multi_filtration =
-      is_multi_filtration && decltype(check_dynamic_filtration(std::declval<T>()))::value;
 };
 
 /**
@@ -62,8 +56,7 @@ class RangeTraits
  * @private
  */
 template <typename T>
-constexpr bool _is_nan(T val)
-{
+constexpr bool _is_nan(T val) {
   if constexpr (std::is_integral_v<T>) {
     // to avoid Windows issue which don't know how to cast integers for cmath methods
     return false;
@@ -96,11 +89,10 @@ constexpr const T MF_T_m_inf =
  * @ingroup multi_filtration
  *
  * @private
- * @brief Adds v1 and v2, stores the result in v1 and returns true if and only if v1 was modified.
+ * @brief Adds v1 and v2, stores the result in v1 and returns true if and only if v1 is now NaN.
  */
 template <typename T>
-constexpr bool _add(T &v1, T v2)
-{
+constexpr bool _add(T &v1, T v2) {
   if (_is_nan(v1) || _is_nan(v2) || (v1 == MF_T_inf<T> && v2 == MF_T_m_inf<T>) ||
       (v1 == MF_T_m_inf<T> && v2 == MF_T_inf<T>)) {
     v1 = std::numeric_limits<T>::quiet_NaN();
@@ -122,11 +114,10 @@ constexpr bool _add(T &v1, T v2)
  * @ingroup multi_filtration
  *
  * @private
- * @brief Subtracts v1 and v2, stores the result in v1 and returns true if and only if v1 was modified.
+ * @brief Subtracts v1 and v2, stores the result in v1 and returns true if and only if v1 is now NaN.
  */
 template <typename T>
-constexpr bool _subtract(T &v1, T v2)
-{
+constexpr bool _subtract(T &v1, T v2) {
   return _add(v1, v2 == MF_T_inf<T> ? MF_T_m_inf<T> : (v2 == MF_T_m_inf<T> ? MF_T_inf<T> : -v2));
 };
 
@@ -134,11 +125,10 @@ constexpr bool _subtract(T &v1, T v2)
  * @ingroup multi_filtration
  *
  * @private
- * @brief Multiplies v1 and v2, stores the result in v1 and returns true if and only if v1 was modified.
+ * @brief Multiplies v1 and v2, stores the result in v1 and returns true if and only if v1 is now NaN.
  */
 template <typename T>
-constexpr bool _multiply(T &v1, T v2)
-{
+constexpr bool _multiply(T &v1, T v2) {
   bool v1_is_infinite = v1 == MF_T_inf<T> || v1 == MF_T_m_inf<T>;
   bool v2_is_infinite = v2 == MF_T_inf<T> || v2 == MF_T_m_inf<T>;
 
@@ -167,11 +157,10 @@ constexpr bool _multiply(T &v1, T v2)
  * @ingroup multi_filtration
  *
  * @private
- * @brief Divides v1 and v2, stores the result in v1 and returns true if and only if v1 was modified.
+ * @brief Divides v1 and v2, stores the result in v1 and returns true if and only if v1 is now NaN.
  */
 template <typename T>
-constexpr bool _divide(T &v1, T v2)
-{
+constexpr bool _divide(T &v1, T v2) {
   bool v1_is_infinite = v1 == MF_T_inf<T> || v1 == MF_T_m_inf<T>;
   bool v2_is_infinite = v2 == MF_T_inf<T> || v2 == MF_T_m_inf<T>;
 
@@ -202,8 +191,7 @@ constexpr bool _divide(T &v1, T v2)
  * @private
  */
 template <class T>
-inline T _get_value(std::istream &stream)
-{
+inline T _get_value(std::istream &stream) {
   if constexpr (std::numeric_limits<T>::has_infinity) {
     auto pos = stream.tellg();
     char first;
@@ -238,6 +226,8 @@ inline T _get_value(std::istream &stream)
   if (stream.fail()) throw std::invalid_argument("Wrong input stream format for value.");
   return val;
 };
+
+}  // namespace details
 
 }  // namespace multi_filtration
 

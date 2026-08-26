@@ -19,32 +19,34 @@
 #include <boost/mpl/list.hpp>
 #include <boost/mp11.hpp>
 
-#include <gudhi/Degree_rips_bifiltration.h>
-#include <gudhi/Multi_parameter_filtration.h>
-#include <gudhi/Dynamic_multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Degree_bifiltration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_filtration/Nested_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 #include <gudhi/Multi_filtration/multi_filtration_conversions.h>
 
 using Gudhi::multi_filtration::are_equal_filtration_values;
-using Gudhi::multi_filtration::Degree_rips_bifiltration;
-using Gudhi::multi_filtration::Dynamic_multi_parameter_filtration;
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Degree_bifiltration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
+using Gudhi::multi_filtration::Nested_array_filtration;
 
-struct DR_tag {
+struct DB_tag {
   template <typename T>
-  using type = Degree_rips_bifiltration<T>;
+  using type = Degree_bifiltration<T>;
 };
 
-struct DF_tag {
+struct NA_tag {
   template <typename T>
-  using type = Dynamic_multi_parameter_filtration<T>;
+  using type = Nested_array_filtration<T>;
 };
 
-struct MF_tag {
+struct FA_tag {
   template <typename T>
-  using type = Multi_parameter_filtration<T>;
+  using type = Flat_array_filtration<T>;
 };
 
-using Templates = boost::mp11::mp_list<DR_tag, DF_tag, MF_tag>;
+using Templates = boost::mp11::mp_list<DB_tag, NA_tag, FA_tag>;
 using Types = boost::mp11::mp_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t, float, double>;
 
 template <typename Tag, typename T>
@@ -53,10 +55,9 @@ using apply_tag = typename Tag::template type<T>;
 using FilTypes = boost::mp11::mp_product<apply_tag, Templates, Types>;
 using FilPairs = boost::mp11::mp_product<std::pair, FilTypes, FilTypes>;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(general_fil_equality, FilPair, FilPairs)
-{
-  using F1 = typename FilPair::first_type;
-  using F2 = typename FilPair::second_type;
+BOOST_AUTO_TEST_CASE_TEMPLATE(general_fil_equality, FilPair, FilPairs) {
+  using F1 = Multi_parameter_filtration_value<typename FilPair::first_type>;
+  using F2 = Multi_parameter_filtration_value<typename FilPair::second_type>;
   using F1_T = typename F1::value_type;
   using F2_T = typename F2::value_type;
 
@@ -70,10 +71,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(general_fil_equality, FilPair, FilPairs)
   BOOST_CHECK(are_equal_filtration_values(f1, f2));
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(general_fil_non_equality, FilPair, FilPairs)
-{
-  using F1 = typename FilPair::first_type;
-  using F2 = typename FilPair::second_type;
+BOOST_AUTO_TEST_CASE_TEMPLATE(general_fil_non_equality, FilPair, FilPairs) {
+  using F1 = Multi_parameter_filtration_value<typename FilPair::first_type>;
+  using F2 = Multi_parameter_filtration_value<typename FilPair::second_type>;
   using F1_T = typename F1::value_type;
   using F2_T = typename F2::value_type;
 
