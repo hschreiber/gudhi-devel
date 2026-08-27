@@ -257,6 +257,7 @@ class Nested_array_filtration {
 
   template <class Iterator>
   void emplace_back(Iterator startIt, Iterator endIt) {
+    // TODO: add infinity test here to resize?
     generators_.emplace_back(startIt, endIt);
   }
 
