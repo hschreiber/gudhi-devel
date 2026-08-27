@@ -48,11 +48,11 @@ namespace Gudhi::multi_filtration {
  * `std::numeric_limits<Multi_parameter_filtration_value<Flat_array_filtration>, Co>` will behave such that:
  * - `::has_infinity` returns `true`,
  * - `::has_quiet_NaN` returns `std::numeric_limits<T>::has_quiet_NaN`,
- * - `::infinity(int)` returns @ref Flat_array_filtration::inf(int) "",
- * - `::minus_infinity(int)` returns @ref Flat_array_filtration::minus_inf(int) "",
+ * - `::infinity(int)` returns Flat_array_filtration::inf(size_type) "",
+ * - `::minus_infinity(int)` returns Flat_array_filtration::minus_inf(size_type) "",
  * - `::max(int)` throws if `Co` is true and otherwise returns a @ref Flat_array_filtration with one generator with
  * all parameters at std::numeric_limits<T>::max()`,
- * - `::quiet_NaN(int)` returns @ref Flat_array_filtration::nan(int) if `std::numeric_limits<T>::has_quiet_NaN`
+ * - `::quiet_NaN(int)` returns Flat_array_filtration::nan(size_type) if `std::numeric_limits<T>::has_quiet_NaN`
  * and throws otherwise.
  * 
  * @tparam T Arithmetic type of an entry for one parameter of a filtration value. Has to be **signed** and
@@ -77,7 +77,7 @@ class Flat_array_filtration {
   using const_iterator =
       typename Underlying_container::const_iterator;          /**< LegacyRandomAccessIterator Const iterator type. */
   template <typename U>
-  using As_type = Flat_array_filtration<U>;                   /**< Flat_array_filtration<U> */
+  using As_type = Flat_array_filtration<U>;                   /**< Flat_array_filtration\<U\> */
 
   template <typename U = T>
   constexpr static const U T_inf = detail::MF_T_inf<U>;
@@ -92,6 +92,9 @@ class Flat_array_filtration {
   constexpr static const bool has_infinity = true;
   template <bool Co>
   constexpr static const bool has_minus_infinity = true;
+  /**
+   * @brief std::numeric_limits\<T\>::has_quiet_NaN
+   */
   constexpr static const bool has_quiet_NaN = std::numeric_limits<T>::has_quiet_NaN;
 
   Flat_array_filtration() : generators_(), generator_view_(generators_.data(), 0, 0) {}
