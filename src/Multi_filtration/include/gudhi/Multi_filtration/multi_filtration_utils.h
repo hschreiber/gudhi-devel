@@ -45,9 +45,14 @@ class RangeTraits {
   template <typename U>
   static auto check_filtration(U x) -> decltype(x.ensures_1_criticality(), std::true_type{});
 
+  static auto check_storage_policy(...) -> std::false_type;
+  template <typename U>
+  static auto check_storage_policy(U) -> decltype(U::has_minimal_set_representation, std::true_type{});
+
  public:
   static constexpr bool has_begin = decltype(check_begin(std::declval<T>()))::value;
   static constexpr bool is_multi_filtration = decltype(check_filtration(std::declval<T>()))::value;
+  static constexpr bool is_storage_policy = decltype(check_storage_policy(std::declval<T>()))::value;
 };
 
 /**
