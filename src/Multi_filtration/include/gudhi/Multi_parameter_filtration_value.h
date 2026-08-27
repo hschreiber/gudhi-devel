@@ -122,6 +122,10 @@ class Multi_parameter_filtration_value {
    * See documentation of corresponding StoragePolicy type or concept @ref StoragePolicy for more details.
    */
   using const_iterator = typename StoragePolicy::const_iterator;
+  /**
+   * @brief First template parameter, storage policy.
+   */
+  using Storage_policy = StoragePolicy;
 
   /**
    * @brief Plus infinity value of an entry of the filtration value.
