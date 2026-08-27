@@ -43,34 +43,34 @@ class Thread_safe_slicer : private Slicer {
  public:
   using Persistence = typename Slicer::Persistence;           /**< Persistence algorithm type. */
   using Filtration_value = typename Slicer::Filtration_value; /**< Filtration value type. */
-  using T = typename Slicer::T;                               /**< Numerical filtration value element type. */
+  using value_type = typename Slicer::value_type;             /**< Numerical filtration value element type. */
   using Complex = typename Slicer::Complex;                   /**< Complex type. */
   using Index = typename Slicer::Index;                       /**< Complex index type. */
   using Dimension = typename Slicer::Dimension;               /**< Dimension type. */
-  template <typename Value = T>
+  template <typename Value = value_type>
   using Bar = typename Slicer::template Bar<Value>;           /**< Bar type. */
   /**
    * @brief Barcode type. A vector of @ref Bar, a tuple like structure containing birth, death and dimension of a bar.
    */
-  template <typename Value = T>
+  template <typename Value = value_type>
   using Barcode = typename Slicer::template Barcode<Value>;
   /**
    * @brief Flat barcode type. All bars are represented by a birth and a death value stored respectively at even and
    * odd indices of the vector.
    */
-  template <typename Value = T>
+  template <typename Value = value_type>
   using Flat_barcode = typename Slicer::template Flat_barcode<Value>;
   /**
    * @brief Barcode ordered by dimension type. A vector which has at index \f$ d \f$ the @ref Barcode of dimension
    * \f$ d \f$.
    */
-  template <typename Value = T>
+  template <typename Value = value_type>
   using Multi_dimensional_barcode = typename Slicer::template Multi_dimensional_barcode<Value>;
   /**
    * @brief Flat barcode ordered by dimension type. A vector which has at index \f$ d \f$ the @ref Flat_barcode of
    * dimension \f$ d \f$.
    */
-  template <typename Value = T>
+  template <typename Value = value_type>
   using Multi_dimensional_flat_barcode = typename Slicer::template Multi_dimensional_flat_barcode<Value>;
   using Cycle = typename Slicer::Cycle;   /**< Cycle type. */
   using Thread_safe = Thread_safe_slicer; /**< Thread safe slicer type. */
@@ -150,13 +150,13 @@ class Thread_safe_slicer : private Slicer {
    * @brief Returns a const reference to the current slice. It can be initialized or updated with @ref set_slice
    * and @ref push_to.
    */
-  const std::vector<T>& get_slice() const { return Slicer::get_slice(); }
+  const std::vector<value_type>& get_slice() const { return Slicer::get_slice(); }
 
   /**
    * @brief Returns a reference to the current slice. It can also be initialized or updated with @ref set_slice
    * and @ref push_to.
    */
-  std::vector<T>& get_slice() { return Slicer::get_slice(); }
+  std::vector<value_type>& get_slice() { return Slicer::get_slice(); }
 
   /**
    * @brief Returns a const reference to the class computing the persistence of the current slice. It will be
@@ -168,7 +168,7 @@ class Thread_safe_slicer : private Slicer {
    * @brief Returns two filtration values representing respectively the greatest common lower bound of all filtration
    * values in the filtration and the lowest common upper bound of them.
    */
-  Box<T> get_bounding_box() const { return slicer_->get_bounding_box(); }
+  Box<value_type> get_bounding_box() const { return slicer_->get_bounding_box(); }
 
   /**
    * @brief Returns a const reference to the filtration value container. A filtration value at index \$f i \$f
@@ -219,7 +219,7 @@ class Thread_safe_slicer : private Slicer {
    *
    * @tparam Array Container which can be converted into a vector of `T`.
    */
-  template <class Array = std::initializer_list<T>>
+  template <class Array = std::initializer_list<value_type>>
   void set_slice(const Array& slice) {
     GUDHI_CHECK(slice.size() == slicer_->complex_.get_number_of_cycle_generators(),
                 std::invalid_argument("Slice should have the same size than the number of generators in the complex."));
@@ -232,7 +232,7 @@ class Thread_safe_slicer : private Slicer {
    *
    * @tparam Line_like Any type convertible to a @ref Line class. Default value: `std::initializer_list<T>`.
    */
-  template <class Line_like = std::initializer_list<T>>
+  template <class Line_like = std::initializer_list<value_type>>
   void push_to(const Line_like& line) {
     Slicer::_push_to(slicer_->complex_, Line<typename Line_like::value_type>(line));
   }
@@ -295,7 +295,7 @@ class Thread_safe_slicer : private Slicer {
    * @param maxDim Maximal dimension to be included in the barcode. If negative, all dimensions are included.
    * Default value: -1.
    */
-  template <bool byDim = true, typename Value = T, bool idx = false>
+  template <bool byDim = true, typename Value = value_type, bool idx = false>
   auto get_barcode(int maxDim = -1) {
     // complex in parent is empty, so maxDim needs to be initialized from the outside.
     if (maxDim < 0) maxDim = slicer_->get_max_dimension();
@@ -313,7 +313,7 @@ class Thread_safe_slicer : private Slicer {
    * @param maxDim Maximal dimension to be included in the barcode. If negative, all dimensions are included.
    * Default value: -1.
    */
-  template <bool byDim = false, typename Value = T, bool idx = false>
+  template <bool byDim = false, typename Value = value_type, bool idx = false>
   auto get_flat_barcode(int maxDim = -1) {
     // complex in parent is empty, so maxDim needs to be initialized from the outside.
     if (maxDim < 0) maxDim = slicer_->get_max_dimension();
@@ -345,7 +345,7 @@ class Thread_safe_slicer : private Slicer {
    * Only available if PersistenceAlgorithm::has_rep_cycles is true.
    *
    * @pre @ref initialize_persistence_computation has to be called at least once before.
-   * 
+   *
    * @param dimension Dimension of the cycles.
    * @param update If true, updates the stored representative cycles, otherwise just returns the container in its
    * current state. So should be true at least the first time the method is used. Default: true.
@@ -363,7 +363,7 @@ class Thread_safe_slicer : private Slicer {
    * Only available if PersistenceAlgorithm::has_rep_cycles is true.
    *
    * @pre @ref initialize_persistence_computation has to be called at least once before.
-   * 
+   *
    * @param dim Dimension of the cycle. Default: 1.
    * @param update If true, updates the representative cycle before returning it, otherwise just returns the cycle
    * in its current state. So should be true at least the first time the method is used. Default: true.
@@ -381,7 +381,7 @@ class Thread_safe_slicer : private Slicer {
    * Only available if PersistenceAlgorithm::has_rep_cycles is true.
    *
    * @pre @ref initialize_persistence_computation has to be called at least once before.
-   * 
+   *
    * @param dim Dimension of the cycle. Default: 1.
    * @param n Number of cycles to return. If 0, no cycle is returned. If higher than the number of available cycles,
    * it is set down to this number and all cycles are returned. Default: 1.

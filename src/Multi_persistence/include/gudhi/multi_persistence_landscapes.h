@@ -196,8 +196,10 @@ inline void _set_module_landscape_pixel(
  * @brief TODO
  *
  * @tparam Slicer Either @ref Slicer or @ref Thread_safe_slicer class with any valid template combination.
- * @tparam GridAxisRange Range with size() and operator[] method returning a value convertible into @ref Slicer::T.
- * @tparam DirectionRange Range with size() and operator[] method returning a value convertible into @ref Slicer::T.
+ * @tparam GridAxisRange Range with size() and operator[] method returning a value convertible into
+ * @ref Slicer::value_type.
+ * @tparam DirectionRange Range with size() and operator[] method returning a value convertible into
+ * @ref Slicer::value_type.
  * @tparam IndexRange Integer range with begin(), end(), size() and operator[] method returning a value convertible
  * into `std::size_t`.
  * @param mainSlicer
@@ -219,7 +221,7 @@ inline std::vector<double> compute_slicer_landscapes_on_grid(Slicer& mainSlicer,
                                                              std::size_t yStride, double dt, int degree,
                                                              const IndexRange& ks, bool ignoreInf,
                                                              [[maybe_unused]] int n_jobs = 0) {
-  using T = typename Slicer::T;
+  using T = typename Slicer::value_type;
 
   const std::size_t xSize = xGrid.size();
   const std::size_t ySize = yGrid.size();
