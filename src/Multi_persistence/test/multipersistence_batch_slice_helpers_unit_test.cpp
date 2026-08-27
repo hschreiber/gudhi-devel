@@ -21,8 +21,9 @@
 #include <gudhi/simple_mdspan.h>
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
-#include <gudhi/Multi_parameter_filtration.h>
-#include <gudhi/Dynamic_multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_filtration/Nested_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 #include <gudhi/slicer_helpers.h>
 #include <gudhi/Slicer.h>
 #include <gudhi/Thread_safe_slicer.h>
@@ -32,14 +33,15 @@
 #include <gudhi/Multi_persistence/Persistence_interface_cohomology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_vineyard.h>
 
-using Gudhi::multi_filtration::Dynamic_multi_parameter_filtration;
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
+using Gudhi::multi_filtration::Nested_array_filtration;
+using Gudhi::multi_persistence::compute_slicer_landscapes_on_grid;
 using Gudhi::multi_persistence::Multi_parameter_filtered_complex;
 using Gudhi::multi_persistence::Persistence_interface_cohomology;
 using Gudhi::multi_persistence::Persistence_interface_homology;
 using Gudhi::multi_persistence::Persistence_interface_vineyard;
 using Gudhi::multi_persistence::persistence_on_slices;
-using Gudhi::multi_persistence::compute_slicer_landscapes_on_grid;
 using Gudhi::multi_persistence::Slicer;
 using Gudhi::multi_persistence::Thread_safe_slicer;
 
@@ -76,28 +78,22 @@ struct Multi_persistence_vineyard_chain_options : Gudhi::vineyard::Default_viney
   static constexpr bool is_RU = false;
 };
 
-using list_of_tested_slicer_variants = boost::mpl::list<
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_r_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_ru_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_chain_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_cohomology<Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_r_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_ru_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_chain_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_cohomology<Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>>;
+using Flat_MFV = Multi_parameter_filtration_value<Flat_array_filtration<T>>;
+using Nested_MFV = Multi_parameter_filtration_value<Nested_array_filtration<T>>;
+
+using list_of_tested_slicer_variants =
+    boost::mpl::list<Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_r_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_ru_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_chain_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_cohomology<Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Flat_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_r_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_ru_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_chain_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_cohomology<Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Nested_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>>;
 
 template <class Fil>
 Multi_parameter_filtered_complex<Fil, I, D> build_simple_input_complex() {
@@ -109,15 +105,8 @@ Multi_parameter_filtered_complex<Fil, I, D> build_simple_input_complex() {
 
   BC bc = {{}, {}, {}, {0, 1}, {1, 2}, {0, 2}, {3, 4, 5}, {}, {1, 7}};
   DC dc = {0, 0, 0, 1, 1, 1, 2, 0, 1};
-  FC fc = {ini{0, 2, 2},
-           ini{0, 2, 1},
-           ini{0, 1, 3},
-           ini{3, 2, 3},
-           ini{3, 4, 5},
-           ini{6, 3, 5},
-           ini{6, 5, 6},
-           ini{5, 6, 8},
-           ini{5, 7, 8}};
+  FC fc = {ini{0, 2, 2}, ini{0, 2, 1}, ini{0, 1, 3}, ini{3, 2, 3}, ini{3, 4, 5},
+           ini{6, 3, 5}, ini{6, 5, 6}, ini{5, 6, 8}, ini{5, 7, 8}};
 
   return Complex(bc, dc, fc);
 }

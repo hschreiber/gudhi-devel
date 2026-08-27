@@ -20,9 +20,11 @@
 #include <gudhi/Multi_persistence/Persistence_interface_cohomology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_vineyard.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
-#include <gudhi/Multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
 using Gudhi::multi_persistence::Multi_parameter_filtered_complex;
 using Gudhi::multi_persistence::Persistence_interface_cohomology;
 using Gudhi::multi_persistence::Persistence_interface_homology;
@@ -30,7 +32,7 @@ using Gudhi::multi_persistence::Persistence_interface_vineyard;
 
 using I = std::uint32_t;
 using D = int;
-using Fil = Multi_parameter_filtration<double>;
+using Fil = Multi_parameter_filtration_value<Flat_array_filtration<double>>;
 using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
 using FC = typename Complex::Filtration_value_container;
 using BC = typename Complex::Boundary_container;

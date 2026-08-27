@@ -23,16 +23,18 @@
 #include <gudhi/Multi_parameter_filtered_complex.h>
 #include <gudhi/Slicer.h>
 #include <gudhi/Thread_safe_slicer.h>
-#include <gudhi/Multi_parameter_filtration.h>
-#include <gudhi/Dynamic_multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_filtration/Nested_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 #include <gudhi/Multi_persistence/Persistence_interface_homology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_cohomology.h>
 #include <gudhi/Multi_persistence/Persistence_interface_vineyard.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Line.h>
 
-using Gudhi::multi_filtration::Dynamic_multi_parameter_filtration;
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
+using Gudhi::multi_filtration::Nested_array_filtration;
 using Gudhi::multi_persistence::Line;
 using Gudhi::multi_persistence::Multi_parameter_filtered_complex;
 using Gudhi::multi_persistence::Persistence_interface_cohomology;
@@ -77,28 +79,22 @@ struct Multi_persistence_vineyard_chain_options : Gudhi::vineyard::Default_viney
   static constexpr bool is_RU = false;
 };
 
-using list_of_tested_variants = boost::mpl::list<
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_r_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_ru_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_chain_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_cohomology<Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_r_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_ru_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_chain_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_cohomology<Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>>;
+using Flat_MFV = Multi_parameter_filtration_value<Flat_array_filtration<T>>;
+using Nested_MFV = Multi_parameter_filtration_value<Nested_array_filtration<T>>;
+
+using list_of_tested_variants =
+    boost::mpl::list<Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_r_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_ru_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_chain_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_cohomology<Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Flat_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_r_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_ru_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_chain_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_cohomology<Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Nested_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>>;
 
 template <class Fil>
 Multi_parameter_filtered_complex<Fil, I, D> build_rep_cycle_input_complex() {
@@ -206,7 +202,8 @@ void test_slicer_constructors_empty(const Slicer& s) {
 BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_constructors, Slicer_t, list_of_tested_variants) {
   using Fil = typename Slicer_t::Filtration_value;
   using OtherSlicer =
-      Slicer<Multi_parameter_filtration<long int>, Persistence_interface_cohomology<Multi_parameter_filtration<T>>>;
+      Slicer<Multi_parameter_filtration_value<Flat_array_filtration<long int>>,
+             Persistence_interface_cohomology<Multi_parameter_filtration_value<Flat_array_filtration<long int>>>>;
 
   Slicer_t empty;
   test_slicer_constructors_empty(empty);
@@ -534,21 +531,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_persistence, Slicer, list_of_tested_variant
   test_slicer_persistence(tss);
 }
 
-using list_of_tested_variants2 = boost::mpl::list<
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_ru_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_chain_options, Multi_parameter_filtration<T>>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Multi_parameter_filtration<T>, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_ru_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_homology<Multi_persistence_chain_options, Dynamic_multi_parameter_filtration<T>>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<T>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>>;
+using list_of_tested_variants2 =
+    boost::mpl::list<Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_ru_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_homology<Multi_persistence_chain_options, Flat_MFV>>,
+                     Slicer<Flat_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Flat_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_ru_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_homology<Multi_persistence_chain_options, Nested_MFV>>,
+                     Slicer<Nested_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Nested_MFV, Persistence_interface_vineyard<Multi_persistence_vineyard_chain_options>>>;
 
 template <class Slicer>
 void test_slicer_vineyard(Slicer& s) {

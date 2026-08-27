@@ -454,10 +454,6 @@ inline Multi_parameter_filtered_complex<OneCriticalMultiFiltrationValue, I, D> b
   typename Complex::Filtration_value_container filtrationValues(numberOfSimplices, Fil(numberOfParameters));
 
   for (Index g = 0; g < numberOfSimplices; ++g) {
-    if constexpr (Gudhi::multi_filtration::RangeTraits<Fil>::is_dynamic_multi_filtration) {
-      // should be faster than doing a proper `push_to_least_common_upper_bound` in the loop after
-      filtrationValues[g].force_generator_size_to_number_of_parameters(0);
-    }
     for (auto v : get_vertices(g)) {
       for (Index p = 0; p < numberOfParameters; ++p) {
         // 1-critical
@@ -478,12 +474,8 @@ inline Multi_parameter_filtered_complex<OneCriticalMultiFiltrationValue, I, D> b
  *
  * @tparam MultiFiltrationValue Class following the @ref MultiFiltrationValue concept.
  * @tparam SimplexTreeOptions Class following the @ref SimplexTreeOptions concept. Additionally, if
- * `SimplexTreeOptions::Filtration_value` and `MultiFiltrationValue` are not the same type, there must
- * be a method `as_type` taking `SimplexTreeOptions::Filtration_value` as argument and returning the value as an
- * `MultiFiltrationValue` type. See @ref Gudhi::multi_filtration::as_type for implementations for
- * @ref Gudhi::multi_filtration::Multi_parameter_filtration,
- * @ref Gudhi::multi_filtration::Dynamic_multi_parameter_filtration and
- * @ref Gudhi::multi_filtration::Degree_rips_bifiltration.
+ * `SimplexTreeOptions::Filtration_value` and `MultiFiltrationValue` are not the same type, the `as_type` method of
+ * `SimplexTreeOptions::Filtration_value` has to be able to copy the value as an `MultiFiltrationValue` type.
  * @tparam I Index type for the complex. Default value: std::uint32_t.
  * @tparam D Dimension type for the complex. Default value: int.
  * @param simplexTree Simplex tree to convert. The key values of the simplex tree will be overwritten.
@@ -491,13 +483,10 @@ inline Multi_parameter_filtered_complex<OneCriticalMultiFiltrationValue, I, D> b
 template <class MultiFiltrationValue, class SimplexTreeOptions, typename I = std::uint32_t, typename D = int>
 inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_complex_from_simplex_tree(
     Simplex_tree<SimplexTreeOptions>& simplexTree) {
-  // declared here to enable custom `as_type` methods which are not in this namespace.
-  using namespace Gudhi::multi_filtration;
-
   // TODO: is_multi_filtration will discriminate all pre-made multi filtration classes, but not any user made
   // class following the MultiFiltrationValue concept (as it was more thought for inner use). The tests should be
   // re-thought or this one just removed.
-  static_assert(RangeTraits<MultiFiltrationValue>::is_multi_filtration,
+  static_assert(multi_filtration::detail::RangeTraits<MultiFiltrationValue>::is_multi_filtration,
                 "Target filtration value type has to correspond to the MultiFiltrationValue concept.");
 
   using Complex = Multi_parameter_filtered_complex<MultiFiltrationValue, I, D>;
@@ -537,7 +526,7 @@ inline Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> build_comple
     if constexpr (std::is_same_v<MultiFiltrationValue, typename SimplexTreeOptions::Filtration_value>) {
       filtrationValues[index] = simplexTree.filtration(sh);
     } else {
-      filtrationValues[index] = as_type<MultiFiltrationValue>(simplexTree.filtration(sh));
+      filtrationValues[index] = simplexTree.filtration(sh).template as_type<MultiFiltrationValue>();
     }
     typename Complex::Boundary boundary(dimensions[index] == 0 ? 0 : dimensions[index] + 1);
     unsigned int j = 0;

@@ -34,10 +34,10 @@
 
 #include <gudhi/Debug_utils.h>
 #include <gudhi/simple_mdspan.h>
+#include <gudhi/serialization_utils.h>
 #include <gudhi/Multi_persistence/Line.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Summand.h>
-#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {

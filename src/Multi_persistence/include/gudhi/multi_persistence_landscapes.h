@@ -152,8 +152,13 @@ template <typename T, typename D, class RandomAccessValueRange>
 inline auto _compute_summand_landscape_value(const Summand<T, D>& sum, const RandomAccessValueRange& x) {
   using signedT = maybe_make_signed_t<T>;
   signedT landscapeValue = 0;
-  for (const auto& birth : sum.get_upset()) {
-    for (const auto& death : sum.get_downset()) {
+  // TODO: if the types of Births and Deaths in Summand changes (to become a template for example)
+  // the input to _get_summand_diagonal has to get adapted to it, as it makes use of
+  // Underlying_container::value_type working like a vector
+  const auto &births = sum.get_upset().get_underlying_container();
+  const auto &deaths = sum.get_downset().get_underlying_container();
+  for (const auto &birth : births) {
+    for (const auto& death : deaths) {
       signedT value = std::min(_get_summand_diagonal<signedT>(birth, x), _get_summand_diagonal<signedT>(x, death));
       landscapeValue = std::max(landscapeValue, value);
     }

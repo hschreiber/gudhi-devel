@@ -17,15 +17,17 @@
 
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
-#include <gudhi/Multi_parameter_filtration.h>
-#include <gudhi/Dynamic_multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_filtration/Nested_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 #include <gudhi/slicer_helpers.h>
 #include <gudhi/Slicer.h>
 #include <gudhi/Multi_persistence/Persistence_interface_cohomology.h>
 #include <gudhi/multi_simplex_tree_helpers.h>
 
-using Gudhi::multi_filtration::Dynamic_multi_parameter_filtration;
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
+using Gudhi::multi_filtration::Nested_array_filtration;
 using Gudhi::multi_persistence::build_complex_from_bitmap;
 using Gudhi::multi_persistence::build_complex_from_scc_file;
 using Gudhi::multi_persistence::build_complex_from_simplex_tree;
@@ -38,8 +40,8 @@ using Gudhi::multi_persistence::Simplex_tree_options_multidimensional_filtration
 using Gudhi::multi_persistence::Slicer;
 using Gudhi::multi_persistence::write_complex_to_scc_file;
 
-using list_of_tested_variants =
-    boost::mpl::list<Multi_parameter_filtration<double>, Dynamic_multi_parameter_filtration<double>>;
+using list_of_tested_variants = boost::mpl::list<Multi_parameter_filtration_value<Flat_array_filtration<double>>,
+                                                 Multi_parameter_filtration_value<Nested_array_filtration<double>>>;
 
 using I = std::uint32_t;
 using D = int;
@@ -436,7 +438,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_simplex_tree_io, Fil, list_of_tested_varian
   using DC = typename Complex::Dimension_container;
   using ini = std::initializer_list<typename Fil::value_type>;
   using Slicer1 = Slicer<Fil, Persistence_interface_cohomology<Fil>>;
-  using Fil2 = Multi_parameter_filtration<int>;  // Will always be different from ST::Filtration_value
+  // Will always be different from ST::Filtration_value
+  using Fil2 = Multi_parameter_filtration_value<Flat_array_filtration<int>>;
   using Slicer2 = Slicer<Fil2, Persistence_interface_cohomology<Fil2>>;
 
   ST simplexTree;

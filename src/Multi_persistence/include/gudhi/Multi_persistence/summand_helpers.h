@@ -43,10 +43,10 @@ namespace detail {
 template <typename Distance, class Summand, class RandomAccessValueRange, class Corners, typename F>
 inline auto _compute_distance_to_front(const RandomAccessValueRange &x, const Corners &corners, bool negative,
                                        F &&diff) {
-  Distance distance = Gudhi::multi_filtration::MF_T_inf<Distance>;
+  Distance distance = Gudhi::multi_filtration::detail::MF_T_inf<Distance>;
 
   for (typename Summand::Index g = 0; g < corners.num_generators(); ++g) {
-    Distance tempDist = negative ? Gudhi::multi_filtration::MF_T_m_inf<Distance> : 0;
+    Distance tempDist = negative ? Gudhi::multi_filtration::detail::MF_T_m_inf<Distance> : 0;
     for (typename Summand::Index p = 0; p < corners.num_parameters(); ++p) {
       auto d = std::forward<F>(diff)(corners(g, p), x[p]);
       if (tempDist < d) tempDist = d;
@@ -119,24 +119,26 @@ inline Distance _get_summand_diagonal(const RandomAccessValueRange1 &birth, cons
  * @ingroup multi_persistence
  * @private
  */
-template <class BirthGenerator, class DeathGenerator, typename Distance>
-inline Distance _summand_rectangle_volume(const BirthGenerator &birth, const DeathGenerator &death,
+template <class BirthGeneratorIterator, class DeathGeneratorIterator, typename Distance>
+inline Distance _summand_rectangle_volume(BirthGeneratorIterator startB, BirthGeneratorIterator endB,
+                                          DeathGeneratorIterator startD, DeathGeneratorIterator endD,
                                           const Box<Distance> &box) {
   // NaN?
-  if (birth.size() == 0 || death.size() == 0) return 0;
-
-  auto get_val = [](const auto &r, std::size_t i) -> Distance {
-    if (i < r.size()) return r[i];
-    // never used if r.size() == 0
-    return r[0];
-  };
+  if (startB == endB || startD == endD) return 0;
+  DeathGeneratorIterator next = startD;
+  ++next;
+  bool isInf = (next == endD);
 
   Distance volume =
-      std::min(get_val(death, 0), box.get_upper_corner()[0]) - std::max(get_val(birth, 0), box.get_lower_corner()[0]);
-  for (std::size_t i = 1; i < birth.size(); i++) {
-    Distance t_death = std::min(get_val(death, i), box.get_upper_corner()[i]);
-    Distance t_birth = std::max(get_val(birth, i), box.get_lower_corner()[i]);
+      std::min<Distance>(*startD, box.get_upper_corner()[0]) - std::max<Distance>(*startB, box.get_lower_corner()[0]);
+  std::size_t i = 1;
+  for (++startB; startB != endB; ++startB) {
+    // condition in case of inf values which can shorten the generator
+    if (!isInf) ++startD;
+    Distance t_death = std::min<Distance>(*startD, box.get_upper_corner()[i]);
+    Distance t_birth = std::max<Distance>(*startB, box.get_lower_corner()[i]);
     volume = volume * (t_death - t_birth);
+    ++i;
   }
   return volume;
 }
@@ -224,11 +226,14 @@ inline Out compute_summand_interleaving(const Summand<T, D> &sum, const Box<U> &
                 "Box template parameter is not compatible with Summand value type.");
 
   Out interleaving = 0;
-  for (const auto &birth : sum.get_upset()) {
-    for (const auto &death : sum.get_downset()) {
-      // TODO: if the types of Births and Deaths in Summand changes (to become a template for example)
-      // the input to _get_summand_diagonal has to get adapted to it, as it makes use of
-      // Dynamic_multi_parameter_filtration::Generator working like a vector
+  // TODO: if the types of Births and Deaths in Summand changes (to become a template for example)
+  // the input to _get_summand_diagonal has to get adapted to it, as it makes use of
+  // Underlying_container::value_type working like a vector
+  const auto &births = sum.get_upset().get_underlying_container();
+  const auto &deaths = sum.get_downset().get_underlying_container();
+
+  for (const auto &birth : births) {
+    for (const auto &death : deaths) {
       interleaving = std::max(interleaving, detail::_get_summand_diagonal<Out>(birth, death, box));
     }
   }
@@ -261,15 +266,16 @@ inline double compute_summand_local_weight(const Summand<T, D> &sum, const Rando
   double localWeight = 0.;
   const double normCoef = 2.;
 
+  const auto &births = sum.get_upset();
+  const auto &deaths = sum.get_downset();
+
   if (delta <= 0) {
     // local weight is the volume of the largest rectangle in the restricted
-    for (const auto &birth : sum.get_upset()) {
-      for (const auto &death : sum.get_downset()) {
-        // TODO: if the types of Births and Deaths in Summand changes (to become a template for example)
-        // _summand_rectangle_volume has to get adapted to it, as it makes use of
-        // Dynamic_multi_parameter_filtration::Generator working like a vector
+    for (std::size_t gB = 0; gB < births.num_generators(); ++gB) {
+      for (std::size_t gD = 0; gD < deaths.num_generators(); ++gD) {
         localWeight =
-            std::max(localWeight, static_cast<double>(detail::_summand_rectangle_volume(birth, death, threshold)));
+            std::max(localWeight, static_cast<double>(detail::_summand_rectangle_volume(
+                                      births.begin(gB), births.end(gB), deaths.begin(gD), deaths.end(gD), threshold)));
       }
     }
     return localWeight / std::pow(normCoef * std::abs(delta), x.size());

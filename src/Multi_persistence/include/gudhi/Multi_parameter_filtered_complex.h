@@ -34,9 +34,9 @@
 #endif
 
 #include <gudhi/Debug_utils.h>
-#include <gudhi/Multi_parameter_filtration.h>  //for lex order
+#include <gudhi/serialization_utils.h>
+#include <gudhi/Multi_parameter_filtration_value.h>  //for lex order
 #include <gudhi/Multi_filtration/multi_filtration_conversions.h>
-#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -203,7 +203,7 @@ class Multi_parameter_filtered_complex {
         isOrderedByDimension_(complex.is_ordered_by_dimension()) {
     const auto& fils = complex.get_filtration_values();
     for (Index i = 0; i < filtrationValues_.size(); ++i) {
-      filtrationValues_[i] = multi_filtration::as_type<MultiFiltrationValue>(fils[i]);
+      filtrationValues_[i] = fils[i].template as_type<MultiFiltrationValue>();
     }
   }
 
@@ -233,7 +233,7 @@ class Multi_parameter_filtered_complex {
     const auto& fils = other.get_filtration_values();
     filtrationValues_ = Filtration_value_container(fils.size());
     for (Index i = 0; i < filtrationValues_.size(); ++i) {
-      filtrationValues_[i] = multi_filtration::as_type<MultiFiltrationValue>(fils[i]);
+      filtrationValues_[i] = fils[i].template as_type<MultiFiltrationValue>();
     }
     maxDimension_ = other.get_max_dimension();
     isOrderedByDimension_ = other.is_ordered_by_dimension();

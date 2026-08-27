@@ -35,12 +35,11 @@
 #endif
 
 #include <gudhi/Debug_utils.h>
-#include <gudhi/Degree_rips_bifiltration.h>
+#include <gudhi/serialization_utils.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Line.h>
-#include <gudhi/Multi_persistence/utils.h>
 #include <gudhi/Thread_safe_slicer.h>
 #include <gudhi/Projective_cover_kernel.h>
 #include <gudhi/persistence_interval.h>
@@ -257,7 +256,7 @@ class Slicer {
       for (Index g = 0; g < f.num_generators(); ++g) {
         for (Index p = 0; p < numParam; ++p) {
           const T v = f(g, p);
-          if (!Gudhi::multi_filtration::_is_nan(v) && v != Filtration_value::T_inf && v != Filtration_value::T_m_inf) {
+          if (!Gudhi::multi_filtration::detail::_is_nan(v) && v != Filtration_value::T_inf && v != Filtration_value::T_m_inf) {
             lower[p] = std::min(lower[p], v);
             upper[p] = std::max(upper[p], v);
           }
@@ -408,19 +407,16 @@ class Slicer {
    * box is trivial, the current bounding box is used (computed with @ref get_bounding_box) and its corner values at
    * infinity are rescaled to respectively 0 (lower corner) and 1 (upper corner).
    *
-   * Not enabled for @ref Gudhi::multi_filtration::Degree_rips_bifiltration as the second parameter cannot be
-   * properly mapped.
+   * Not enabled for @ref Gudhi::multi_filtration::StoragePolicy::has_an_implicit_axis equal to true, as the implicit
+   * parameter cannot be properly mapped.
    * 
    * @tparam U Box template parameter
    * @param box Box. Default: trivial box.
    */
   template <typename U = T>
   void normalize_filtration_values(const Box<U>& box = {}) {
-    static_assert(
-        !std::is_same_v<Filtration_value,
-                        Gudhi::multi_filtration::Degree_rips_bifiltration<T, Filtration_value::has_negative_cones(),
-                                                                          Filtration_value::ensures_1_criticality()>>,
-        "`normalize_filtration_values` not possible for Degree_rips_filtration");
+    static_assert(!Filtration_value::Storage_policy::has_an_implicit_axis,
+                  "`normalize_filtration_values` not possible for this filtration value class");
 
     const auto numParam = get_number_of_parameters();
     if (numParam == 0 || get_number_of_cycle_generators() == 0) return;
@@ -455,7 +451,7 @@ class Slicer {
         T scale = upper[p] > lower[p] ? upper[p] - lower[p] : static_cast<T>(1);
         for (Index g = 0; g < f.num_generators(); ++g) {
           T& v = f(g, p);
-          if (!Gudhi::multi_filtration::_is_nan(v) && v != Filtration_value::T_inf && v != Filtration_value::T_m_inf) {
+          if (!Gudhi::multi_filtration::detail::_is_nan(v) && v != Filtration_value::T_inf && v != Filtration_value::T_m_inf) {
             v = (v - lower[p]) / scale;
           }
         }
@@ -946,7 +942,7 @@ class Slicer {
 
   template <bool idx, class Interval, typename Value>
   void _retrieve_interval(const Interval& bar, Dimension& dim, Value& birth, Value& death) {
-    const Value inf = Gudhi::multi_filtration::MF_T_inf<Value>;
+    const Value inf = Gudhi::multi_filtration::detail::MF_T_inf<Value>;
     dim = bar.dim;
     if constexpr (idx) {
       birth = bar.birth;

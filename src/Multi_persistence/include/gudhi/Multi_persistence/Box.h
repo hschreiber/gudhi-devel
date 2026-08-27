@@ -157,7 +157,7 @@ class Box {
     for (unsigned int i = 0; i < lowerCorner_.size(); ++i) {
       T lc = lowerCorner_[i];
       T uc = upperCorner_[i];
-      if (Gudhi::multi_filtration::_is_nan(lc) || Gudhi::multi_filtration::_is_nan(uc)) return true;
+      if (Gudhi::multi_filtration::detail::_is_nan(lc) || Gudhi::multi_filtration::detail::_is_nan(uc)) return true;
       if (lc != inf) lowerIsInf = false;
       if (lc != m_inf) lowerIsMinusInf = false;
       if (uc != inf) upperIsInf = false;
@@ -178,8 +178,8 @@ class Box {
       T lc = lowerCorner_[i];
       T uc = upperCorner_[i];
       T p = point[i];
-      if (Gudhi::multi_filtration::_is_nan(p) || Gudhi::multi_filtration::_is_nan(lc) ||
-          Gudhi::multi_filtration::_is_nan(uc))
+      if (Gudhi::multi_filtration::detail::_is_nan(p) || Gudhi::multi_filtration::detail::_is_nan(lc) ||
+          Gudhi::multi_filtration::detail::_is_nan(uc))
         return false;
       if (lc > p || uc < p) return false;
     }

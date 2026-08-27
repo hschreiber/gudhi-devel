@@ -19,19 +19,22 @@
 #include <boost/mpl/list.hpp>
 
 #include <gudhi/Multi_parameter_filtered_complex.h>
-#include <gudhi/Multi_parameter_filtration.h>
-#include <gudhi/Dynamic_multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_filtration/Nested_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 
-using Gudhi::multi_filtration::Dynamic_multi_parameter_filtration;
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
+using Gudhi::multi_filtration::Nested_array_filtration;
 using Gudhi::multi_persistence::Multi_parameter_filtered_complex;
 
 using I = std::uint32_t;
 using D = int;
 
-using list_of_tested_variants =
-    boost::mpl::list<Multi_parameter_filtration<double>, Dynamic_multi_parameter_filtration<double>,
-                     Multi_parameter_filtration<int>, Dynamic_multi_parameter_filtration<int>>;
+using list_of_tested_variants = boost::mpl::list<Multi_parameter_filtration_value<Flat_array_filtration<double>>,
+                                                 Multi_parameter_filtration_value<Nested_array_filtration<double>>,
+                                                 Multi_parameter_filtration_value<Flat_array_filtration<int>>,
+                                                 Multi_parameter_filtration_value<Nested_array_filtration<int>>>;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_variants) {
   using Complex = Multi_parameter_filtered_complex<Fil, I, D>;
@@ -128,7 +131,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
   BOOST_CHECK_EQUAL(any2.get_boundaries().size(), 6);
   BOOST_CHECK_EQUAL(any2.get_max_dimension(), 2);
 
-  Multi_parameter_filtered_complex<Multi_parameter_filtration<long int>, I, D> copyCC(copyC);
+  Multi_parameter_filtered_complex<Multi_parameter_filtration_value<Flat_array_filtration<long int>>, I, D> copyCC(
+      copyC);
   BOOST_CHECK_EQUAL(copyCC.get_number_of_cycle_generators(), 6);
   BOOST_CHECK_EQUAL(copyCC.get_number_of_parameters(), 3);
   BOOST_CHECK(copyCC.is_ordered_by_dimension());
@@ -143,7 +147,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
   // BOOST_CHECK_EQUAL(copyCC.get_dimension(4), 1);
   // BOOST_CHECK_EQUAL(copyCC.get_dimension(5), 2);
 
-  Multi_parameter_filtered_complex<Multi_parameter_filtration<long int>, I, D> copyCC2 = copyC;
+  Multi_parameter_filtered_complex<Multi_parameter_filtration_value<Flat_array_filtration<long int>>, I, D> copyCC2 =
+      copyC;
   BOOST_CHECK_EQUAL(copyCC2.get_number_of_cycle_generators(), 6);
   BOOST_CHECK_EQUAL(copyCC2.get_number_of_parameters(), 3);
   BOOST_CHECK(copyCC2.is_ordered_by_dimension());

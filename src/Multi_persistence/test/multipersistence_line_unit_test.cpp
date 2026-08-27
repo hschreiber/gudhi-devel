@@ -15,9 +15,11 @@
 
 #include <gudhi/Multi_persistence/Point.h>
 #include <gudhi/Multi_persistence/Line.h>
-#include <gudhi/Multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
 using Gudhi::multi_persistence::Line;
 using Gudhi::multi_persistence::Point;
 
@@ -66,7 +68,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(line_constructors, T, list_of_tested_variants) {
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(line_intersections, T, list_of_tested_variants) {
-  using F = Multi_parameter_filtration<T>;
+  using F = Multi_parameter_filtration_value<Flat_array_filtration<T>>;
   Point<T> p_inf = {Point<T>::T_inf, Point<T>::T_inf, Point<T>::T_inf};
   Point<T> p_minus_inf = {Point<T>::T_m_inf, Point<T>::T_m_inf, Point<T>::T_m_inf};
 

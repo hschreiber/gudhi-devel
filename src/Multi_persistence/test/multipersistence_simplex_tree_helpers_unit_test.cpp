@@ -17,15 +17,18 @@
 
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/multi_simplex_tree_helpers.h>
-#include <gudhi/Multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
 using Gudhi::multi_persistence::make_multi_dimensional;
 using Gudhi::multi_persistence::make_one_dimensional;
 using Gudhi::multi_persistence::Simplex_tree_options_multidimensional_filtration;
 
 template <typename T>
-using Multi_options = Simplex_tree_options_multidimensional_filtration<Multi_parameter_filtration<T> >;
+using Multi_options =
+    Simplex_tree_options_multidimensional_filtration<Multi_parameter_filtration_value<Flat_array_filtration<T> > >;
 template <typename T>
 using Std_options = Simplex_tree_options_multidimensional_filtration<T>;
 template <typename T>

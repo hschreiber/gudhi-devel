@@ -132,7 +132,7 @@ class Line {
     GUDHI_CHECK(direction_.size() == 0 || direction_.size() == basePoint_.size(),
                 "Direction and base point do not have the same dimension.");
 
-    if (Gudhi::multi_filtration::_is_nan(t) || t == Point<U>::T_inf || t == Point<U>::T_m_inf)
+    if (Gudhi::multi_filtration::detail::_is_nan(t) || t == Point<U>::T_inf || t == Point<U>::T_m_inf)
       return Point_t(basePoint_.size(), t);
 
     Point_t x(basePoint_.size());
@@ -197,7 +197,7 @@ class Line {
    * @tparam U Type of the time parameter.
    * @tparam FiltrationValue Type of a multi-parameter filtration value. Has to implement the following methods:
    * `num_parameters`, `num_generators`, `operator()(generator_index, parameter_index)`.
-   * See @ref Gudhi::multi_filtration::Multi_parameter_filtration for an example.
+   * See @ref Gudhi::multi_filtration::Multi_parameter_filtration_value for an example.
    * @param x Origin of the closed positive cones.
    */
   template <typename U = T, class FiltrationValue>
@@ -210,7 +210,7 @@ class Line {
     for (unsigned int g = 0; g < x.num_generators(); ++g) {
       U tmp = Point<U>::T_m_inf;
       for (unsigned int p = 0; p < x.num_parameters(); ++p) {
-        if (Gudhi::multi_filtration::_is_nan(x(g, p))) return inf;
+        if (Gudhi::multi_filtration::detail::_is_nan(x(g, p))) return inf;
         auto div = direction_.size() == 0 ? 1 : direction_[p];
         if (div == 0) {
           if (x(g, p) > basePoint_[p]) tmp = inf;
@@ -241,7 +241,7 @@ class Line {
     U t = Point<U>::T_m_inf;
     for (unsigned int p = 0; it_begin != it_end && p < direction_.size(); ++p, ++it_begin) {
       auto val = *it_begin;
-      if (Gudhi::multi_filtration::_is_nan(val)) return inf;
+      if (Gudhi::multi_filtration::detail::_is_nan(val)) return inf;
       auto div = direction_.size() == 0 ? 1 : direction_[p];
       if (div == 0) {
         if (val > basePoint_[p]) return inf;
@@ -286,7 +286,7 @@ class Line {
     for (unsigned int g = 0; g < x.num_generators(); ++g) {
       U tmp = Point<U>::T_inf;
       for (unsigned int p = 0; p < x.num_parameters(); ++p) {
-        if (Gudhi::multi_filtration::_is_nan(x(g, p))) return m_inf;
+        if (Gudhi::multi_filtration::detail::_is_nan(x(g, p))) return m_inf;
         auto div = direction_.size() == 0 ? 1 : direction_[p];
         if (div == 0) {
           if (x(g, p) <= basePoint_[p]) tmp = m_inf;
@@ -317,7 +317,7 @@ class Line {
     U t = Point<U>::T_inf;
     for (unsigned int p = 0; it_begin != it_end && p < direction_.size(); ++p, ++it_begin) {
       auto val = *it_begin;
-      if (Gudhi::multi_filtration::_is_nan(val)) return m_inf;
+      if (Gudhi::multi_filtration::detail::_is_nan(val)) return m_inf;
       auto div = direction_.size() == 0 ? 1 : direction_[p];
       if (div == 0) {
         if (val <= basePoint_[p]) return m_inf;

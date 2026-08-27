@@ -17,13 +17,15 @@
 #include <boost/mpl/list.hpp>
 
 #include <gudhi/multiparameter_module_approximation.h>
-#include <gudhi/Multi_parameter_filtration.h>
-#include <gudhi/Dynamic_multi_parameter_filtration.h>
+#include <gudhi/Multi_filtration/Flat_array_filtration.h>
+#include <gudhi/Multi_filtration/Nested_array_filtration.h>
+#include <gudhi/Multi_parameter_filtration_value.h>
 #include <gudhi/Slicer.h>
 #include <gudhi/Multi_persistence/Persistence_interface_vineyard.h>
 
-using Gudhi::multi_filtration::Dynamic_multi_parameter_filtration;
-using Gudhi::multi_filtration::Multi_parameter_filtration;
+using Gudhi::multi_filtration::Flat_array_filtration;
+using Gudhi::multi_filtration::Multi_parameter_filtration_value;
+using Gudhi::multi_filtration::Nested_array_filtration;
 using Gudhi::multi_persistence::Box;
 using Gudhi::multi_persistence::Module;
 using Gudhi::multi_persistence::Multi_parameter_filtered_complex;
@@ -38,13 +40,15 @@ struct Multi_persistence_vineyard_ru_options : Gudhi::vineyard::Default_vineyard
 using I = std::uint32_t;
 using D = int;
 
-using list_of_tested_variants = boost::mpl::list<
-    Slicer<Multi_parameter_filtration<double>, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<double>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Multi_parameter_filtration<float>, Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
-    Slicer<Dynamic_multi_parameter_filtration<float>,
-           Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>>;
+using list_of_tested_variants =
+    boost::mpl::list<Slicer<Multi_parameter_filtration_value<Flat_array_filtration<double>>,
+                            Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Multi_parameter_filtration_value<Nested_array_filtration<double>>,
+                            Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Multi_parameter_filtration_value<Flat_array_filtration<float>>,
+                            Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>,
+                     Slicer<Multi_parameter_filtration_value<Nested_array_filtration<float>>,
+                            Persistence_interface_vineyard<Multi_persistence_vineyard_ru_options>>>;
 
 template <class Fil>
 Multi_parameter_filtered_complex<Fil, I, D> build_simple_input_complex() {

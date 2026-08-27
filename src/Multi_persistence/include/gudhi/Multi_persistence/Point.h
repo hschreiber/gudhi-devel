@@ -22,8 +22,8 @@
 #include <vector>
 
 #include <gudhi/Debug_utils.h>
+#include <gudhi/serialization_utils.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
-#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -265,7 +265,9 @@ class Point {
     GUDHI_CHECK(a.size() == b.size(), "Cannot compare two points with different number of coordinates.");
     bool isSame = true;
     for (size_type i = 0U; i < a.size(); ++i) {
-      if (a[i] > b[i] || Gudhi::multi_filtration::_is_nan(a[i]) || Gudhi::multi_filtration::_is_nan(b[i])) return false;
+      if (a[i] > b[i] || Gudhi::multi_filtration::detail::_is_nan(a[i]) ||
+          Gudhi::multi_filtration::detail::_is_nan(b[i]))
+        return false;
       if (isSame && a[i] != b[i]) isSame = false;
     }
     return !isSame;
@@ -281,7 +283,9 @@ class Point {
     if (&a == &b) return true;
     GUDHI_CHECK(a.size() == b.size(), "Cannot compare two points with different number of coordinates.");
     for (size_type i = 0U; i < a.size(); ++i) {
-      if (a[i] > b[i] || Gudhi::multi_filtration::_is_nan(a[i]) || Gudhi::multi_filtration::_is_nan(b[i])) return false;
+      if (a[i] > b[i] || Gudhi::multi_filtration::detail::_is_nan(a[i]) ||
+          Gudhi::multi_filtration::detail::_is_nan(b[i]))
+        return false;
     }
     return true;
   }
@@ -396,7 +400,7 @@ class Point {
   friend Point operator-(const T &val, Point f) {
     f._apply_operation(val, [](T &valF, const T &valR) {
       valF = -valF;
-      Gudhi::multi_filtration::_add(valF, valR);
+      Gudhi::multi_filtration::detail::_add(valF, valR);
     });
     return f;
   }
@@ -420,7 +424,7 @@ class Point {
   template <typename U = T>
   friend Point &operator-=(Point &f, const Point<U> &val) {
     GUDHI_CHECK(f.size() == val.size(), "Cannot translate point by a direction with different dimension.");
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_subtract(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_subtract(valF, valR); });
     return f;
   }
 
@@ -440,7 +444,7 @@ class Point {
    * @param val Second element of the subtraction.
    */
   friend Point &operator-=(Point &f, const T &val) {
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_subtract(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_subtract(valF, valR); });
     return f;
   }
 
@@ -527,7 +531,7 @@ class Point {
   template <typename U = T>
   friend Point &operator+=(Point &f, const Point<U> &val) {
     GUDHI_CHECK(f.size() == val.size(), "Cannot translate point by a direction with different dimension.");
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_add(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_add(valF, valR); });
     return f;
   }
 
@@ -547,7 +551,7 @@ class Point {
    * @param val Second element of the addition.
    */
   friend Point &operator+=(Point &f, const T &val) {
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_add(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_add(valF, valR); });
     return f;
   }
 
@@ -642,7 +646,7 @@ class Point {
   template <typename U = T>
   friend Point &operator*=(Point &f, const Point<U> &val) {
     GUDHI_CHECK(f.size() == val.size(), "Cannot translate point by a direction with different dimension.");
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_multiply(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_multiply(valF, valR); });
     return f;
   }
 
@@ -664,7 +668,7 @@ class Point {
    * @param val Second element of the multiplication.
    */
   friend Point &operator*=(Point &f, const T &val) {
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_multiply(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_multiply(valF, valR); });
     return f;
   }
 
@@ -746,7 +750,7 @@ class Point {
     f._apply_operation(val, [](T &valF, const T &valR) {
       T tmp = valF;
       valF = valR;
-      Gudhi::multi_filtration::_divide(valF, tmp);
+      Gudhi::multi_filtration::detail::_divide(valF, tmp);
     });
     return f;
   }
@@ -775,7 +779,7 @@ class Point {
   template <typename U = T>
   friend Point &operator/=(Point &f, const Point<U> &val) {
     GUDHI_CHECK(f.size() == val.size(), "Cannot translate point by a direction with different dimension.");
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_divide(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_divide(valF, valR); });
     return f;
   }
 
@@ -800,7 +804,7 @@ class Point {
    * @param val Second element of the division.
    */
   friend Point &operator/=(Point &f, const T &val) {
-    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::_divide(valF, valR); });
+    f._apply_operation(val, [](T &valF, const T &valR) { Gudhi::multi_filtration::detail::_divide(valF, valR); });
     return f;
   }
 
@@ -836,12 +840,12 @@ class Point {
   /**
    * @brief Plus infinity value of an entry of the filtration value.
    */
-  constexpr static const T T_inf = Gudhi::multi_filtration::MF_T_inf<T>;
+  constexpr static const T T_inf = Gudhi::multi_filtration::detail::MF_T_inf<T>;
 
   /**
    * @brief Minus infinity value of an entry of the filtration value.
    */
-  constexpr static const T T_m_inf = Gudhi::multi_filtration::MF_T_m_inf<T>;
+  constexpr static const T T_m_inf = Gudhi::multi_filtration::detail::MF_T_m_inf<T>;
 
  private:
   Container coordinates_; /**< Coordinates of the point. */
