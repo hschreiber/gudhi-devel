@@ -311,7 +311,7 @@ class Multi_parameter_filtration_value {
    * @ref Multi_parameter_filtration_value with `OtherEnsure1Criticality` template argument at `true`.
    */
   template <class OtherStoragePolicy, bool OtherCo = Co, bool OtherEnsure1Criticality = Ensure1Criticality,
-            class = std::enable_if_t<!std::is_arithmetic_v<OtherStoragePolicy>>>
+            class = std::enable_if_t<detail::RangeTraits<OtherStoragePolicy>::is_storage_policy>>
   Multi_parameter_filtration_value<OtherStoragePolicy, OtherCo, OtherEnsure1Criticality> as_type() const {
     if constexpr (OtherEnsure1Criticality) {
       if (num_generators() > 1)
@@ -322,13 +322,18 @@ class Multi_parameter_filtration_value {
   }
 
   /**
-   * @brief Returns a copy by casting every filtration value element in the given type.
-   *
-   * @tparam U New desired @ref value_type.
+   * @brief If `U` is a native arithmetic type, returns a copy by casting every filtration value element in that type.
+   * Otherwise, `U` has to be @ref Multi_parameter_filtration_value with the desired template arguments, and
+   * the method returns a copy into that new format.
    */
-  template <typename U, class = std::enable_if_t<std::is_arithmetic_v<U>>>
+  template <typename U,
+            class = std::enable_if_t<std::is_arithmetic_v<U> || detail::RangeTraits<U>::is_multi_filtration>>
   auto as_type() const {
-    return as_type<typename StoragePolicy::template As_type<U>, Co, Ensure1Criticality>();
+    if constexpr (std::is_arithmetic_v<U>) {
+      return as_type<typename StoragePolicy::template As_type<U>, Co, Ensure1Criticality>();
+    } else {
+      return as_type<typename U::Storage_policy, U::has_negative_cones(), U::ensures_1_criticality()>();
+    }
   }
 
   // ACCESS
