@@ -13,8 +13,8 @@
  * @file multi_simplex_tree_helpers.h
  * @author David Loiseaux
  * @brief Contains the @ref Gudhi::multi_persistence::Simplex_tree_options_multidimensional_filtration struct,
- * as well as the two helper methods @ref Gudhi::multi_persistence::make_multi_dimensional and
- * @ref Gudhi::multi_persistence::make_one_dimensional.
+ * as well as the two helper methods @ref Gudhi::multi_persistence::make_multi_dimensional,
+ * @ref Gudhi::multi_persistence::make_one_dimensional and @ref Gudhi::multi_persistence::fill_axis_with_lowerstar.
  */
 
 #ifndef MP_MULTI_SIMPLEX_TREE_HELPERS_H_
@@ -22,10 +22,12 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <stdexcept>
 
 #include <gudhi/Debug_utils.h>
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Simplex_tree/simplex_tree_options.h>
+#include <gudhi/Multi_filtration/multi_filtration_utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -136,6 +138,40 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
   one_st.set_num_parameters(1);
 
   return one_st;
+}
+
+// TODO: unit test
+/**
+ * @brief Fills the values at given parameter of the first generator of all filtration values in the given simplex tree
+ * with a lower star filtration generated from the given vertex filtration values.
+ *
+ * @tparam MultiDimSimplexTree Type of the multi-dimensional @ref Gudhi::Simplex_tree. It has to define a
+ * @ref FiltrationValue with the additional methods: `num_parameters()` which returns the number of parameters,
+ * `num_generators()` which returns the number of generators and `operator(g, p)` which returns the value of the
+ * \f$ p^{th} \f$ element of the \f$ g^{th} \f$ generator. It should also define a type `value_type` with the type of
+ * an element in the filtration value.
+ * @tparam RandomAccessRange Random access range of value convertible into
+ * `MultiDimSimplexTree::Filtration_value::value_type`.
+ * @param st Simplex tree to modify.
+ * @param vertexFiltration Initial vertex filtration values for the 1D lower star filtration.
+ * @param axis Parameter to fill with the lower star filtration.
+ */
+template <class MultiDimSimplexTree, class RandomAccessRange>
+void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccessRange &vertexFiltration, std::size_t axis) {
+  using T = typename MultiDimSimplexTree::Filtration_value::value_type;
+  for (auto sh : st.complex_simplex_range()) {
+    auto &current_birth = st.get_filtration_value(sh);
+    T maxValue = Gudhi::multi_filtration::detail::MF_T_m_inf<T>;
+    for (auto vertex : st.simplex_vertex_range(sh)) {
+      GUDHI_CHECK(vertex < vertexFiltration.size(),
+                  std::invalid_argument("Vertex filtration values does not have a value for every vertex."));
+      GUDHI_CHECK(!Gudhi::multi_filtration::detail::_is_nan(vertexFiltration[vertex]),
+                  std::invalid_argument("Filtration value should not be NaN."));
+      maxValue = std::max(maxValue, static_cast<T>(vertexFiltration[vertex]));
+    }
+    GUDHI_CHECK(axis < current_birth.num_parameters(), std::invalid_argument("Axis is not a valid parameter index."));
+    current_birth(0, axis) = maxValue;
+  }
 }
 
 }  // namespace multi_persistence
