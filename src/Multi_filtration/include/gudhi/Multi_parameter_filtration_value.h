@@ -468,7 +468,7 @@ class Multi_parameter_filtration_value {
 
   /**
    * @brief Returns a filtration value with given number of parameters for which @ref is_nan() returns `true`.
-   * @throw std::logic_error If @ref has_quite_NaN is false.
+   * @throw std::logic_error If @ref has_quiet_NaN is false.
    */
   static Multi_parameter_filtration_value nan(int numberOfParameters) {
     StoragePolicy out = StoragePolicy::nan(numberOfParameters < 0 ? 0 : numberOfParameters);

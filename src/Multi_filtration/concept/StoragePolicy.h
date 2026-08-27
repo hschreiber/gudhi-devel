@@ -297,7 +297,7 @@ class StoragePolicy {
    * @brief Returns a filtration value with given number of parameters for which @ref is_nan() returns `true`
    * or an empty filtration value if `numberOfParameters` is 0 (for which @ref is_nan() sometimes can also evaluate
    * to true).
-   * Throws if @ref has_quite_NaN is false.
+   * Throws if @ref has_quiet_NaN is false.
    */
   static StoragePolicy nan(size_type numberOfParameters);
 
