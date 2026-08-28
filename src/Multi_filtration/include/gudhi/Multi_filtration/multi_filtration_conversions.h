@@ -40,7 +40,7 @@ namespace multi_filtration {
  *
  * @brief Converts the given @ref Flat_array_filtration into the @ref StoragePolicy given as template argument.
  * It is assumed that the given value is simplified (i.e. minimal and ordered lexicographically). It is also assumed
- * that the given value has the right format for the choosen output type. E.g., if `OutStoragePolicy` is
+ * that the given value has the right format for the chosen output type. E.g., if `OutStoragePolicy` is
  * @ref Degree_bifiltration, then the number of parameters are 2 etc.
  *
  * @tparam OutStoragePolicy New @ref StoragePolicy. Has to be either
@@ -83,7 +83,7 @@ inline OutStoragePolicy as_type(const Flat_array_filtration<T>& f) {
  *
  * @brief Converts the given @ref Nested_array_filtration into the @ref StoragePolicy given as template argument.
  * It is assumed that the given value is simplified (i.e. minimal and ordered lexicographically). It is also assumed
- * that the given value has the right format for the choosen output type. E.g., if `OutStoragePolicy` is
+ * that the given value has the right format for the chosen output type. E.g., if `OutStoragePolicy` is
  * @ref Degree_bifiltration, then the number of parameters are 2 etc.
  *
  * @tparam OutStoragePolicy New @ref StoragePolicy. Has to be either
