@@ -508,7 +508,7 @@ class Multi_parameter_filtration_value {
    */
   [[nodiscard]] bool is_finite() const { return generators_.template is_finite<Co>(); }
 
-  // COMPARAISON OPERATORS
+  // COMPARISON OPERATORS
 
   /**
    * @brief Returns `true` if and only if the first argument is lexicographically strictly less than the second
@@ -1551,7 +1551,7 @@ class Multi_parameter_filtration_value {
   /**
    * @brief If @ref StoragePolicy::has_minimal_set_representation is true, simplifies the current set of generators
    * such that it becomes minimal. Also orders it in increasing lexicographical order. Only necessary if generators
-   * were added "by hand" without verification either trough the constructor or with @ref add_guaranteed_generator "",
+   * were added "by hand" without verification either through the constructor or with @ref add_guaranteed_generator "",
    * etc. If @ref StoragePolicy::has_minimal_set_representation is false, does nothing.
    */
   void simplify() {
@@ -1922,7 +1922,7 @@ class Multi_parameter_filtration_value {
 #endif
   }
 
-  // FONCTIONNALITIES
+  // FUNCTIONALITIES
 
   /**
    * @private
@@ -2261,7 +2261,7 @@ class Multi_parameter_filtration_value {
             if (g < f1.num_generators())
               threshold1 = _strictly_dominates(threshold1, f1(g, p)) ? f1(g, p) : threshold1;
             else {
-              f1.set_num_generators(g);
+              f1.set_num_generators(g + 1);
               modified = true;
             }
             if (g < f2.num_generators()) threshold2 = _strictly_dominates(threshold2, f2(g, p)) ? f2(g, p) : threshold2;
@@ -2497,11 +2497,11 @@ class Multi_parameter_filtration_value {
     bool allNaNA = true;
     bool allNaNB = true;
     for (size_type p = 0; p < num_parameters(); ++p) {
-      if (generators_(g, p) < *it) {
+      if (generators_(g, p) < static_cast<value_type>(*it)) {
         if (!allSmaller) return Rel::NONE;
         equal = false;
         allGreater = false;
-      } else if (generators_(g, p) > *it) {
+      } else if (generators_(g, p) > static_cast<value_type>(*it)) {
         if (!allGreater) return Rel::NONE;
         equal = false;
         allSmaller = false;

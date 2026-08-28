@@ -55,11 +55,11 @@ namespace Gudhi::multi_filtration {
  * `std::numeric_limits<Multi_parameter_filtration_value<Degree_bifiltration>, Co>` will behave such that:
  * - `::has_infinity` returns `true` if and only if `Co` is false,
  * - `::has_quiet_NaN` returns `true`,
- * - `::infinity(int)` returns Degree_bifiltration::inf(size_type) "",
- * - `::minus_infinity(int)` returns Degree_bifiltration::minus_inf(size_type) "",
+ * - `::infinity(int)` returns `Degree_bifiltration::inf(size_type)`,
+ * - `::minus_infinity(int)` returns `Degree_bifiltration::minus_inf(size_type)`,
  * - `::max(int)` throws if `Co` is true and otherwise returns a @ref Degree_bifiltration with one generator with
  * first parameter 0 and second parameter `std::numeric_limits<T>::max()`,
- * - `::quiet_NaN(int)` returns Degree_bifiltration::nan(size_type).
+ * - `::quiet_NaN(int)` returns `Degree_bifiltration::nan(size_type)`.
  *
  * @tparam T Arithmetic type of an entry of the second parameter of a filtration value. Has to be **signed** and
  * to implement `std::isnan(T)`, `std::numeric_limits<T>::has_quiet_NaN`, `std::numeric_limits<T>::quiet_NaN()`,
@@ -229,11 +229,11 @@ class Degree_bifiltration {
 
   iterator begin(size_type g) { return iterator(generators_[g], g); }
 
-  iterator end(size_type g) { return iterator(); }
+  iterator end([[maybe_unused]] size_type g) { return iterator(); }
 
   const_iterator begin(size_type g) const { return const_iterator(generators_[g], g); }
 
-  const_iterator end(size_type g) const { return const_iterator(); }
+  const_iterator end([[maybe_unused]] size_type g) const { return const_iterator(); }
 
   static constexpr size_type implicit_axis() noexcept { return 1; }
 
@@ -317,7 +317,7 @@ class Degree_bifiltration {
   void set_num_generators(size_type g, value_type defaultValue) { generators_.resize(g, defaultValue); }
 
   template <bool Co, class Iterator>
-  bool emplace(Iterator startIt, Iterator endIt, value_type nullValue) {
+  bool emplace(Iterator startIt, [[maybe_unused]] Iterator endIt, value_type nullValue) {
     GUDHI_CHECK(std::distance(startIt, endIt) == 2,
                 std::invalid_argument("Wrong range size. Should correspond to the number of parameters."));
 

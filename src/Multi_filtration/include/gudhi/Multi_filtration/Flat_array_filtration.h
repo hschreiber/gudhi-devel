@@ -48,11 +48,11 @@ namespace Gudhi::multi_filtration {
  * `std::numeric_limits<Multi_parameter_filtration_value<Flat_array_filtration>, Co>` will behave such that:
  * - `::has_infinity` returns `true`,
  * - `::has_quiet_NaN` returns `std::numeric_limits<T>::has_quiet_NaN`,
- * - `::infinity(int)` returns Flat_array_filtration::inf(size_type) "",
- * - `::minus_infinity(int)` returns Flat_array_filtration::minus_inf(size_type) "",
+ * - `::infinity(int)` returns `Flat_array_filtration::inf(size_type)`,
+ * - `::minus_infinity(int)` returns `Flat_array_filtration::minus_inf(size_type)`,
  * - `::max(int)` throws if `Co` is true and otherwise returns a @ref Flat_array_filtration with one generator with
  * all parameters at std::numeric_limits<T>::max()`,
- * - `::quiet_NaN(int)` returns Flat_array_filtration::nan(size_type) if `std::numeric_limits<T>::has_quiet_NaN`
+ * - `::quiet_NaN(int)` returns `Flat_array_filtration::nan(size_type)` if `std::numeric_limits<T>::has_quiet_NaN`
  * and throws otherwise.
  * 
  * @tparam T Arithmetic type of an entry for one parameter of a filtration value. Has to be **signed** and

@@ -63,7 +63,7 @@ class StoragePolicy {
 
   /**
    * @brief Value considered +infinity for an element in the filtration value.
-   * Carefull: `-T_inf` does **not** have to be equal to `T_m_inf`.
+   * @note `-T_inf` does **not** have to be equal to `T_m_inf`.
    *
    * @tparam U Type of the element. Default value: @ref value_type.
    */
@@ -72,7 +72,7 @@ class StoragePolicy {
 
   /**
    * @brief Value considered -infinity for an element in the filtration value.
-   * Carefull: `-T_m_inf` does **not** have to be equal to `T_inf`.
+   * @note `-T_m_inf` does **not** have to be equal to `T_inf`.
    *
    * @tparam U Type of the element. Default value: @ref value_type.
    */
