@@ -281,8 +281,9 @@ class Degree_bifiltration {
     return shift_ == other.shift_ && step_ == other.step_;
   }
 
-  Degree_bifiltration get_empty() const {
-    Degree_bifiltration out;
+  template <typename U = T>
+  As_type<U> get_empty() const {
+    As_type<U> out;
     out.set_mapping(shift_, step_);
     return out;
   }
@@ -337,7 +338,7 @@ class Degree_bifiltration {
     return Degree_bifiltration(numberOfParameters, T_m_inf<>);
   }
 
-  static Degree_bifiltration nan(size_type numberOfParameters = 2) { return Degree_bifiltration(); }
+  static Degree_bifiltration nan([[maybe_unused]] size_type numberOfParameters = 2) { return Degree_bifiltration(); }
 
   template <bool Co>
   [[nodiscard]] constexpr bool is_plus_inf() const {

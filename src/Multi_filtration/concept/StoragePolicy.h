@@ -223,7 +223,8 @@ class StoragePolicy {
    * this, which could have been eventually modified by the user independently of
    * @ref Multi_parameter_filtration_value after construction.
    */
-  Degree_bifiltration get_empty() const;
+  template <typename U>
+  As_type<U> get_empty() const;
 
   /**
    * @brief Returns reference to underlying container.
