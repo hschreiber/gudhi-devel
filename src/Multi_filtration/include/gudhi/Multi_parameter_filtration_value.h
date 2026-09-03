@@ -334,6 +334,28 @@ class Multi_parameter_filtration_value {
     }
   }
 
+  /**
+   * @brief Returns a copy of this with given number of parameters and generators. If the given number of parameters
+   * \f$ p \f$ is smaller than the current one, only the \f$ p \f$ first parameters are copied and if \f$ p \f$ is
+   * greater than the current one, then additional parameters are added at the end using the given default value.
+   * Same for the given number of generators (similar to @ref set_num_generators "").
+   *
+   * @warning All new generators or parameters will be set to -infinity (`Co` is true) or infinity (`Co` is false).
+   * That is, the new filtration value is potentially not minimal anymore. So,
+   * if @ref StoragePolicy::has_minimal_set_representation is true, make sure to fill them with real generators or to
+   * call @ref simplify before using other methods as most methods will have an undefined behaviour for that case,
+   * if the set of generators is not minimal or sorted.
+   * 
+   * @tparam U Arithmetic type @ref value_type can convert into. Default: @ref value_type.
+   */
+  template <typename U = value_type>
+  auto copy(size_type numberOfParameters, size_type numberOfGenerators) const {
+    using SP = typename StoragePolicy::template As_type<U>;
+    SP sp = generators_.template copy<U>(numberOfParameters, numberOfGenerators,
+                                         Co ? SP::template T_m_inf<> : SP::template T_inf<>);
+    return Multi_parameter_filtration_value<SP, Co, Ensure1Criticality>(std::move(sp));
+  }
+
   // ACCESS
 
   /**
@@ -1915,7 +1937,7 @@ class Multi_parameter_filtration_value {
       }
       if (isNaN) return nan(f.num_parameters());
       if (isInf) return Co ? minus_inf(f.num_parameters()) : inf(f.num_parameters());
-      StoragePolicy result = f.generators_.get_empty();
+      StoragePolicy result = f.generators_.copy(f.num_parameters(), 0, _get_default_null_value());
       result.template emplace<Co>(gen.begin(), gen.end(), _get_default_null_value());
       return Multi_parameter_filtration_value(std::move(result));
     } else {
@@ -2010,8 +2032,7 @@ class Multi_parameter_filtration_value {
     U grid_inf = SP::template T_inf<>;
     auto get_filtration_value = [grid_inf](const Multi_parameter_filtration_value &f) {
       if constexpr (StoragePolicy::has_an_implicit_axis) {
-        SP sp = f.get_underlying_policy().template get_empty<U>();
-        return Multi_parameter_filtration_value<SP, Co, Ensure1Criticality>(std::move(sp));
+        return f.copy<U>(f.num_parameters(), 0);
       } else {
         return Multi_parameter_filtration_value<SP, Co, Ensure1Criticality>(f.num_parameters(), grid_inf);
       }

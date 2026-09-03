@@ -186,6 +186,15 @@ class StoragePolicy {
   friend void swap(StoragePolicy &f1, StoragePolicy &f2) noexcept;
 
   /**
+   * @brief Returns a copy of this with given number of parameters and generators. If the given number of parameters
+   * \f$ p \f$ is smaller than the current one, only the \f$ p \f$ first parameters are copied and if \f$ p \f$ is
+   * greater than the current one, then additional parameters are added at the end using the given default value.
+   * Same for the given number of generators.
+   */
+  template <typename U = value_type>
+  As_type<U> copy(size_type numberOfParameters, size_type numberOfGenerators, U defaultValue) const;
+
+  /**
    * @brief Only necessary if @ref has_an_implicit_axis is true. Returns the parameter index which is implicit.
    */
   static constexpr size_type implicit_axis() noexcept;
@@ -216,15 +225,6 @@ class StoragePolicy {
    * This is meant to be a quick test.
    */
   bool has_same_implicit_values(const StoragePolicy& other) const;
-
-  /**
-   * @brief Only necessary if @ref has_an_implicit_axis is true. Returns a copy of this but with empty generator
-   * container. This way the new empty @ref StoragePolicy has the same settings (related to the implicit axis) than
-   * this, which could have been eventually modified by the user independently of
-   * @ref Multi_parameter_filtration_value after construction.
-   */
-  template <typename U>
-  As_type<U> get_empty() const;
 
   /**
    * @brief Returns reference to underlying container.

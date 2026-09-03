@@ -229,6 +229,17 @@ class Degree_bifiltration {
     std::swap(f1.step_, f2.step_);
   }
 
+  template <typename U = T>
+  As_type<U> copy(size_type numberOfParameters, size_type numberOfGenerators, U defaultValue) const {
+    typename As_type<U>::Underlying_container newContainer(numberOfGenerators, defaultValue);
+    for (size_type g = 0; g < std::min(numberOfGenerators, num_generators()); ++g) {
+      newContainer[g] = operator()(g, 0);
+    }
+    As_type<U> out(std::move(newContainer), numberOfParameters);
+    out.set_mapping(shift_, step_);
+    return out;
+  }
+
   Underlying_container &get_underlying_container() { return generators_; }
 
   const Underlying_container &get_underlying_container() const { return generators_; }
@@ -279,13 +290,6 @@ class Degree_bifiltration {
 
   bool has_same_implicit_values(const Degree_bifiltration& other) const {
     return shift_ == other.shift_ && step_ == other.step_;
-  }
-
-  template <typename U = T>
-  As_type<U> get_empty() const {
-    As_type<U> out;
-    out.set_mapping(shift_, step_);
-    return out;
   }
 
   /**

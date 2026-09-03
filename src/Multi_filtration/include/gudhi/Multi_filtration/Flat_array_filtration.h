@@ -160,6 +160,19 @@ class Flat_array_filtration {
     swap(f1.generator_view_, f2.generator_view_);
   }
 
+  template <typename U = T>
+  As_type<U> copy(size_type numberOfParameters, size_type numberOfGenerators, U defaultValue) const {
+    typename As_type<U>::Underlying_container newContainer(numberOfParameters * numberOfGenerators, defaultValue);
+    size_type i = 0;
+    for (size_type g = 0; g < numberOfGenerators; ++g) {
+      for (size_type p = 0; p < numberOfParameters; ++p) {
+        if (g < num_generators() && p < num_parameters()) newContainer[i] = operator()(g, p);
+        ++i;
+      }
+    }
+    return As_type<U>(std::move(newContainer), numberOfParameters);
+  }
+
   Underlying_container &get_underlying_container() { return generators_; }
 
   const Underlying_container &get_underlying_container() const { return generators_; }
