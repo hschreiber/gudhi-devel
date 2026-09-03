@@ -23,6 +23,8 @@ namespace multi_filtration {
  * @ingroup multi_filtration
  *
  * @brief Concept for the first template parameter of @ref Multi_parameter_filtration_value.
+ * The internal order of generators and parameters has to be fixed, whatever order it is,
+ * i.e. if two instances of @ref StoragePolicy are equal, the generators and parameters are ordered the same for both.
  */
 class StoragePolicy {
  public:
@@ -81,8 +83,11 @@ class StoragePolicy {
 
   /**
    * @brief True if and only if exactly one of the parameter values is just implicitly "stored" and is (therefore)
-   * fixed/not updatable. See for example @ref Gudhi::multi_filtration::Degree_bifiltration. It is than assumed that
-   * the generators are internally always totally ordered by this fixed implicit parameter.
+   * fixed/not updatable. See for example @ref Gudhi::multi_filtration::Degree_bifiltration.
+   * For the comparaison operators `>`, `>=`, `<=` and `<` of @ref Multi_parameter_filtration_value to properly work
+   * if needed, additional constrains are: the implicit values are integers (even if @ref value_type is not), the
+   * generators are internally always ordered by increasing implicit values and no two distinct generators can have
+   * the same value for this parameter.
    */
   constexpr static const bool has_an_implicit_axis;
   /**
@@ -188,12 +193,12 @@ class StoragePolicy {
   /**
    * @brief Only necessary if @ref has_an_implicit_axis is true. Returns the generator index for which the implicit
    * parameter has the given implicit value. If the generator is not stored or the given value is invalid, has to
-   * return @ref null_value with the output type as template parameter. If the given value is +/-infinity, returns
-   * @ref T_inf, resp. @ref T_m_inf with the output type as template parameter.
+   * return @ref null_value with the output type as template parameter. If the given value is +/-infinity (and not
+   * invalid), returns @ref T_inf, resp. @ref T_m_inf with the output type as template parameter.
    *
    * @param val Implicit value of the fixed parameter at the desired generator.
    */
-  static auto get_generator_of_implicit_value(value_type val);
+  auto get_generator_of_implicit_value(value_type val) const;
 
   /**
    * @brief Only necessary if @ref has_an_implicit_axis is true. Returns the failing value of
@@ -204,6 +209,21 @@ class StoragePolicy {
    */
   template <typename U>
   static constexpr U null_value() noexcept;
+
+  /**
+   * @brief Only necessary if @ref has_an_implicit_axis is true. Returns true if and only if
+   * `(*this)(g, implicit_axis()) == other(g, implicit_axis())` for every `g`.
+   * This is meant to be a quick test.
+   */
+  bool has_same_implicit_values(const StoragePolicy& other) const;
+
+  /**
+   * @brief Only necessary if @ref has_an_implicit_axis is true. Returns a copy of this but with empty generator
+   * container. This way the new empty @ref StoragePolicy has the same settings (related to the implicit axis) than
+   * this, which could have been eventually modified by the user independently of
+   * @ref Multi_parameter_filtration_value after construction.
+   */
+  Degree_bifiltration get_empty() const;
 
   /**
    * @brief Returns reference to underlying container.
