@@ -141,6 +141,18 @@ class Nested_array_filtration {
     f1.generators_.swap(f2.generators_);
   }
 
+  template <typename U = T>
+  As_type<U> copy(size_type numberOfParameters, size_type numberOfGenerators, U defaultValue) const {
+    typename As_type<U>::Underlying_container newContainer(numberOfGenerators,
+                                                           Generator(numberOfParameters, defaultValue));
+    for (size_type g = 0; g < std::min(numberOfGenerators, num_generators()); ++g) {
+      for (size_type p = 0; p < std::min(numberOfParameters, num_parameters()); ++p) {
+        newContainer[g][p] = operator()(g, p);
+      }
+    }
+    return As_type<U>(std::move(newContainer), numberOfParameters);
+  }
+
   Underlying_container &get_underlying_container() { return generators_; }
 
   const Underlying_container &get_underlying_container() const { return generators_; }
