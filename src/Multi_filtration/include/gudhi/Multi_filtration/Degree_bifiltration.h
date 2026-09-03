@@ -18,9 +18,11 @@
 #define MF_DEGREE_BIFILTRATION_H_
 
 #include <cstddef>      //std::size_t
+#include <cstdint>      //std::int64_t
 #include <cstring>      //memcpy
-#include <stdexcept>
 #include <type_traits>  //std::is_arithmetic
+#include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <boost/iterator/iterator_facade.hpp>
@@ -38,7 +40,9 @@ namespace Gudhi::multi_filtration {
  * @brief Class encoding the different generators, i.e., apparition times, of a \f$ k \f$-critical
  * \f$\mathbb R^2\f$-filtration value in a filtration of the particular form:
  * \f$ [(v_0,0), (v_1,1), (v_2,2), ..., (v_{k-1},k-1)] \f$, where all pairs \f$ (v_i,i) \f$
- * represent a generator with two parameters.
+ * represent a generator with two parameters. It is also possible to represent the form
+ * \f$ [(v_0,shift+0*step), (v_1,shift+1*step), (v_2,shift+2*step), ..., (v_{k-1},shift+(k-1)*step)] \f$.
+ * See below to see how.
  * For example: let \f$ d \f$ be the max degree of a vertex in a complex. Let a vertex be \f$ k \f$-critical if it has
  * degree \f$ d - k + 1 \f$ and an edge if one of its end vertices is \f$ k \f$-critical and the other one
  * \f$ j \f$-critical, \f$ j \geq k \f$. If we filter the complex by degree, the filtration value of a
@@ -60,6 +64,20 @@ namespace Gudhi::multi_filtration {
  * - `::max(int)` throws if `Co` is true and otherwise returns a @ref Degree_bifiltration with one generator with
  * first parameter 0 and second parameter `std::numeric_limits<T>::max()`,
  * - `::quiet_NaN(int)` returns `Degree_bifiltration::nan(size_type)`.
+ *
+ * At construction, the format will be \f$ [(v_0,0), (v_1,1), (v_2,2), ..., (v_{k-1},k-1)] \f$, but it is possible
+ * to set a shit and step value to get
+ * \f$ [(v_0,shift+0*step), (v_1,shift+1*step), (v_2,shift+2*step), ..., (v_{k-1},shift+(k-1)*step)] \f$ using
+ * @ref Degree_bifiltration::set_mapping:
+ * ```
+ * using Storage_policy = Gudhi::multi_filtration::Degree_bifiltration<double>;
+ * using Multi_filtration_value = Gudhi::multi_filtration::Multi_parameter_filtration_value<Storage_policy>;
+ *
+ * Multi_filtration_value f({2, 1, 3, 4}, 2);
+ * // here f(0, 1) is equal to 0 and f(1, 1) to 1
+ * f.get_underlying_policy().set_mapping(1, 3);
+ * // now f(0, 1) is equal to 1 and f(1, 1) to 4 as desired
+ * ```
  *
  * @tparam T Arithmetic type of an entry of the second parameter of a filtration value. Has to be **signed** and
  * to implement `std::isnan(T)`, `std::numeric_limits<T>::has_quiet_NaN`, `std::numeric_limits<T>::quiet_NaN()`,
@@ -155,36 +173,33 @@ class Degree_bifiltration {
   constexpr static const bool has_minus_infinity = true;
   constexpr static const bool has_quiet_NaN = true;
 
-  Degree_bifiltration() = default;
+  Degree_bifiltration() : generators_(), shift_(0), step_(1) {}
 
-  Degree_bifiltration([[maybe_unused]] size_type numberOfParameters, T value) : generators_(1, value) {}
-
-  template <class Iterator, class = std::enable_if_t<!std::is_arithmetic_v<Iterator>>>
-  Degree_bifiltration(Iterator itBegin, [[maybe_unused]] Iterator itEnd) : generators_(1, *itBegin) {
-    GUDHI_CHECK(*(std::next(itBegin)) == 0, std::invalid_argument("Second value of the range has to be 0"));
-  }
+  Degree_bifiltration([[maybe_unused]] size_type numberOfParameters, T value)
+      : generators_(1, value), shift_(0), step_(1) {}
 
   template <class Iterator, class = std::enable_if_t<!std::is_arithmetic_v<Iterator>>>
-  Degree_bifiltration(Iterator itBegin, Iterator itEnd, [[maybe_unused]] size_type numberOfParameters) {
+  Degree_bifiltration(Iterator itBegin, [[maybe_unused]] Iterator itEnd)
+      : generators_(1, *itBegin), shift_(0), step_(1) {}
+
+  template <class Iterator, class = std::enable_if_t<!std::is_arithmetic_v<Iterator>>>
+  Degree_bifiltration(Iterator itBegin, Iterator itEnd, [[maybe_unused]] size_type numberOfParameters)
+      : shift_(0), step_(1) {
     size_type numGen = std::distance(itBegin, itEnd) / 2;
     generators_.resize(numGen);
     Iterator it = itBegin;
     for (size_type i = 0; i < numGen; ++i) {
       generators_[i] = *it;
       ++it;
-      GUDHI_CHECK(
-          static_cast<size_type>(*it) == i,
-          std::invalid_argument(
-              "Every second value of the range has to correspond to a contiguous sequence of integers starting at 0."));
       ++it;
     }
   }
 
   Degree_bifiltration(const Underlying_container &generators, [[maybe_unused]] size_type numberOfParameters)
-      : generators_(generators) {}
+      : generators_(generators), shift_(0), step_(1) {}
 
   Degree_bifiltration(Underlying_container &&generators, [[maybe_unused]] size_type numberOfParameters)
-      : generators_(std::move(generators)) {}
+      : generators_(std::move(generators)), shift_(0), step_(1) {}
 
   Degree_bifiltration(const Degree_bifiltration &other) = default;
 
@@ -195,16 +210,24 @@ class Degree_bifiltration {
   // cannot use = default as it triggers "dummy_g_ may be used uninitialized" compiler warning for nothing
   Degree_bifiltration &operator=(const Degree_bifiltration &other) {
     generators_ = other.generators_;
+    shift_ = other.shift_;
+    step_ = other.step_;
     return *this;
   }
 
   // cannot use = default as it triggers "dummy_g_ may be used uninitialized" compiler warning for nothing
   Degree_bifiltration &operator=(Degree_bifiltration &&other) noexcept {
     generators_ = std::move(other.generators_);
+    shift_ = std::exchange(other.shift_, 0);
+    step_ = std::exchange(other.step_, 1);
     return *this;
   }
 
-  friend void swap(Degree_bifiltration &f1, Degree_bifiltration &f2) noexcept { f1.generators_.swap(f2.generators_); }
+  friend void swap(Degree_bifiltration &f1, Degree_bifiltration &f2) noexcept {
+    f1.generators_.swap(f2.generators_);
+    std::swap(f1.shift_, f2.shift_);
+    std::swap(f1.step_, f2.step_);
+  }
 
   Underlying_container &get_underlying_container() { return generators_; }
 
@@ -214,7 +237,7 @@ class Degree_bifiltration {
     GUDHI_CHECK(g < generators_.size(), std::out_of_range("Out of bound generator index."));
     GUDHI_CHECK(p < 2, std::out_of_range("Out of bound parameter index."));
     if (p == 1) {
-      dummy_g_ = g;
+      dummy_g_ = _get_implicit_value(g);
       return dummy_g_;
     }
     return generators_[g];
@@ -223,32 +246,71 @@ class Degree_bifiltration {
   const_reference operator()(size_type g, size_type p) const {
     GUDHI_CHECK(g < generators_.size(), std::out_of_range("Out of bound generator index."));
     GUDHI_CHECK(p < 2, std::out_of_range("Out of bound parameter index."));
-    if (p == 1) return g;
+    if (p == 1) return _get_implicit_value(g);
     return generators_[g];
   }
 
-  iterator begin(size_type g) { return iterator(generators_[g], g); }
+  iterator begin(size_type g) { return iterator(generators_[g], _get_implicit_value(g)); }
 
   iterator end([[maybe_unused]] size_type g) { return iterator(); }
 
-  const_iterator begin(size_type g) const { return const_iterator(generators_[g], g); }
+  const_iterator begin(size_type g) const { return const_iterator(generators_[g], _get_implicit_value(g)); }
 
   const_iterator end([[maybe_unused]] size_type g) const { return const_iterator(); }
 
   static constexpr size_type implicit_axis() noexcept { return 1; }
 
-  static int get_generator_of_implicit_value(value_type val) {
-    if (detail::_is_nan(val) || val == T_m_inf<>) return null_value<int>();
-    if (val == T_inf<>) return T_inf<int>;
-    auto g = static_cast<int>(val);
-    if (g < 0) return null_value<int>();
-    return g;
+  std::int64_t get_generator_of_implicit_value(value_type val) const {
+    if (detail::_is_nan(val) || val == T_m_inf<>) return null_value<std::int64_t>();
+    if (val == T_inf<>) return T_inf<std::int64_t>;
+
+    val -= shift_;
+    T g = val / step_;
+    if (g < 0 || g * step_ != val) return null_value<std::int64_t>();
+    // lets say that std::int64_t is good enough here, as practical values should all fit in there
+    // TODO: but could be more subtile depending on T
+    return static_cast<std::int64_t>(g);
   }
 
   template <typename U>
   static constexpr U null_value() noexcept {
     return static_cast<U>(-1);  // equal to T_inf for unsigned integers, but we do not allow them anyway
   }
+
+  bool has_same_implicit_values(const Degree_bifiltration& other) const {
+    return shift_ == other.shift_ && step_ == other.step_;
+  }
+
+  Degree_bifiltration get_empty() const {
+    Degree_bifiltration out;
+    out.set_mapping(shift_, step_);
+    return out;
+  }
+
+  /**
+   * @brief Sets the shift and step value of the implicit axis.
+   * That is \f$ implicit\_value = shift + generator\_index \cdot step \f$.
+   * Argument `step` has to be non-zero.
+   * For @ref Multi_parameter_filtration_value::operator< (resp. `>` etc.) to work,
+   * both arguments have to be integers and `step` has to be strictly positive.
+   */
+  void set_mapping(T shift, T step) {
+    GUDHI_CHECK(step != 0, std::invalid_argument("Step cannot be zero."));
+    shift_ = shift;
+    step_ = step;
+  }
+
+  /**
+   * @brief Get current shift value.
+   * Recall \f$ implicit\_value = shift + generator\_index \cdot step \f$.
+   */
+  T get_shift() const { return shift_; }
+
+  /**
+   * @brief Get current step value.
+   * Recall \f$ implicit\_value = shift + generator\_index \cdot step \f$.
+   */
+  T get_step() const { return step_; }
 
   void reserve(size_type number_of_generators) { generators_.reserve(number_of_generators); }
 
@@ -324,9 +386,7 @@ class Degree_bifiltration {
     const T val = *startIt;
     ++startIt;
 
-    GUDHI_CHECK(*startIt >= 0, std::invalid_argument("Second parameter has to be a positive index."));
-
-    const size_type index = *startIt;
+    const size_type index = _get_index(*startIt);
 
     if (detail::_is_nan(val)) return false;
 
@@ -354,26 +414,39 @@ class Degree_bifiltration {
     for (size_type i = 0; i < f.generators_.size(); ++i) {
       stream << f.generators_[i] << " ";
     }
-    stream << "]";
+    stream << "] shift=" << f.shift_ << ", step=" << f.step_;
 
     return stream;
   }
 
   friend char *serialize_value_to_char_buffer(const Degree_bifiltration &value, char *start) {
-    return serialize_value_to_char_buffer(value.generators_, start);
+    char *curr = start;
+    curr = serialize_value_to_char_buffer(value.generators_, curr);
+    curr = serialize_value_to_char_buffer(value.shift_, curr);
+    curr = serialize_value_to_char_buffer(value.step_, curr);
+    return curr;
   }
 
   friend const char *deserialize_value_from_char_buffer(Degree_bifiltration &value, const char *start) {
-    return deserialize_value_from_char_buffer(value.generators_, start);
+    const char *curr = start;
+    curr = deserialize_value_from_char_buffer(value.generators_, curr);
+    curr = deserialize_value_from_char_buffer(value.shift_, curr);
+    curr = deserialize_value_from_char_buffer(value.step_, curr);
+    return curr;
   }
 
   friend std::size_t get_serialization_size_of(const Degree_bifiltration &value) {
-    return get_serialization_size_of(value.generators_);
+    std::size_t size = get_serialization_size_of(value.generators_);
+    size += get_serialization_size_of(value.shift_);
+    size += get_serialization_size_of(value.step_);
+    return size;
   }
 
  private:
   Underlying_container generators_; /**< Container of the filtration value elements. */
-  T dummy_g_;                       /**< Dummy value for the first parameter, such that a reference can be returned. */
+  value_type dummy_g_;              /**< Dummy value for the first parameter, such that a reference can be returned. */
+  value_type shift_;                /**< Shift value for value of implicit axis. */
+  value_type step_;                 /**< Step value for value of implicit axis. */
 
   template <bool Co>
   static bool _dominates(T a, T b) {
@@ -383,6 +456,15 @@ class Degree_bifiltration {
       return a >= b;
     }
   }
+
+  size_type _get_index(value_type value) const {
+    std::int64_t index = get_generator_of_implicit_value(value);
+    GUDHI_CHECK(index != null_value<std::int64_t>() && index != T_inf<std::int64_t>,
+                std::invalid_argument("Implicit value is invalid for the current shift and step values."));
+    return static_cast<size_type>(index);
+  }
+
+  value_type _get_implicit_value(size_type g) const { return shift_ + (static_cast<value_type>(g) * step_); }
 };
 
 }  // namespace Gudhi::multi_filtration

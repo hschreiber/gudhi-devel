@@ -40,8 +40,9 @@ namespace multi_filtration {
  *
  * @brief Converts the given @ref Flat_array_filtration into the @ref StoragePolicy given as template argument.
  * It is assumed that the given value is simplified (i.e. minimal and ordered lexicographically). It is also assumed
- * that the given value has the right format for the chosen output type. E.g., if `OutStoragePolicy` is
- * @ref Degree_bifiltration, then the number of parameters are 2 etc.
+ * that the given value has the right format for the chosen output type for de default constructor. E.g.,
+ * if `OutStoragePolicy` is @ref Degree_bifiltration, then the number of parameters are 2, shift/step are assumed
+ * to be 0/1 etc.
  *
  * @tparam OutStoragePolicy New @ref StoragePolicy. Has to be either
  * @ref Gudhi::multi_filtration::Flat_array_filtration,
@@ -83,8 +84,9 @@ inline OutStoragePolicy as_type(const Flat_array_filtration<T>& f) {
  *
  * @brief Converts the given @ref Nested_array_filtration into the @ref StoragePolicy given as template argument.
  * It is assumed that the given value is simplified (i.e. minimal and ordered lexicographically). It is also assumed
- * that the given value has the right format for the chosen output type. E.g., if `OutStoragePolicy` is
- * @ref Degree_bifiltration, then the number of parameters are 2 etc.
+ * that the given value has the right format for the chosen output type for de default constructor. E.g.,
+ * if `OutStoragePolicy` is @ref Degree_bifiltration, then the number of parameters are 2, shift/step are assumed
+ * to be 0/1 etc.
  *
  * @tparam OutStoragePolicy New @ref StoragePolicy. Has to be either
  * @ref Gudhi::multi_filtration::Flat_array_filtration,
@@ -154,7 +156,9 @@ inline OutStoragePolicy as_type(const Degree_bifiltration<T>& f) {
 
   if constexpr (std::is_same_v<OutStoragePolicy, Degree_bifiltration<U> >) {
     std::vector<U> out(f.get_underlying_container().begin(), f.get_underlying_container().end());
-    return Degree_bifiltration<U>(std::move(out), 2);
+    Degree_bifiltration<U> res(std::move(out), 2);
+    res.set_mapping(f.get_shift(), f.get_step());
+    return res;
   } else {
     auto gen_index = [&f](std::size_t i) {
       if constexpr (Co) {
@@ -186,13 +190,13 @@ inline OutStoragePolicy as_type(const Degree_bifiltration<T>& f) {
       std::vector<U> values;
       values.reserve(f.num_generators() * 2);
       std::size_t g = order[gen_index(0)];
-      T threshold = g;
+      T threshold = f(g, 1);
       values.push_back(f(g, 0));
       values.push_back(threshold);
       for (std::size_t i = 1; i < f.num_generators(); ++i) {
         g = order[gen_index(i)];
-        if (strictly_dominates(threshold, g)) {
-          threshold = g;
+        if (strictly_dominates(threshold, f(g, 1))) {
+          threshold = f(g, 1);
           values.push_back(f(g, 0));
           values.push_back(threshold);
         }
@@ -211,12 +215,12 @@ inline OutStoragePolicy as_type(const Degree_bifiltration<T>& f) {
       std::vector<std::vector<U> > values;
       values.reserve(f.num_generators());
       std::size_t g = order[gen_index(0)];
-      U threshold = g;
+      U threshold = f(g, 1);
       values.emplace_back(std::vector<U>{static_cast<U>(f(g, 0)), threshold});
       for (std::size_t i = 1; i < f.num_generators(); ++i) {
         g = order[gen_index(i)];
-        if (strictly_dominates(threshold, g)) {
-          threshold = g;
+        if (strictly_dominates(threshold, f(g, 1))) {
+          threshold = f(g, 1);
           std::vector<U> v = {static_cast<U>(f(g, 0)), threshold};
           values.emplace_back(std::move(v));
         }
