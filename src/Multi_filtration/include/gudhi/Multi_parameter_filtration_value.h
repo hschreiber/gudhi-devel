@@ -2010,7 +2010,7 @@ class Multi_parameter_filtration_value {
     U grid_inf = SP::template T_inf<>;
     auto get_filtration_value = [grid_inf](const Multi_parameter_filtration_value &f) {
       if constexpr (StoragePolicy::has_an_implicit_axis) {
-        StoragePolicy sp = f.get_underlying_policy().get_empty();
+        SP sp = f.get_underlying_policy().template get_empty<U>();
         return Multi_parameter_filtration_value<SP, Co, Ensure1Criticality>(std::move(sp));
       } else {
         return Multi_parameter_filtration_value<SP, Co, Ensure1Criticality>(f.num_parameters(), grid_inf);
