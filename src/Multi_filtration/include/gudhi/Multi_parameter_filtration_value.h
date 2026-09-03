@@ -1538,7 +1538,7 @@ class Multi_parameter_filtration_value {
       if (x.is_plus_inf()) {
         if constexpr (StoragePolicy::template has_infinity<Co>) {
           if (is_plus_inf()) return false;
-          generators_ = StoragePolicy::template inf<Co>();
+          generators_ = StoragePolicy::template inf<Co>(num_parameters());
         } else {
           throw std::invalid_argument("Cannot represent an infinite implicit axis with the current StoragePolicy.");
         }
@@ -1565,7 +1565,7 @@ class Multi_parameter_filtration_value {
       if (implicitAxisGen == StoragePolicy::template T_inf<I>) {
         if constexpr (StoragePolicy::template has_infinity<Co>) {
           if (is_plus_inf()) return false;
-          generators_ = StoragePolicy::template inf<Co>();
+          generators_ = StoragePolicy::template inf<Co>(num_parameters());
         } else {
           throw std::invalid_argument("Cannot represent an infinite implicit axis with the current StoragePolicy.");
         }
@@ -1624,7 +1624,7 @@ class Multi_parameter_filtration_value {
 
       // to potentially simplify
       if constexpr (StoragePolicy::template has_infinity<Co>) {
-        if (is_plus_inf()) generators_ = StoragePolicy::template inf<Co>();
+        if (is_plus_inf()) generators_ = StoragePolicy::template inf<Co>(num_parameters());
       }
       return modified;
     } else {
@@ -1698,7 +1698,7 @@ class Multi_parameter_filtration_value {
       if (x.is_nan()) return false;
       if (x.is_minus_inf()) {
         if (is_minus_inf()) return false;
-        generators_ = StoragePolicy::template minus_inf<Co>();
+        generators_ = StoragePolicy::template minus_inf<Co>(num_parameters());
         return true;
       }
       if (x.is_plus_inf()) return false;
