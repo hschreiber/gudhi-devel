@@ -28,6 +28,7 @@
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Simplex_tree/simplex_tree_options.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
+#include <gudhi/Multi_persistence/Line.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -132,6 +133,30 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
                 "Given dimension is too high, it has to be smaller than the number of parameters.");
     GUDHI_CHECK(f.num_generators() > 0, "A filtration value of the multi tree should contain at least one generator.");
     return f(0, dimension);
+  };
+
+  Simplex_tree<OneDimSimplexTreeOptions> one_st(st, translate);
+  one_st.set_num_parameters(1);
+
+  return one_st;
+}
+
+template <class OneDimSimplexTreeOptions, class MultiDimSimplexTree>
+Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(
+    const MultiDimSimplexTree &st, const Line<typename MultiDimSimplexTree::Filtration_value::value_type> line,
+    const std::size_t dimension = 0) {
+  using OneDimF = typename OneDimSimplexTreeOptions::Filtration_value;
+  using MultiDimF = typename MultiDimSimplexTree::Options::Filtration_value;
+
+  static_assert(std::is_convertible_v<typename MultiDimF::value_type, OneDimF>,
+                "An element of a filtration value of the multi dimensional tree should be convertible to a filtration "
+                "value of the one dimensional simplex tree.");
+
+  auto translate = [dimension, &line](const MultiDimF &f) -> OneDimF {
+    GUDHI_CHECK(dimension < f.num_parameters(),
+                "Given dimension is too high, it has to be smaller than the number of parameters.");
+    GUDHI_CHECK(f.num_generators() > 0, "A filtration value of the multi tree should contain at least one generator.");
+    return line[line.compute_forward_intersection(f)][dimension];
   };
 
   Simplex_tree<OneDimSimplexTreeOptions> one_st(st, translate);
