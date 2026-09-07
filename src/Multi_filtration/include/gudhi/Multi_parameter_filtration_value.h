@@ -2030,6 +2030,7 @@ class Multi_parameter_filtration_value {
 
     using SP = typename StoragePolicy::template As_type<U>;
     U grid_inf = SP::template T_inf<>;
+    U grid_m_inf = SP::template T_m_inf<>;
     auto get_filtration_value = [grid_inf](const Multi_parameter_filtration_value &f) {
       if constexpr (StoragePolicy::has_an_implicit_axis) {
         return f.copy<U>(f.num_parameters(), 0);
@@ -2046,9 +2047,14 @@ class Multi_parameter_filtration_value {
       for (size_type p = 0; p < f.num_parameters(); ++p) {
         const RandomAccessArray &filtration = grid[p];
         const value_type &c = f(g, p);
-        GUDHI_CHECK(c == T_inf || static_cast<std::size_t>(c) < filtration.size(),
-                    std::invalid_argument("f coordinate is out of bound: non compatible grid."));
-        tmpGen[p] = (c == T_inf ? grid_inf : static_cast<U>(filtration[c]));
+        if (detail::_is_nan(c))
+          tmpGen[p] = std::numeric_limits<U>::quiet_NaN();
+        else if (c < 0)
+          tmpGen[p] = grid_m_inf;
+        else if (c == T_inf || static_cast<std::size_t>(c) >= filtration.size())
+          tmpGen[p] = grid_inf;
+        else
+          tmpGen[p] = static_cast<U>(filtration[c]);
       }
       out.add_generator(tmpGen);
     }
