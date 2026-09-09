@@ -141,10 +141,10 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
   return one_st;
 }
 
-template <class OneDimSimplexTreeOptions, class MultiDimSimplexTree>
-Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(
-    const MultiDimSimplexTree &st, const Line<typename MultiDimSimplexTree::Filtration_value::value_type> line,
-    const std::size_t dimension = 0) {
+template <class OneDimSimplexTreeOptions, class MultiDimSimplexTree,
+          typename U = typename MultiDimSimplexTree::Filtration_value::value_type>
+Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimplexTree &st, const Line<U> line,
+                                                            const std::size_t dimension = 0) {
   using OneDimF = typename OneDimSimplexTreeOptions::Filtration_value;
   using MultiDimF = typename MultiDimSimplexTree::Options::Filtration_value;
 
@@ -188,7 +188,7 @@ void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccessRange &
     auto &current_birth = st.get_filtration_value(sh);
     T maxValue = Gudhi::multi_filtration::detail::MF_T_m_inf<T>;
     for (auto vertex : st.simplex_vertex_range(sh)) {
-      GUDHI_CHECK(vertex < vertexFiltration.size(),
+      GUDHI_CHECK(static_cast<std::size_t>(vertex) < vertexFiltration.size(),
                   std::invalid_argument("Vertex filtration values does not have a value for every vertex."));
       GUDHI_CHECK(!Gudhi::multi_filtration::detail::_is_nan(vertexFiltration[vertex]),
                   std::invalid_argument("Filtration value should not be NaN."));
