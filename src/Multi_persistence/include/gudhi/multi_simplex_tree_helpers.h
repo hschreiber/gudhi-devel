@@ -13,8 +13,9 @@
  * @file multi_simplex_tree_helpers.h
  * @author David Loiseaux
  * @brief Contains the @ref Gudhi::multi_persistence::Simplex_tree_options_multidimensional_filtration struct,
- * as well as the two helper methods @ref Gudhi::multi_persistence::make_multi_dimensional,
- * @ref Gudhi::multi_persistence::make_one_dimensional and @ref Gudhi::multi_persistence::fill_axis_with_lowerstar.
+ * as well as the helper methods @ref Gudhi::multi_persistence::make_multi_dimensional,
+ * @ref Gudhi::multi_persistence::make_one_dimensional, @ref Gudhi::multi_persistence::build_simplex_tree_from_complex
+ * and @ref Gudhi::multi_persistence::fill_axis_with_lowerstar.
  */
 
 #ifndef MP_MULTI_SIMPLEX_TREE_HELPERS_H_
@@ -28,7 +29,9 @@
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Simplex_tree/simplex_tree_options.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
+#include <gudhi/Multi_parameter_filtered_complex.h>
 #include <gudhi/Multi_persistence/Line.h>
+#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -141,6 +144,27 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
   return one_st;
 }
 
+// TODO: unit test
+/**
+ * @brief Constructs a one-dimensional simplex tree from the given multi-dimensional simplex tree.
+ *
+ * All simplices are copied from the multi-dimensional simplex tree \f$ st \f$ to the one-dimensional simplex tree
+ * \f$ st_one \f$. All filtration values of \f$ st_one \f$ are initialized with the element value at the intersection
+ * point of the given line and the cone spanned by the corresponding multi-dimensional filtration value in \f$ st \f$.
+ * 
+ * @tparam OneDimSimplexTreeOptions Options for the one-dimensional simplex tree. Should follow the
+ * @ref SimplexTreeOptions concept.
+ * @tparam MultiDimSimplexTree Type of the multi-dimensional @ref Gudhi::Simplex_tree. It has to define a
+ * @ref FiltrationValue with the additional methods: `num_parameters()` which returns the number of parameters,
+ * `num_generators()` which returns the number of generators and `operator(g, p)` which returns the value of the
+ * \f$ p^{th} \f$ element of the \f$ g^{th} \f$ generator. It should also define a type `value_type` with the type of
+ * an element in the filtration value, which has to be convertible to `Filtration_value` of `OneDimSimplexTreeOptions`.
+ * @tparam U Template argument of the @ref Line class.
+ * @param st Simplex tree to project.
+ * @param line Line with positive slope into which to project the multi parameter filtration onto to obtain
+ * a 1-parameter filtration.
+ * @param dimension Coordinate of the point resulting from the projection into the line to store as filtration value.
+ */
 template <class OneDimSimplexTreeOptions, class MultiDimSimplexTree,
           typename U = typename MultiDimSimplexTree::Filtration_value::value_type>
 Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimplexTree &st, const Line<U> line,
@@ -163,6 +187,68 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
   one_st.set_num_parameters(1);
 
   return one_st;
+}
+
+// TODO: unit test
+/**
+ * @brief Constructs a multi-parameter filtered simplex tree from the given complex.
+ * 
+ * @tparam SimplexTreeOptions Options of the @ref Simplex_tree to construct.
+ * @tparam MultiFiltrationValue First template argument of @ref Multi_parameter_filtered_complex. Must be
+ * convertible into @ref Simplex_tree::FiltrationValue of the resulting simplex tree with a `as_type` method.
+ * @tparam I Second template argument of @ref Multi_parameter_filtered_complex.
+ * @tparam D Third template argument of @ref Multi_parameter_filtered_complex.
+ * @param cpx Complex to translate.
+ * @param maxDim Maximal dimension to include in the translation. If negative, all dimensions are kept. Default: -1.
+ */
+template <class SimplexTreeOptions, class MultiFiltrationValue, typename I, typename D>
+inline Simplex_tree<SimplexTreeOptions> build_simplex_tree_from_complex(
+    const Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> &cpx, int maxDim = -1) {
+  // TODO: is_multi_filtration will discriminate all pre-made multi filtration classes, but not any user made
+  // class following the MultiFiltrationValue concept (as it was more thought for inner use). The tests should be
+  // re-thought or this one just removed.
+  static_assert(multi_filtration::detail::RangeTraits<MultiFiltrationValue>::is_multi_filtration,
+                "Target filtration value type has to correspond to the MultiFiltrationValue concept.");
+
+  using ST = Simplex_tree<SimplexTreeOptions>;
+  using Index = ST::Vertex_handle;
+
+  const auto numberOfSimplices = cpx.get_number_of_cycle_generators();
+  ST st;
+  st.set_num_parameters(cpx.get_number_of_parameters());
+
+  if (numberOfSimplices == 0) return st;
+
+  if (cpx.is_ordered_by_dimension()) {
+    std::vector<std::vector<Index>> simplices =
+        get_vertices_from_ordered_boundaries<Index>(cpx.get_boundaries(), cpx.get_dimensions(), maxDim);
+    for (std::size_t i = 0; i < simplices.size(); ++i) {
+      if constexpr (std::is_same_v<MultiFiltrationValue, typename ST::Filtration_value>) {
+        st.insert_simplex(simplices[i], cpx.get_filtration_values()[i]);
+      } else {
+        st.insert_simplex(simplices[i],
+                          cpx.get_filtration_values()[i].template as_type<typename ST::Filtration_value>());
+      }
+    }
+  } else {
+    std::vector<std::vector<Index>> simplices =
+        get_vertices_from_boundaries<Index>(cpx.get_boundaries(), cpx.get_dimensions(), maxDim);
+    for (std::size_t i = 0; i < numberOfSimplices; ++i) {
+      // if out of scope of maxDim, the simplex is empty
+      if (!simplices[i].empty()) {
+        if constexpr (std::is_same_v<MultiFiltrationValue, typename ST::Filtration_value>) {
+          st.insert_simplex_and_subfaces(ST::Filtration_maintenance::IGNORE_VALIDITY, simplices[i],
+                                         cpx.get_filtration_values()[i]);
+        } else {
+          st.insert_simplex_and_subfaces(
+              ST::Filtration_maintenance::IGNORE_VALIDITY, simplices[i],
+              cpx.get_filtration_values()[i].template as_type<typename ST::Filtration_value>());
+        }
+      }
+    }
+  }
+
+  return st;
 }
 
 // TODO: unit test

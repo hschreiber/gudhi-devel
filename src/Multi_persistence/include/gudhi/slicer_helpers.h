@@ -34,7 +34,6 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#include <set>
 #include <limits>
 #include <iomanip>
 
@@ -53,6 +52,7 @@
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_filtration/multi_filtration_conversions.h>
 #include <gudhi/Multi_persistence/Line.h>
+#include <gudhi/Multi_persistence/utils.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -438,23 +438,10 @@ inline Multi_parameter_filtered_complex<OneCriticalMultiFiltrationValue, I, D> b
     }
   }
 
-  auto get_vertices = [&boundaries](Index i) -> std::set<Index> {
-    auto rec_get_vertices = [&boundaries](const auto& self, Index i, std::set<Index>& vertices) -> void {
-      if (boundaries[i].empty()) {
-        vertices.insert(i);
-        return;
-      }
-      for (auto v : boundaries[i]) self(self, v, vertices);
-    };
-    std::set<Index> vertices;
-    rec_get_vertices(rec_get_vertices, i, vertices);
-    return vertices;
-  };
-
+  std::vector<std::vector<Index>> vertices = get_vertices_from_ordered_boundaries<Index>(boundaries, dimensions);
   typename Complex::Filtration_value_container filtrationValues(numberOfSimplices, Fil(numberOfParameters));
-
   for (Index g = 0; g < numberOfSimplices; ++g) {
-    for (auto v : get_vertices(g)) {
+    for (auto v : vertices[g]) {
       for (Index p = 0; p < numberOfParameters; ++p) {
         // 1-critical
         filtrationValues[g](0, p) = std::max(filtrationValues[g](0, p), vertexValues[v](0, p));
