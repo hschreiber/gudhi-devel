@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
 
   Multi_parameter_filtered_complex<Fil, I, D> emptyC;
   BOOST_CHECK_EQUAL(emptyC.get_number_of_cycle_generators(), 0);
-  BOOST_CHECK_EQUAL(emptyC.get_number_of_parameters(), 0);
+  BOOST_CHECK_EQUAL(emptyC.num_parameters(), 0);
   BOOST_CHECK(emptyC.is_ordered_by_dimension());
   BOOST_CHECK_EQUAL(emptyC.get_filtration_values().size(), 0);
   BOOST_CHECK_EQUAL(emptyC.get_dimensions().size(), 0);
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
 
   Multi_parameter_filtered_complex<Fil, I, D> copyC(bc, dc, fc);
   BOOST_CHECK_EQUAL(copyC.get_number_of_cycle_generators(), 6);
-  BOOST_CHECK_EQUAL(copyC.get_number_of_parameters(), 3);
+  BOOST_CHECK_EQUAL(copyC.num_parameters(), 3);
   BOOST_CHECK(copyC.is_ordered_by_dimension());
   BOOST_CHECK_EQUAL(copyC.get_filtration_values().size(), 6);
   BOOST_CHECK_EQUAL(copyC.get_dimensions().size(), 6);
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
 
   Multi_parameter_filtered_complex<Fil, I, D> moveC(std::move(bc), std::move(dc), std::move(fc));
   BOOST_CHECK_EQUAL(moveC.get_number_of_cycle_generators(), 6);
-  BOOST_CHECK_EQUAL(moveC.get_number_of_parameters(), 3);
+  BOOST_CHECK_EQUAL(moveC.num_parameters(), 3);
   BOOST_CHECK(!moveC.is_ordered_by_dimension());
   BOOST_CHECK_EQUAL(moveC.get_filtration_values().size(), 6);
   BOOST_CHECK_EQUAL(moveC.get_dimensions().size(), 6);
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
 
   Multi_parameter_filtered_complex<Fil, I, D> any1(bc2, ini{0, 0, 0, 1, 1, 2}, fc20);
   BOOST_CHECK_EQUAL(any1.get_number_of_cycle_generators(), 6);
-  BOOST_CHECK_EQUAL(any1.get_number_of_parameters(), 3);
+  BOOST_CHECK_EQUAL(any1.num_parameters(), 3);
   BOOST_CHECK(any1.is_ordered_by_dimension());
   BOOST_CHECK_EQUAL(any1.get_filtration_values().size(), 6);
   BOOST_CHECK_EQUAL(any1.get_filtration_values()[0].num_generators(), 1);
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
 
   Multi_parameter_filtered_complex<Fil, I, D> any2(bc2, ini{0, 0, 0, 1, 1, 2}, fc21);
   BOOST_CHECK_EQUAL(any2.get_number_of_cycle_generators(), 6);
-  BOOST_CHECK_EQUAL(any2.get_number_of_parameters(), 3);
+  BOOST_CHECK_EQUAL(any2.num_parameters(), 3);
   BOOST_CHECK(any2.is_ordered_by_dimension());
   BOOST_CHECK_EQUAL(any2.get_filtration_values().size(), 6);
   BOOST_CHECK_EQUAL(any2.get_filtration_values()[0].num_generators(), 1);
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
   Multi_parameter_filtered_complex<Multi_parameter_filtration_value<Flat_array_filtration<long int>>, I, D> copyCC(
       copyC);
   BOOST_CHECK_EQUAL(copyCC.get_number_of_cycle_generators(), 6);
-  BOOST_CHECK_EQUAL(copyCC.get_number_of_parameters(), 3);
+  BOOST_CHECK_EQUAL(copyCC.num_parameters(), 3);
   BOOST_CHECK(copyCC.is_ordered_by_dimension());
   BOOST_CHECK_EQUAL(copyCC.get_filtration_values().size(), 6);
   BOOST_CHECK_EQUAL(copyCC.get_dimensions().size(), 6);
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(multi_complex_constructors, Fil, list_of_tested_va
   Multi_parameter_filtered_complex<Multi_parameter_filtration_value<Flat_array_filtration<long int>>, I, D> copyCC2 =
       copyC;
   BOOST_CHECK_EQUAL(copyCC2.get_number_of_cycle_generators(), 6);
-  BOOST_CHECK_EQUAL(copyCC2.get_number_of_parameters(), 3);
+  BOOST_CHECK_EQUAL(copyCC2.num_parameters(), 3);
   BOOST_CHECK(copyCC2.is_ordered_by_dimension());
   BOOST_CHECK_EQUAL(copyCC2.get_filtration_values().size(), 6);
   BOOST_CHECK_EQUAL(copyCC2.get_dimensions().size(), 6);

@@ -246,6 +246,8 @@ class Multi_parameter_filtered_complex {
    */
   Multi_parameter_filtered_complex& operator=(Multi_parameter_filtered_complex&& other) noexcept = default;
 
+  [[nodiscard]] bool is_empty() const { return boundaries_.empty(); }
+
   /**
    * @brief Returns the number of cells in the complex.
    */
@@ -254,7 +256,7 @@ class Multi_parameter_filtered_complex {
   /**
    * @brief Returns the number of parameters in the filtration.
    */
-  [[nodiscard]] Index get_number_of_parameters() const {
+  [[nodiscard]] Index num_parameters() const {
     if (filtrationValues_.empty()) return 0;
     return filtrationValues_[0].num_parameters();
   }

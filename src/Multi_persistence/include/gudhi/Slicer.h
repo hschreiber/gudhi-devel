@@ -38,6 +38,7 @@
 #include <gudhi/serialization_utils.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
+#include <gudhi/Multi_persistence/utils.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Line.h>
 #include <gudhi/Thread_safe_slicer.h>
@@ -201,7 +202,7 @@ class Slicer {
   /**
    * @brief Returns the number of parameters of the stored filtration. If the module is empty, the number returned is 0.
    */
-  Index get_number_of_parameters() const { return complex_.get_number_of_parameters(); }
+  Index get_number_of_parameters() const { return complex_.num_parameters(); }
 
   /**
    * @brief Returns the underlying complex.
@@ -244,28 +245,11 @@ class Slicer {
    * values, the lower corner at that parameter will be inf and the upper corner -inf.
    */
   Box<value_type> get_bounding_box() const {
-    const auto numParam = get_number_of_parameters();
-
-    if (get_number_of_cycle_generators() == 0 || numParam == 0) return {};
-
-    std::vector<value_type> lower(numParam, Filtration_value::T_inf);
-    std::vector<value_type> upper(numParam, Filtration_value::T_m_inf);
-
-    for (const auto& f : get_filtration_values()) {
-      GUDHI_CHECK(f.num_parameters() == numParam, std::runtime_error("Number of parameters are inconsistent."));
-      for (Index g = 0; g < f.num_generators(); ++g) {
-        for (Index p = 0; p < numParam; ++p) {
-          const value_type v = f(g, p);
-          if (!Gudhi::multi_filtration::detail::_is_nan(v) && v != Filtration_value::T_inf &&
-              v != Filtration_value::T_m_inf) {
-            lower[p] = std::min(lower[p], v);
-            upper[p] = std::max(upper[p], v);
-          }
-        }
+    return get_bounding_box_of_complex(complex_, [this](auto&& to_apply) {
+      for (const auto& f : get_filtration_values()) {
+        to_apply(f);
       }
-    }
-
-    return {std::move(lower), std::move(upper)};
+    });
   }
 
   /**
@@ -416,49 +400,14 @@ class Slicer {
    */
   template <typename U = value_type>
   void normalize_filtration_values(const Box<U>& box = {}) {
-    static_assert(!Filtration_value::Storage_policy::has_an_implicit_axis,
-                  "`normalize_filtration_values` not possible for this filtration value class");
-
-    const auto numParam = get_number_of_parameters();
-    if (numParam == 0 || get_number_of_cycle_generators() == 0) return;
-
-    Box<value_type> bounds;
-    if (box.is_trivial()) {
-      bounds = get_bounding_box();
-      auto& lower = bounds.get_lower_corner();
-      auto& upper = bounds.get_upper_corner();
-      for (Index p = 0; p < numParam; ++p) {
-        // lower is inf if and only if upper is -inf
-        if (lower[p] == Filtration_value::T_inf) {
-          lower[p] = 0;
-          upper[p] = 1;
-        }
-      }
-    } else {
-      GUDHI_CHECK(box.get_number_of_coordinates() == numParam,
-                  std::invalid_argument(
-                      "Box does not have the same number of coordinates than number of parameters in the Slicer."));
-      const auto& lower = box.get_lower_corner();
-      const auto& upper = box.get_upper_corner();
-      bounds = {lower.begin(), lower.end(), upper.begin(), upper.end()};
-    }
-
-    const auto& lower = bounds.get_lower_corner();
-    const auto& upper = bounds.get_upper_corner();
-
-    for (auto& f : complex_.get_filtration_values()) {
-      GUDHI_CHECK(f.num_parameters() == numParam, std::runtime_error("Number of parameters are inconsistent."));
-      for (Index p = 0; p < numParam; ++p) {
-        value_type scale = upper[p] > lower[p] ? upper[p] - lower[p] : static_cast<value_type>(1);
-        for (Index g = 0; g < f.num_generators(); ++g) {
-          value_type& v = f(g, p);
-          if (!Gudhi::multi_filtration::detail::_is_nan(v) && v != Filtration_value::T_inf &&
-              v != Filtration_value::T_m_inf) {
-            v = (v - lower[p]) / scale;
+    return normalize_filtration_values_in_complex(
+        complex_,
+        [this](auto&& to_apply) {
+          for (auto& f : get_filtration_values()) {
+            to_apply(f);
           }
-        }
-      }
-    }
+        },
+        box);
   }
 
   // PERSISTENCE

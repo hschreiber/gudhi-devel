@@ -189,6 +189,36 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
   return one_st;
 }
 
+namespace detail {
+
+template <class SimplexTreeOptions, typename Index, class MultiFiltrationValue, typename I, typename D, class F>
+void _insert_simplices(const std::vector<std::vector<Index>> &simplices, int numParam,
+                       const Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> &cpx, F &&insert_simplex) {
+  using ST = Simplex_tree<SimplexTreeOptions>;
+  for (std::size_t i = 0; i < simplices.size(); ++i) {
+    auto &f_i = cpx.get_filtration_values()[i];
+
+    if constexpr (std::is_same_v<MultiFiltrationValue, typename ST::Filtration_value>) {
+      if (numParam >= 0 && numParam != f_i.num_parameters()) {
+        auto f = f_i.copy(numParam, f_i.num_generators());
+        insert_simplex(simplices[i], f);
+      } else {
+        insert_simplex(simplices[i], f_i);
+      }
+    } else {
+      if (numParam >= 0 && numParam != f_i.num_parameters()) {
+        auto f = f_i.copy(numParam, f_i.num_generators()).template as_type<typename ST::Filtration_value>();
+        insert_simplex(simplices[i], f);
+      } else {
+        auto f = f_i.template as_type<typename ST::Filtration_value>();
+        insert_simplex(simplices[i], f);
+      }
+    }
+  }
+}
+
+}  // namespace detail
+
 // TODO: unit test
 /**
  * @brief Constructs a multi-parameter filtered simplex tree from the given complex.
@@ -200,10 +230,13 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
  * @tparam D Third template argument of @ref Multi_parameter_filtered_complex.
  * @param cpx Complex to translate.
  * @param maxDim Maximal dimension to include in the translation. If negative, all dimensions are kept. Default: -1.
+ * @param numParam New number of parameters if it should change. If negative, it remains the same. If the new value
+ * is smaller than the old one, the generators are shortened from the end to fit. If the new value is greater,
+ * the generators are extended from the end with -inf if `Co` and with +inf otherwise. Default: -1.
  */
 template <class SimplexTreeOptions, class MultiFiltrationValue, typename I, typename D>
 inline Simplex_tree<SimplexTreeOptions> build_simplex_tree_from_complex(
-    const Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> &cpx, int maxDim = -1) {
+    const Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> &cpx, int maxDim = -1, int numParam = -1) {
   // TODO: is_multi_filtration will discriminate all pre-made multi filtration classes, but not any user made
   // class following the MultiFiltrationValue concept (as it was more thought for inner use). The tests should be
   // re-thought or this one just removed.
@@ -211,41 +244,28 @@ inline Simplex_tree<SimplexTreeOptions> build_simplex_tree_from_complex(
                 "Target filtration value type has to correspond to the MultiFiltrationValue concept.");
 
   using ST = Simplex_tree<SimplexTreeOptions>;
-  using Index = ST::Vertex_handle;
+  using Index = typename ST::Vertex_handle;
 
   const auto numberOfSimplices = cpx.get_number_of_cycle_generators();
   ST st;
-  st.set_num_parameters(cpx.get_number_of_parameters());
+  st.set_num_parameters(cpx.num_parameters());
 
   if (numberOfSimplices == 0) return st;
 
   if (cpx.is_ordered_by_dimension()) {
     std::vector<std::vector<Index>> simplices =
         get_vertices_from_ordered_boundaries<Index>(cpx.get_boundaries(), cpx.get_dimensions(), maxDim);
-    for (std::size_t i = 0; i < simplices.size(); ++i) {
-      if constexpr (std::is_same_v<MultiFiltrationValue, typename ST::Filtration_value>) {
-        st.insert_simplex(simplices[i], cpx.get_filtration_values()[i]);
-      } else {
-        st.insert_simplex(simplices[i],
-                          cpx.get_filtration_values()[i].template as_type<typename ST::Filtration_value>());
-      }
-    }
+    detail::_insert_simplices<SimplexTreeOptions>(
+        simplices, numParam, cpx,
+        [&st](const std::vector<Index> &s, const typename ST::Filtration_value &f) { st.insert_simplex(s, f); });
   } else {
     std::vector<std::vector<Index>> simplices =
         get_vertices_from_boundaries<Index>(cpx.get_boundaries(), cpx.get_dimensions(), maxDim);
-    for (std::size_t i = 0; i < numberOfSimplices; ++i) {
-      // if out of scope of maxDim, the simplex is empty
-      if (!simplices[i].empty()) {
-        if constexpr (std::is_same_v<MultiFiltrationValue, typename ST::Filtration_value>) {
-          st.insert_simplex_and_subfaces(ST::Filtration_maintenance::IGNORE_VALIDITY, simplices[i],
-                                         cpx.get_filtration_values()[i]);
-        } else {
-          st.insert_simplex_and_subfaces(
-              ST::Filtration_maintenance::IGNORE_VALIDITY, simplices[i],
-              cpx.get_filtration_values()[i].template as_type<typename ST::Filtration_value>());
-        }
-      }
-    }
+    detail::_insert_simplices<SimplexTreeOptions>(
+        simplices, numParam, cpx, [&st](const std::vector<Index> &s, const typename ST::Filtration_value &f) {
+          // if out of scope of maxDim, the simplex is empty
+          if (!s.empty()) st.insert_simplex_and_subfaces(ST::Filtration_maintenance::IGNORE_VALIDITY, s, f);
+        });
   }
 
   return st;
@@ -258,9 +278,8 @@ inline Simplex_tree<SimplexTreeOptions> build_simplex_tree_from_complex(
  *
  * @tparam MultiDimSimplexTree Type of the multi-dimensional @ref Gudhi::Simplex_tree. It has to define a
  * @ref FiltrationValue with the additional methods: `num_parameters()` which returns the number of parameters,
- * `num_generators()` which returns the number of generators and `operator(g, p)` which returns the value of the
- * \f$ p^{th} \f$ element of the \f$ g^{th} \f$ generator. It should also define a type `value_type` with the type of
- * an element in the filtration value.
+ * and `operator(g, p)` which returns the value of the \f$ p^{th} \f$ element of the \f$ g^{th} \f$ generator.
+ * It should also define a type `value_type` with the type of an element in the filtration value.
  * @tparam RandomAccessRange Random access range of value convertible into
  * `MultiDimSimplexTree::Filtration_value::value_type`.
  * @param st Simplex tree to modify.
@@ -279,6 +298,51 @@ void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccessRange &
       GUDHI_CHECK(!Gudhi::multi_filtration::detail::_is_nan(vertexFiltration[vertex]),
                   std::invalid_argument("Filtration value should not be NaN."));
       maxValue = std::max(maxValue, static_cast<T>(vertexFiltration[vertex]));
+    }
+    GUDHI_CHECK(axis < current_birth.num_parameters(), std::invalid_argument("Axis is not a valid parameter index."));
+    current_birth(0, axis) = maxValue;
+  }
+}
+
+// TODO: unit test
+/**
+ * @brief Fills the values at given parameter of the first generator of all filtration values in the given simplex tree
+ * with a lower star filtration generated from the given distance matrix.
+ * 
+ * @tparam MultiDimSimplexTree Type of the multi-dimensional @ref Gudhi::Simplex_tree. It has to define a
+ * @ref FiltrationValue with the additional methods: `num_parameters()` which returns the number of parameters,
+ * and `operator(g, p)` which returns the value of the \f$ p^{th} \f$ element of the \f$ g^{th} \f$ generator.
+ * It should also define a type `value_type` with the type of an element in the filtration value.
+ * @tparam RandomAccess2DRange 2-dimensional random access range of value convertible into
+ * `MultiDimSimplexTree::Filtration_value::value_type`.
+ * @param st Simplex tree to modify.
+ * @param distanceMatrix Distance matrix. Must take the vertex handles of the simplex tree as indices (e.g. if the
+ * simplex tree stores vertex 0, 1 and 3, there should be a distance entry at indices 0, 1 and 3. The index 2 will
+ * be skipped) and be symmetric.
+ * @param vertexValue Value for the vertices.
+ * @param axis Parameter to fill with the lower star filtration.
+ */
+template <class MultiDimSimplexTree, class RandomAccess2DRange>
+void fill_axis_with_distance_matrix(MultiDimSimplexTree &st, const RandomAccess2DRange &distanceMatrix,
+                                    typename MultiDimSimplexTree::Filtration_value::value_type vertexValue,
+                                    std::size_t axis) {
+  using T = typename MultiDimSimplexTree::Filtration_value::value_type;
+  for (auto sh : st.complex_simplex_range()) {
+    auto &current_birth = st.get_filtration_value(sh);
+    T maxValue = vertexValue;
+    for (auto v1 : st.simplex_vertex_range(sh)) {
+      for (auto v2 : st.simplex_vertex_range(sh)) {
+        if (v1 < v2) {
+          GUDHI_CHECK(static_cast<std::size_t>(v1) < distanceMatrix.size(),
+                      std::invalid_argument("Distance matrix values does not have a column for every vertex."));
+          GUDHI_CHECK(static_cast<std::size_t>(v2) < distanceMatrix[v1].size(),
+                      std::invalid_argument("Distance matrix values does not have a row for every vertex."));
+          auto val = distanceMatrix[v1][v2];
+          GUDHI_CHECK(!Gudhi::multi_filtration::detail::_is_nan(val),
+                      std::invalid_argument("Filtration value should not be NaN."));
+          maxValue = std::max(maxValue, static_cast<T>(val));
+        }
+      }
     }
     GUDHI_CHECK(axis < current_birth.num_parameters(), std::invalid_argument("Axis is not a valid parameter index."));
     current_birth(0, axis) = maxValue;

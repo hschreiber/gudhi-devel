@@ -18,12 +18,15 @@
 #define MP_UTILS_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <iterator>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <gudhi/Debug_utils.h>
+#include <gudhi/Multi_persistence/Box.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -171,6 +174,87 @@ std::vector<std::vector<Index>> get_vertices_from_boundaries(const Boundaries& b
     }
   }
   return vertices;
+}
+
+template <class FilteredComplex, class F>
+Box<typename FilteredComplex::Filtration_value::value_type> get_bounding_box_of_complex(const FilteredComplex& cpx,
+                                                                                        F&& for_each) {
+  using Filtration_value = typename FilteredComplex::Filtration_value;
+  using value_type = typename Filtration_value::value_type;
+
+  if (cpx.is_empty()) return {};
+
+  const auto numParam = cpx.num_parameters();
+
+  std::vector<value_type> lower(numParam, Filtration_value::T_inf);
+  std::vector<value_type> upper(numParam, Filtration_value::T_m_inf);
+
+  std::forward<F>(for_each)([&lower, &upper, numParam](const Filtration_value& f) {
+    GUDHI_CHECK(f.num_parameters() == numParam, std::runtime_error("Number of parameters are inconsistent."));
+    for (std::size_t g = 0; g < f.num_generators(); ++g) {
+      for (std::size_t p = 0; p < numParam; ++p) {
+        const value_type v = f(g, p);
+        if (!Gudhi::multi_filtration::detail::_is_nan(v) && v != Filtration_value::T_inf &&
+            v != Filtration_value::T_m_inf) {
+          lower[p] = std::min(lower[p], v);
+          upper[p] = std::max(upper[p], v);
+        }
+      }
+    }
+  });
+
+  return {std::move(lower), std::move(upper)};
+}
+
+template <class FilteredComplex, class F, typename U = typename FilteredComplex::Filtration_value::value_type>
+void normalize_filtration_values_in_complex(FilteredComplex& cpx, F&& for_each, const Box<U>& box = {}) {
+  using Filtration_value = typename FilteredComplex::Filtration_value;
+  using value_type = typename Filtration_value::value_type;
+
+  static_assert(!Filtration_value::Storage_policy::has_an_implicit_axis,
+                "`normalize_filtration_values` not possible for this filtration value class");
+
+  if (cpx.is_empty()) return;
+
+  const auto numParam = cpx.num_parameters();
+
+  Box<value_type> bounds;
+  if (box.is_trivial()) {
+    bounds = get_bounding_box_of_complex(cpx, for_each);
+    auto& lower = bounds.get_lower_corner();
+    auto& upper = bounds.get_upper_corner();
+    for (std::size_t p = 0; p < bounds.get_number_of_coordinates(); ++p) {
+      // lower is inf if and only if upper is -inf
+      if (lower[p] == Filtration_value::T_inf) {
+        lower[p] = 0;
+        upper[p] = 1;
+      }
+    }
+  } else {
+    GUDHI_CHECK(box.get_number_of_coordinates() == numParam,
+                std::invalid_argument(
+                    "Box does not have the same number of coordinates than number of parameters in the Slicer."));
+    const auto& lower = box.get_lower_corner();
+    const auto& upper = box.get_upper_corner();
+    bounds = {lower.begin(), lower.end(), upper.begin(), upper.end()};
+  }
+
+  const auto& lower = bounds.get_lower_corner();
+  const auto& upper = bounds.get_upper_corner();
+
+  std::forward<F>(for_each)([&lower, &upper, numParam](Filtration_value& f) {
+    GUDHI_CHECK(f.num_parameters() == numParam, std::runtime_error("Number of parameters are inconsistent."));
+    for (std::size_t p = 0; p < f.num_parameters(); ++p) {
+      value_type scale = upper[p] > lower[p] ? upper[p] - lower[p] : static_cast<value_type>(1);
+      for (std::size_t g = 0; g < f.num_generators(); ++g) {
+        value_type& v = f(g, p);
+        if (!Gudhi::multi_filtration::detail::_is_nan(v) && v != Filtration_value::T_inf &&
+            v != Filtration_value::T_m_inf) {
+          v = (v - lower[p]) / scale;
+        }
+      }
+    }
+  });
 }
 
 }  // namespace multi_persistence

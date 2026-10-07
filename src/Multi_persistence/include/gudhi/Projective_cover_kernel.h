@@ -73,7 +73,7 @@ class Projective_cover_kernel {
   Projective_cover_kernel(const Complex &complex, Dimension dim) {
     using namespace Gudhi::multi_filtration;
 
-    if (complex.get_number_of_parameters() != 2) throw std::invalid_argument("Only available for 2-parameter modules.");
+    if (complex.num_parameters() != 2) throw std::invalid_argument("Only available for 2-parameter modules.");
     if (!complex.is_ordered_by_dimension()) throw std::invalid_argument("Complex has to be ordered by dimension.");
 
     const auto &boundaries = complex.get_boundaries();

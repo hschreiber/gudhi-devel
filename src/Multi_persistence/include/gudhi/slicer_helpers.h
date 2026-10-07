@@ -267,7 +267,7 @@ inline void write_complex_to_scc_file(const std::string& outFilePath,
     return;
   }
 
-  unsigned int numberOfParameters = complex.get_number_of_parameters();
+  unsigned int numberOfParameters = complex.num_parameters();
 
   std::ofstream file(outFilePath);
 
