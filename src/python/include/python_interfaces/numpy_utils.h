@@ -42,6 +42,15 @@ inline auto _wrap_as_numpy_array(T *tensor, Shape... shapes)
       }));
 }
 
+// tensor has to be declared with 'new []'
+template <class T, typename... Shape>
+inline auto _wrap_as_numpy_array(std::unique_ptr<T[]> tensor, Shape... shapes) {
+  T *data = tensor.get();
+  nanobind::capsule owner(data, [](void *p) noexcept { delete[] static_cast<T *>(p); });
+  tensor.release();
+  return nanobind::ndarray<nanobind::numpy, T>(data, {static_cast<std::size_t>(shapes)...}, owner);
+}
+
 template <class T, std::size_t I>
 inline auto _wrap_as_numpy_array(std::vector<std::array<T, I> > &&tensor)
 {

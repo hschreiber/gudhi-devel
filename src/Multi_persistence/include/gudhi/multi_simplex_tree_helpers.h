@@ -199,14 +199,14 @@ void _insert_simplices(const std::vector<std::vector<Index>> &simplices, int num
     auto &f_i = cpx.get_filtration_values()[i];
 
     if constexpr (std::is_same_v<MultiFiltrationValue, typename ST::Filtration_value>) {
-      if (numParam >= 0 && numParam != f_i.num_parameters()) {
+      if (numParam >= 0 && static_cast<std::size_t>(numParam) != f_i.num_parameters()) {
         auto f = f_i.copy(numParam, f_i.num_generators());
         insert_simplex(simplices[i], f);
       } else {
         insert_simplex(simplices[i], f_i);
       }
     } else {
-      if (numParam >= 0 && numParam != f_i.num_parameters()) {
+      if (numParam >= 0 && static_cast<std::size_t>(numParam) != f_i.num_parameters()) {
         auto f = f_i.copy(numParam, f_i.num_generators()).template as_type<typename ST::Filtration_value>();
         insert_simplex(simplices[i], f);
       } else {

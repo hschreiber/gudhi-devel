@@ -184,7 +184,9 @@ Box<typename FilteredComplex::Filtration_value::value_type> get_bounding_box_of_
 
   if (cpx.is_empty()) return {};
 
-  const auto numParam = cpx.num_parameters();
+  GUDHI_CHECK(cpx.num_parameters() > 0, std::invalid_argument("Number of parameters are either invalid or not set."));
+
+  const auto numParam = static_cast<std::size_t>(cpx.num_parameters());
 
   std::vector<value_type> lower(numParam, Filtration_value::T_inf);
   std::vector<value_type> upper(numParam, Filtration_value::T_m_inf);
@@ -231,7 +233,7 @@ void normalize_filtration_values_in_complex(FilteredComplex& cpx, F&& for_each, 
       }
     }
   } else {
-    GUDHI_CHECK(box.get_number_of_coordinates() == numParam,
+    GUDHI_CHECK(box.get_number_of_coordinates() == static_cast<std::size_t>(numParam),
                 std::invalid_argument(
                     "Box does not have the same number of coordinates than number of parameters in the Slicer."));
     const auto& lower = box.get_lower_corner();
@@ -243,7 +245,8 @@ void normalize_filtration_values_in_complex(FilteredComplex& cpx, F&& for_each, 
   const auto& upper = bounds.get_upper_corner();
 
   std::forward<F>(for_each)([&lower, &upper, numParam](Filtration_value& f) {
-    GUDHI_CHECK(f.num_parameters() == numParam, std::runtime_error("Number of parameters are inconsistent."));
+    GUDHI_CHECK(f.num_parameters() == static_cast<std::size_t>(numParam),
+                std::runtime_error("Number of parameters are inconsistent."));
     for (std::size_t p = 0; p < f.num_parameters(); ++p) {
       value_type scale = upper[p] > lower[p] ? upper[p] - lower[p] : static_cast<value_type>(1);
       for (std::size_t g = 0; g < f.num_generators(); ++g) {
