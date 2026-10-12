@@ -249,7 +249,7 @@ inline Simplex_tree<SimplexTreeOptions> build_simplex_tree_from_complex(
 
   const auto numberOfSimplices = cpx.get_number_of_cycle_generators();
   ST st;
-  st.set_num_parameters(cpx.num_parameters());
+  st.set_num_parameters(numParam < 0 ? cpx.num_parameters() : numParam);
 
   if (numberOfSimplices == 0) return st;
 
