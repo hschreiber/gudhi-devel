@@ -18,8 +18,8 @@
  * and @ref Gudhi::multi_persistence::fill_axis_with_lowerstar.
  */
 
-#ifndef MP_MULTI_SIMPLEX_TREE_HELPERS_H_
-#define MP_MULTI_SIMPLEX_TREE_HELPERS_H_
+#ifndef GUDHI_MP_MULTI_SIMPLEX_TREE_HELPERS_H_
+#define GUDHI_MP_MULTI_SIMPLEX_TREE_HELPERS_H_
 
 #include <cstddef>
 #include <type_traits>
@@ -31,7 +31,7 @@
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
 #include <gudhi/Multi_persistence/Line.h>
-#include <gudhi/Multi_persistence/utils.h>
+#include <gudhi/Multi_persistence/complex_helpers.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -73,7 +73,7 @@ struct Simplex_tree_options_multidimensional_filtration : Simplex_tree_options_d
  * @param dimension Dimension index to which the filtration values should be projected onto.
  */
 template <class MultiDimSimplexTreeOptions, class OneDimSimplexTree>
-Simplex_tree<MultiDimSimplexTreeOptions> make_multi_dimensional(
+inline Simplex_tree<MultiDimSimplexTreeOptions> make_multi_dimensional(
     const OneDimSimplexTree &st, const typename MultiDimSimplexTreeOptions::Filtration_value &default_value,
     const std::size_t dimension = 0) {
   using OneDimF = typename OneDimSimplexTree::Options::Filtration_value;
@@ -122,8 +122,8 @@ Simplex_tree<MultiDimSimplexTreeOptions> make_multi_dimensional(
  * @param dimension Dimension index in the first generator to project.
  */
 template <class OneDimSimplexTreeOptions, class MultiDimSimplexTree>
-Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimplexTree &st,
-                                                            const std::size_t dimension = 0) {
+inline Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimplexTree &st,
+                                                                   const std::size_t dimension = 0) {
   using OneDimF = typename OneDimSimplexTreeOptions::Filtration_value;
   using MultiDimF = typename MultiDimSimplexTree::Options::Filtration_value;
 
@@ -151,7 +151,7 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
  * All simplices are copied from the multi-dimensional simplex tree \f$ st \f$ to the one-dimensional simplex tree
  * \f$ st_one \f$. All filtration values of \f$ st_one \f$ are initialized with the element value at the intersection
  * point of the given line and the cone spanned by the corresponding multi-dimensional filtration value in \f$ st \f$.
- * 
+ *
  * @tparam OneDimSimplexTreeOptions Options for the one-dimensional simplex tree. Should follow the
  * @ref SimplexTreeOptions concept.
  * @tparam MultiDimSimplexTree Type of the multi-dimensional @ref Gudhi::Simplex_tree. It has to define a
@@ -167,8 +167,8 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
  */
 template <class OneDimSimplexTreeOptions, class MultiDimSimplexTree,
           typename U = typename MultiDimSimplexTree::Filtration_value::value_type>
-Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimplexTree &st, const Line<U> line,
-                                                            const std::size_t dimension = 0) {
+inline Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimplexTree &st, const Line<U> line,
+                                                                   const std::size_t dimension = 0) {
   using OneDimF = typename OneDimSimplexTreeOptions::Filtration_value;
   using MultiDimF = typename MultiDimSimplexTree::Options::Filtration_value;
 
@@ -192,8 +192,9 @@ Simplex_tree<OneDimSimplexTreeOptions> make_one_dimensional(const MultiDimSimple
 namespace detail {
 
 template <class SimplexTreeOptions, typename Index, class MultiFiltrationValue, typename I, typename D, class F>
-void _insert_simplices(const std::vector<std::vector<Index>> &simplices, int numParam,
-                       const Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> &cpx, F &&insert_simplex) {
+inline void _insert_simplices(const std::vector<std::vector<Index>> &simplices, int numParam,
+                              const Multi_parameter_filtered_complex<MultiFiltrationValue, I, D> &cpx,
+                              F &&insert_simplex) {
   using ST = Simplex_tree<SimplexTreeOptions>;
   for (std::size_t i = 0; i < simplices.size(); ++i) {
     auto &f_i = cpx.get_filtration_values()[i];
@@ -222,7 +223,7 @@ void _insert_simplices(const std::vector<std::vector<Index>> &simplices, int num
 // TODO: unit test
 /**
  * @brief Constructs a multi-parameter filtered simplex tree from the given complex.
- * 
+ *
  * @tparam SimplexTreeOptions Options of the @ref Gudhi::Simplex_tree to construct.
  * @tparam MultiFiltrationValue First template argument of
  * @ref Gudhi::multi_persistence::Multi_parameter_filtered_complex. Must be convertible into
@@ -288,7 +289,8 @@ inline Simplex_tree<SimplexTreeOptions> build_simplex_tree_from_complex(
  * @param axis Parameter to fill with the lower star filtration.
  */
 template <class MultiDimSimplexTree, class RandomAccessRange>
-void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccessRange &vertexFiltration, std::size_t axis) {
+inline void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccessRange &vertexFiltration,
+                                     std::size_t axis) {
   using T = typename MultiDimSimplexTree::Filtration_value::value_type;
   for (auto sh : st.complex_simplex_range()) {
     auto &current_birth = st.get_filtration_value(sh);
@@ -309,7 +311,7 @@ void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccessRange &
 /**
  * @brief Fills the values at given parameter of the first generator of all filtration values in the given simplex tree
  * with a lower star filtration generated from the given distance matrix.
- * 
+ *
  * @tparam MultiDimSimplexTree Type of the multi-dimensional @ref Gudhi::Simplex_tree. It has to define a
  * @ref FiltrationValue with the additional methods: `num_parameters()` which returns the number of parameters,
  * and `operator(g, p)` which returns the value of the \f$ p^{th} \f$ element of the \f$ g^{th} \f$ generator.
@@ -324,9 +326,9 @@ void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccessRange &
  * @param axis Parameter to fill with the lower star filtration.
  */
 template <class MultiDimSimplexTree, class RandomAccess2DRange>
-void fill_axis_with_distance_matrix(MultiDimSimplexTree &st, const RandomAccess2DRange &distanceMatrix,
-                                    typename MultiDimSimplexTree::Filtration_value::value_type vertexValue,
-                                    std::size_t axis) {
+inline void fill_axis_with_distance_matrix(MultiDimSimplexTree &st, const RandomAccess2DRange &distanceMatrix,
+                                           typename MultiDimSimplexTree::Filtration_value::value_type vertexValue,
+                                           std::size_t axis) {
   using T = typename MultiDimSimplexTree::Filtration_value::value_type;
   for (auto sh : st.complex_simplex_range()) {
     auto &current_birth = st.get_filtration_value(sh);
@@ -353,4 +355,4 @@ void fill_axis_with_distance_matrix(MultiDimSimplexTree &st, const RandomAccess2
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_MULTI_SIMPLEX_TREE_HELPERS_H_
+#endif  // GUDHI_MP_MULTI_SIMPLEX_TREE_HELPERS_H_

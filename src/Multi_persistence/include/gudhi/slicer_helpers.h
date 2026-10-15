@@ -21,8 +21,8 @@
  * @ref Gudhi::multi_persistence::persistence_on_slices.
  */
 
-#ifndef MP_SLICER_HELPERS_H_
-#define MP_SLICER_HELPERS_H_
+#ifndef GUDHI_MP_SLICER_HELPERS_H_
+#define GUDHI_MP_SLICER_HELPERS_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -52,7 +52,7 @@
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_filtration/multi_filtration_conversions.h>
 #include <gudhi/Multi_persistence/Line.h>
-#include <gudhi/Multi_persistence/utils.h>
+#include <gudhi/Multi_persistence/complex_helpers.h>
 
 namespace Gudhi {
 namespace multi_persistence {
@@ -726,4 +726,4 @@ inline std::vector<typename Slicer::template Multi_dimensional_flat_barcode<U>> 
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_SLICER_HELPERS_H_
+#endif  // GUDHI_MP_SLICER_HELPERS_H_

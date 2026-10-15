@@ -18,8 +18,8 @@
  * @ref Gudhi::multi_persistence::compute_module_interleavings and @ref Gudhi::multi_persistence::compute_module_pixels.
  */
 
-#ifndef MP_MODULE_HELPERS_H_
-#define MP_MODULE_HELPERS_H_
+#ifndef GUDHI_MP_MODULE_HELPERS_H_
+#define GUDHI_MP_MODULE_HELPERS_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -366,4 +366,4 @@ inline std::vector<double> compute_module_pixels(const Module<T> &mod, const Ran
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_MODULE_HELPERS_H_
+#endif  // GUDHI_MP_MODULE_HELPERS_H_

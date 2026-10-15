@@ -16,8 +16,8 @@
  * @ref Gudhi::multi_persistence::build_complex_from_bitmap and @ref Gudhi::multi_persistence::build_slicer_from_bitmap.
  */
 
-#ifndef MP_LANDSCAPES_HELPERS_H_
-#define MP_LANDSCAPES_HELPERS_H_
+#ifndef GUDHI_MP_LANDSCAPES_HELPERS_H_
+#define GUDHI_MP_LANDSCAPES_HELPERS_H_
 
 #include <algorithm>
 #include <array>
@@ -442,4 +442,4 @@ inline std::vector<maybe_make_signed_t<T>> compute_set_of_module_landscapes(cons
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_LANDSCAPES_HELPERS_H_
+#endif  // GUDHI_MP_LANDSCAPES_HELPERS_H_

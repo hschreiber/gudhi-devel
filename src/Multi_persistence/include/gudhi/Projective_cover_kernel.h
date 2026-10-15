@@ -15,8 +15,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Projective_cover_kernel class.
  */
 
-#ifndef MP_PROJECTIVE_COVER_KERNEL_H_INCLUDED
-#define MP_PROJECTIVE_COVER_KERNEL_H_INCLUDED
+#ifndef GUDHI_MP_PROJECTIVE_COVER_KERNEL_H_INCLUDED
+#define GUDHI_MP_PROJECTIVE_COVER_KERNEL_H_INCLUDED
 
 #include <stdexcept>  //std::invalid_argument, std::runtime_error
 #include <utility>    //std::move
@@ -345,4 +345,4 @@ class Projective_cover_kernel {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_PROJECTIVE_COVER_KERNEL_H_INCLUDED
+#endif  // GUDHI_MP_PROJECTIVE_COVER_KERNEL_H_INCLUDED

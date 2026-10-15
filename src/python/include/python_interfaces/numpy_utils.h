@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <type_traits>
 #include <vector>
+#include <memory> // std::unique_ptr
 
 #include <nanobind/ndarray.h>
 

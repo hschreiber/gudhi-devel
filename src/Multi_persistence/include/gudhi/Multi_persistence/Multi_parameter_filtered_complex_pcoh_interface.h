@@ -14,8 +14,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Multi_parameter_filtered_complex_pcoh_interface class.
  */
 
-#ifndef MP_COMPLEX_PCOH_INTERFACE_H_INCLUDED
-#define MP_COMPLEX_PCOH_INTERFACE_H_INCLUDED
+#ifndef GUDHI_MP_COMPLEX_PCOH_INTERFACE_H_INCLUDED
+#define GUDHI_MP_COMPLEX_PCOH_INTERFACE_H_INCLUDED
 
 #include <utility>
 #include <vector>
@@ -234,4 +234,4 @@ class Multi_parameter_filtered_complex_pcoh_interface {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_COMPLEX_PCOH_INTERFACE_H_INCLUDED
+#endif  // GUDHI_MP_COMPLEX_PCOH_INTERFACE_H_INCLUDED

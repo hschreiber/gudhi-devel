@@ -15,8 +15,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Slicer class.
  */
 
-#ifndef MP_SLICER_H_INCLUDED
-#define MP_SLICER_H_INCLUDED
+#ifndef GUDHI_MP_SLICER_H_INCLUDED
+#define GUDHI_MP_SLICER_H_INCLUDED
 
 #include <algorithm>
 #include <array>
@@ -38,7 +38,7 @@
 #include <gudhi/serialization_utils.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
-#include <gudhi/Multi_persistence/utils.h>
+#include <gudhi/Multi_persistence/complex_helpers.h>
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Line.h>
 #include <gudhi/Thread_safe_slicer.h>
@@ -980,4 +980,4 @@ class Slicer {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_SLICER_H_INCLUDED
+#endif  // GUDHI_MP_SLICER_H_INCLUDED

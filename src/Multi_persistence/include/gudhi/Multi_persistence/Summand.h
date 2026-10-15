@@ -15,8 +15,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Summand class.
  */
 
-#ifndef MP_SUMMAND_H_INCLUDED
-#define MP_SUMMAND_H_INCLUDED
+#ifndef GUDHI_MP_SUMMAND_H_INCLUDED
+#define GUDHI_MP_SUMMAND_H_INCLUDED
 
 #include <cstddef>    //std::size_t
 #include <iterator>
@@ -575,4 +575,4 @@ class Summand {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_SUMMAND_H_INCLUDED
+#endif  // GUDHI_MP_SUMMAND_H_INCLUDED

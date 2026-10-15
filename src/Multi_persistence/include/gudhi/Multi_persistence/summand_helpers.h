@@ -17,8 +17,8 @@
  * @ref Gudhi::multi_persistence::compute_summand_local_weight.
  */
 
-#ifndef MP_SUMMAND_HELPERS_H_
-#define MP_SUMMAND_HELPERS_H_
+#ifndef GUDHI_MP_SUMMAND_HELPERS_H_
+#define GUDHI_MP_SUMMAND_HELPERS_H_
 
 #include <algorithm>  //std::max
 #include <cstddef>    //std::size_t
@@ -289,4 +289,4 @@ inline double compute_summand_local_weight(const Summand<T, D> &sum, const Rando
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_SUMMAND_HELPERS_H_
+#endif  // GUDHI_MP_SUMMAND_HELPERS_H_

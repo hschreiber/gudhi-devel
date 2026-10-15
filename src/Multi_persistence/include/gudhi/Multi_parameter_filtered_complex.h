@@ -15,8 +15,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Multi_parameter_filtered_complex class.
  */
 
-#ifndef MP_FILTERED_COMPLEX_H_INCLUDED
-#define MP_FILTERED_COMPLEX_H_INCLUDED
+#ifndef GUDHI_MP_FILTERED_COMPLEX_H_INCLUDED
+#define GUDHI_MP_FILTERED_COMPLEX_H_INCLUDED
 
 #include <cstddef>
 #include <cstdint>  //std::uint32_t
@@ -625,4 +625,4 @@ class Multi_parameter_filtered_complex {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_FILTERED_COMPLEX_H_INCLUDED
+#endif  // GUDHI_MP_FILTERED_COMPLEX_H_INCLUDED

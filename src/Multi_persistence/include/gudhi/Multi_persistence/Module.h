@@ -15,8 +15,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Module class.
  */
 
-#ifndef MP_MODULE_H_INCLUDED
-#define MP_MODULE_H_INCLUDED
+#ifndef GUDHI_MP_MODULE_H_INCLUDED
+#define GUDHI_MP_MODULE_H_INCLUDED
 
 #include <cstddef>
 #include <ostream>    //std::ostream
@@ -500,4 +500,4 @@ class Module {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_MODULE_H_INCLUDED
+#endif  // GUDHI_MP_MODULE_H_INCLUDED

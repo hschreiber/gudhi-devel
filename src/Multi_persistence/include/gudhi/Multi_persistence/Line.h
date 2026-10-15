@@ -16,8 +16,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Line class.
  */
 
-#ifndef MP_LINE_FILTRATION_H_INCLUDED
-#define MP_LINE_FILTRATION_H_INCLUDED
+#ifndef GUDHI_MP_LINE_FILTRATION_H_INCLUDED
+#define GUDHI_MP_LINE_FILTRATION_H_INCLUDED
 
 #include <cstddef>
 #include <stdexcept>
@@ -388,4 +388,4 @@ class Line {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_LINE_FILTRATION_H_INCLUDED
+#endif  // GUDHI_MP_LINE_FILTRATION_H_INCLUDED

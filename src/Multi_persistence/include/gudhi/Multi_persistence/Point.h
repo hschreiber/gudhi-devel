@@ -14,8 +14,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Point class.
  */
 
-#ifndef MP_POINT_H_INCLUDED
-#define MP_POINT_H_INCLUDED
+#ifndef GUDHI_MP_POINT_H_INCLUDED
+#define GUDHI_MP_POINT_H_INCLUDED
 
 #include <algorithm>  //std::for_each
 #include <ostream>    //std::ostream
@@ -868,4 +868,4 @@ class Point {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_POINT_H_INCLUDED
+#endif  // GUDHI_MP_POINT_H_INCLUDED

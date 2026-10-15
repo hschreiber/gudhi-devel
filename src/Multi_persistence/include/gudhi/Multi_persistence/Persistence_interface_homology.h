@@ -14,8 +14,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Persistence_interface_homology class.
  */
 
-#ifndef MP_PERSISTENCE_INTERFACE_HOMOLOGY_H_INCLUDED
-#define MP_PERSISTENCE_INTERFACE_HOMOLOGY_H_INCLUDED
+#ifndef GUDHI_MP_PERSISTENCE_INTERFACE_HOMOLOGY_H_INCLUDED
+#define GUDHI_MP_PERSISTENCE_INTERFACE_HOMOLOGY_H_INCLUDED
 
 #include <numeric>
 #include <utility>
@@ -243,4 +243,4 @@ class Persistence_interface_homology {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_PERSISTENCE_INTERFACE_HOMOLOGY_H_INCLUDED
+#endif  // GUDHI_MP_PERSISTENCE_INTERFACE_HOMOLOGY_H_INCLUDED

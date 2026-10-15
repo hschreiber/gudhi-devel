@@ -396,9 +396,9 @@ class Simple_mdspan
     return *(ptr_ + map_(indices));
   }
 
-  constexpr rank_type rank() noexcept { return map_.extents().rank(); }
+  static constexpr rank_type rank() noexcept { return Extents::rank(); }
 
-  constexpr rank_type rank_dynamic() noexcept { return map_.extents().rank_dynamic(); }
+  static constexpr rank_type rank_dynamic() noexcept { return Extents::rank_dynamic(); }
 
   static constexpr std::size_t static_extent(rank_type r) noexcept { return extents_type::static_extent(r); }
 

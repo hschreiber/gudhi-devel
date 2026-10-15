@@ -16,8 +16,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Box class.
  */
 
-#ifndef MP_BOX_H_INCLUDED
-#define MP_BOX_H_INCLUDED
+#ifndef GUDHI_MP_BOX_H_INCLUDED
+#define GUDHI_MP_BOX_H_INCLUDED
 
 #include <ostream>    //std::ostream
 #include <stdexcept>  //std::invalid_argument
@@ -298,4 +298,4 @@ class Box {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_BOX_H_INCLUDED
+#endif  // GUDHI_MP_BOX_H_INCLUDED

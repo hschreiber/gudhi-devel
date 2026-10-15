@@ -15,8 +15,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Thread_safe_slicer class.
  */
 
-#ifndef MP_THREAD_SAFE_SLICER_H_INCLUDED
-#define MP_THREAD_SAFE_SLICER_H_INCLUDED
+#ifndef GUDHI_MP_THREAD_SAFE_SLICER_H_INCLUDED
+#define GUDHI_MP_THREAD_SAFE_SLICER_H_INCLUDED
 
 #include <ostream>
 #include <utility>
@@ -427,4 +427,4 @@ class Thread_safe_slicer : private Slicer {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_THREAD_SAFE_SLICER_H_INCLUDED
+#endif  // GUDHI_MP_THREAD_SAFE_SLICER_H_INCLUDED

@@ -14,8 +14,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::Persistence_interface_cohomology class.
  */
 
-#ifndef MP_PERSISTENCE_INTERFACE_COHOMOLOGY_H_INCLUDED
-#define MP_PERSISTENCE_INTERFACE_COHOMOLOGY_H_INCLUDED
+#ifndef GUDHI_MP_PERSISTENCE_INTERFACE_COHOMOLOGY_H_INCLUDED
+#define GUDHI_MP_PERSISTENCE_INTERFACE_COHOMOLOGY_H_INCLUDED
 
 #include <vector>
 
@@ -196,4 +196,4 @@ class Persistence_interface_cohomology {
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_PERSISTENCE_INTERFACE_COHOMOLOGY_H_INCLUDED
+#endif  // GUDHI_MP_PERSISTENCE_INTERFACE_COHOMOLOGY_H_INCLUDED

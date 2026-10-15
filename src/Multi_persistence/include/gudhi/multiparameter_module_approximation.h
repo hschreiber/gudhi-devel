@@ -17,8 +17,8 @@
  * @brief Contains the @ref Gudhi::multi_persistence::multiparameter_module_approximation method.
  */
 
-#ifndef MP_MULTIPARAM_MODULE_APPROX_H_
-#define MP_MULTIPARAM_MODULE_APPROX_H_
+#ifndef GUDHI_MP_MULTIPARAM_MODULE_APPROX_H_
+#define GUDHI_MP_MULTIPARAM_MODULE_APPROX_H_
 
 #include <iostream>     // std::clog
 #include <cstddef>      // std::size_t
@@ -378,7 +378,7 @@ class Multiparameter_module_approximator {
 template <class MultiFiltrationValue, class PersistenceAlgorithm,
           class CoordinateRange = std::initializer_list<typename MultiFiltrationValue::value_type>,
           class DirectionRange = std::initializer_list<typename MultiFiltrationValue::value_type>>
-Module<typename MultiFiltrationValue::value_type> multiparameter_module_approximation(
+inline Module<typename MultiFiltrationValue::value_type> multiparameter_module_approximation(
     Slicer<MultiFiltrationValue, PersistenceAlgorithm>& slicer, typename MultiFiltrationValue::value_type precision,
     const CoordinateRange& boxCorner1, const CoordinateRange& boxCorner2, const DirectionRange& direction = {},
     bool thresholdToBox = false, bool complete = true, bool verbose = false, [[maybe_unused]] int n_jobs = -1) {
@@ -392,4 +392,4 @@ Module<typename MultiFiltrationValue::value_type> multiparameter_module_approxim
 }  // namespace multi_persistence
 }  // namespace Gudhi
 
-#endif  // MP_MULTIPARAM_MODULE_APPROX_H_
+#endif  // GUDHI_MP_MULTIPARAM_MODULE_APPROX_H_
