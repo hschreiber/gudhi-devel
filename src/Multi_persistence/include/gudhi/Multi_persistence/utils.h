@@ -17,6 +17,7 @@
 #ifndef GUDHI_MP_UTILS_H_
 #define GUDHI_MP_UTILS_H_
 
+#include <iostream>
 #include <iterator>
 #include <type_traits>
 
@@ -48,6 +49,21 @@ constexpr bool is_forward_iterator_v = detail::is_forward_iterator<T>::value;
 template <typename T>
 using maybe_make_signed_t =
     typename std::conditional_t<std::is_unsigned_v<T>, std::make_signed<T>, detail::type_identity<T>>::type;
+
+template <typename... Args>
+void print_progress(bool verbose, const Args&... args) {
+  if (verbose) {
+    ((std::clog << args << " "), ...);
+    std::clog << "\n";
+  }
+}
+
+template <typename... Args>
+void print_progress_wo_line_break(bool verbose, const Args&... args) {
+  if (verbose) {
+    ((std::clog << args << " "), ...);
+  }
+}
 
 }  // namespace multi_persistence
 }  // namespace Gudhi

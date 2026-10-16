@@ -35,6 +35,14 @@
 namespace Gudhi {
 namespace multi_persistence {
 
+template <typename I, typename T>
+struct Signed_measure {
+  I numberOfParameters;
+  // coordinates has shape x * numberOfParameters
+  std::vector<I> coordinates;
+  std::vector<T> values;
+};
+
 // Dynamic version of mdspan where ndim does not have to be known at compile time and data has to be continuous
 template <typename T>
 class Tensor {
@@ -49,12 +57,12 @@ class Tensor {
   using data_handle_type = element_type*;
   using reference = element_type&;
 
-  // TODO: remove?
-  template <class Range = std::initializer_list<element_type>>
-  Tensor(element_type* data, const Range& shape)
-      : ptr_(data), shape_(shape.begin(), shape.end()), strides_(shape.size()) {
-    _initialize_strides();
-  }
+  // // TODO: remove?
+  // template <class Range = std::initializer_list<element_type>>
+  // Tensor(element_type* data, const Range& shape)
+  //     : ptr_(data), shape_(shape.begin(), shape.end()), strides_(shape.size()) {
+  //   _initialize_strides();
+  // }
 
   template <class Range = std::initializer_list<element_type>>
   Tensor(const Container& data, const Range& shape)
@@ -238,20 +246,20 @@ inline void differentiate(const Tensor_t& tensor, std::size_t axis) {
 }
 
 template <typename Index, class Tensor_t>
-inline std::pair<std::vector<Index>, std::vector<typename Tensor_t::element_type>> sparsify(
+inline Signed_measure<Index, typename Tensor_t::element_type> sparsify(
     const Tensor_t& tensor, const std::vector<bool>& flipAxes = {}) {
   static_assert(std::is_pointer_v<typename Tensor_t::data_handle_type>,
                 "differentiate: requires a raw-pointer data handle.");
   static_assert(Tensor_t::is_always_exhaustive() && Tensor_t::is_always_strided(),
                 "sparsify: requires a contiguous layout.");
 
-  std::vector<Index> coordinates;
-  std::vector<typename Tensor_t::element_type> values;
+  Signed_measure<Index, typename Tensor_t::element_type> sm;
+  sm.numberOfParameters = tensor.rank();
   for (typename Tensor_t::index_type i = 0; i < tensor.size(); ++i) {
     const auto value = *(tensor.data_handle() + i);
     if (value != 0) {
-      detail::_fill_data_index_coordinates(tensor, i, flipAxes, coordinates);
-      values.push_back(value);
+      detail::_fill_data_index_coordinates(tensor, i, flipAxes, sm.coordinates);
+      sm.values.push_back(value);
     }
   }
 #ifdef DEBUG_TRACES
@@ -261,7 +269,7 @@ inline std::pair<std::vector<Index>, std::vector<typename Tensor_t::element_type
   }
 #endif  // DEBUG_TRACES
   // coordinates has shape number_of_non_null_values * tensor.rank()
-  return {coordinates, values};
+  return sm;
 }
 
 }  // namespace multi_persistence

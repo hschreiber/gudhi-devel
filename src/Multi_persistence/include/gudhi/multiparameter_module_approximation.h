@@ -20,7 +20,6 @@
 #ifndef GUDHI_MP_MULTIPARAM_MODULE_APPROX_H_
 #define GUDHI_MP_MULTIPARAM_MODULE_APPROX_H_
 
-#include <iostream>     // std::clog
 #include <cstddef>      // std::size_t
 #include <stdexcept>    // std::invalid_argument
 #include <type_traits>  // std::is_signed_v
@@ -41,6 +40,7 @@
 #include <gudhi/Multi_persistence/Box.h>
 #include <gudhi/Multi_persistence/Point.h>
 #include <gudhi/Multi_persistence/Module.h>
+#include <gudhi/Multi_persistence/utils.h>
 #include <gudhi/Slicer.h>
 
 namespace Gudhi {
@@ -194,10 +194,7 @@ class Multiparameter_module_approximator {
 
   template <typename... Args>
   void _progress(const Args&... args) const {
-    if (verbose_) {
-      ((std::clog << args << " "), ...);
-      std::clog << "\n";
-    }
+    Gudhi::multi_persistence::print_progress(verbose_, std::forward<const Args&>(args)...);
   }
 
   template <class S, class CoordinateRange>
