@@ -25,10 +25,15 @@
 #include <type_traits>
 #include <stdexcept>
 
+#ifdef GUDHI_USE_TBB
+#include <oneapi/tbb/parallel_for.h>
+#endif
+
 #include <gudhi/Debug_utils.h>
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Simplex_tree/simplex_tree_options.h>
 #include <gudhi/Multi_filtration/multi_filtration_utils.h>
+#include <gudhi/Multi_filtration/Degree_bifiltration.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
 #include <gudhi/Multi_persistence/Line.h>
 #include <gudhi/Multi_persistence/complex_helpers.h>
@@ -350,6 +355,89 @@ inline void fill_axis_with_distance_matrix(MultiDimSimplexTree &st, const Random
     GUDHI_CHECK(axis < current_birth.num_parameters(), std::invalid_argument("Axis is not a valid parameter index."));
     current_birth(0, axis) = maxValue;
   }
+}
+
+template <class DegreeRipsBiFilSimplexTree, class OneDimSimplexTree, class RandomAccessRange>
+inline DegreeRipsBiFilSimplexTree build_degree_filtration(const OneDimSimplexTree &st,
+                                                          const RandomAccessRange &degrees) {
+  using F = typename DegreeRipsBiFilSimplexTree::Filtration_value;
+  using T = typename F::value_type;
+  static_assert(std::is_same_v<typename F::Storage_policy, Gudhi::multi_filtration::Degree_bifiltration<T>>,
+                "Resulting simplex tree must have `Degree_bifiltration` as filtration value storage policy.");
+
+  GUDHI_CHECK(st.dimension() == 1,
+              std::invalid_argument("Degree filtration has to be build on a 1-dimensional complex."));
+
+  const std::size_t numGen = degrees.size();
+  const std::size_t numVertices = st.num_vertices();
+
+  std::size_t maxDeg = 0;
+  for (auto d : degrees) {
+    GUDHI_CHECK(d >= 0, std::invalid_argument("Degrees have to be positive."));
+    maxDeg = std::max(maxDeg, static_cast<std::size_t>(d));
+  }
+
+  DegreeRipsBiFilSimplexTree out = make_multi_dimensional<typename DegreeRipsBiFilSimplexTree::Options>(st, {0, 0});
+
+  // Flat storage of the filtration values of all cells incident to each vertex.
+  // After sorting, row[0] is the vertex value and row[d] is the filtration of its d-th incident edge
+  // (monotonously increasing filtration assumed).
+  // Assumes vertex labels are contiguous in [0, numVertices).
+  std::vector<std::size_t> offsets(numVertices + 1, 0);
+  for (auto sh : st.complex_simplex_range())
+    for (auto v : st.simplex_vertex_range(sh)) ++offsets[static_cast<std::size_t>(v) + 1];
+  std::partial_sum(offsets.begin(), offsets.end(), offsets.begin());
+
+  std::vector<T> flatEdgeFiltrationOfNodes(offsets.back());
+  {
+    std::vector<std::size_t> pos(offsets.begin(), offsets.end() - 1);
+    for (auto sh : st.complex_simplex_range()) {
+      const T fil = static_cast<T>(st.filtration(sh));
+      for (auto v : st.simplex_vertex_range(sh)) flatEdgeFiltrationOfNodes[pos[static_cast<std::size_t>(v)]++] = fil;
+    }
+  }
+
+  // Per-vertex, per-degree filtration values, already in reversed degree order
+  // (to obtain "at most degree i" instead of "at least degree i").
+  std::vector<T> perDegree(numVertices * numGen);
+  auto fill_per_degree = [&](std::size_t i) {
+    auto b = flatEdgeFiltrationOfNodes.begin() + offsets[i];
+    auto e = flatEdgeFiltrationOfNodes.begin() + offsets[i + 1];
+    const std::size_t n = static_cast<std::size_t>(e - b);
+    const std::size_t k = std::min(n, maxDeg + 1);
+    if (k == n)
+      std::sort(b, e);
+    else
+      std::partial_sort(b, b + k, e);
+
+    T *row = &perDegree[i * numGen];
+    for (std::size_t g = 0; g < numGen; ++g) {
+      const std::size_t d = static_cast<std::size_t>(degrees[g]);
+      row[numGen - 1 - g] = (d < n) ? b[d] : F::T_inf;
+    }
+  };
+
+#ifdef GUDHI_USE_TBB
+  tbb::parallel_for(std::size_t{0}, numVertices, fill_per_degree);
+#else
+  for (std::size_t i = 0; i < numVertices; ++i) {
+    fill_per_degree(i);
+  }
+#endif
+
+  // Fill the output.
+  for (auto sh : out.complex_simplex_range()) {
+    auto &f = out.get_filtration_value(sh);
+    const T originalFil = f(0, 0);
+    f.set_num_generators(numGen);
+    for (std::size_t g = 0; g < numGen; ++g) f(g, 0) = originalFil;
+    for (auto v : out.simplex_vertex_range(sh)) {
+      const T *row = &perDegree[static_cast<std::size_t>(v) * numGen];
+      for (std::size_t g = 0; g < numGen; ++g) f(g, 0) = std::max(f(g, 0), row[g]);
+    }
+  }
+
+  return out;
 }
 
 }  // namespace multi_persistence
