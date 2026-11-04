@@ -393,11 +393,11 @@ inline DegreeRipsBiFilSimplexTree build_degree_filtration(const OneDimSimplexTre
     std::vector<std::size_t> pos(offsets.begin(), offsets.end() - 1);
     for (auto sh : st.complex_simplex_range()) {
       const T fil = static_cast<T>(st.filtration(sh));
-      for (auto v : st.simplex_vertex_range(sh)) flatEdgeFiltrationOfNodes[pos[static_cast<std::size_t>(v)]++] = fil;
+      for (std::size_t v : st.simplex_vertex_range(sh)) flatEdgeFiltrationOfNodes[pos[v]++] = fil;
     }
   }
 
-  // Per-vertex, per-degree filtration values, already in reversed degree order
+  // Per-vertex, per-degree filtration values, in reversed degree order
   // (to obtain "at most degree i" instead of "at least degree i").
   std::vector<T> perDegree(numVertices * numGen);
   auto fill_per_degree = [&](std::size_t i) {

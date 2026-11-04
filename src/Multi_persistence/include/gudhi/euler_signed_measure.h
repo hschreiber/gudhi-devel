@@ -11,7 +11,7 @@
 /**
  * @file euler_signed_measure.h
  * @author David Loiseaux, Hannah Schreiber
- * @brief Contains the method @ref Gudhi::multi_persistence::compute_euler_signed_measure.
+ * @brief Contains the method @ref Gudhi::multi_persistence::get_euler_signed_measure.
  */
 
 #ifndef GUDHI_MP_EULER_SIGNED_H_
@@ -42,9 +42,11 @@ constexpr unsigned int count_trailing_zero_u64(unsigned long long int x) noexcep
 }
 
 // Adds `value` to every element of the cone
-template <typename T, class StoragePolicy>
-inline void _add_cone(const Tensor<T> &tensor,
-                      const multi_filtration::Multi_parameter_filtration_value<StoragePolicy> &basepoint, T value) {
+template <typename T, class StoragePolicy, bool Co, bool Ensure1Criticality>
+inline void _add_cone(
+    const Tensor<T> &tensor,
+    const Gudhi::multi_filtration::Multi_parameter_filtration_value<StoragePolicy, Co, Ensure1Criticality> &basepoint,
+    T value) {
   GUDHI_CHECK(tensor.rank() == basepoint.num_parameters(), std::invalid_argument("Invalid coordinates for cone."));
   GUDHI_CHECK(tensor.rank() != 0, std::logic_error("Number of parameters cannot be 0."));
 
@@ -84,10 +86,11 @@ inline void _add_cone(const Tensor<T> &tensor,
   }
 }
 
-template <typename T, class StoragePolicy>
-inline void _add_cone_boundary(const Tensor<T> &tensor,
-                               const multi_filtration::Multi_parameter_filtration_value<StoragePolicy> &basepoint,
-                               T value) {
+template <typename T, class StoragePolicy, bool Co, bool Ensure1Criticality>
+inline void _add_cone_boundary(
+    const Tensor<T> &tensor,
+    const Gudhi::multi_filtration::Multi_parameter_filtration_value<StoragePolicy, Co, Ensure1Criticality> &basepoint,
+    T value) {
   const std::size_t r = tensor.rank();
   GUDHI_CHECK(r < 64, std::invalid_argument("Number of parameters are limited to 63 for optimization purposes."));
   T *data = tensor.data_handle();
@@ -124,12 +127,12 @@ inline void _get_euler_surface(const Tensor<T> &out, const FilteredComplex &cpx,
                 std::logic_error("Tensor does not have the right shape for given complex."));
     int sign = 1 - 2 * (cpx.dimension(sh) % 2);
     if (mobiusInversion && zeroPad) {
-      detail::_add_cone_boundary(out, fil, sign);
+      _add_cone_boundary(out, fil, sign);
     } else if (mobiusInversion) {
       for (std::size_t p = 0; p < fil.num_parameters(); ++p) coordinates[p] = fil(0, p);
       out[coordinates] += sign;
     } else {
-      detail::_add_cone(out, fil, sign);
+      _add_cone(out, fil, sign);
     }
   }
 }
@@ -138,20 +141,20 @@ inline void _get_euler_surface(const Tensor<T> &out, const FilteredComplex &cpx,
 
 // only takes into account first generator
 template <typename T = int, typename I = std::uint16_t, class FilteredComplex, typename U>
-inline Signed_measure<I, T> compute_euler_signed_measure(const FilteredComplex &cpx, const std::vector<U> &shape,
-                                                         bool zeroPad, bool mobiusInversion = true,
-                                                         bool verbose = false) {
+inline Signed_measure<I, T> get_euler_signed_measure(const FilteredComplex &cpx, const std::vector<U> &shape,
+                                                     bool zeroPad, bool mobiusInversion = true, bool verbose = false) {
   std::size_t total = 1;
   for (U value : shape) {
+    GUDHI_CHECK(value >= 0, std::invalid_argument("The shape must be explicit and all its values positive."));
     total *= static_cast<std::size_t>(value);
   }
+  if (total == 0) return {};
   std::vector<T> container(total, 0);
   Tensor<T> tensor(container, shape);
 
   print_progress_wo_line_break(verbose, "Container shape : ");
-  for (auto r : container.extents()) print_progress_wo_line_break(verbose, r, ", ");
-  print_progress_wo_line_break(verbose, "\nContainer size : ", container.size(),
-                               "\nComputing Euler Characteristic ...");
+  for (auto r : tensor.extents()) print_progress_wo_line_break(verbose, r, ", ");
+  print_progress_wo_line_break(verbose, "\nContainer size : ", tensor.size(), "\nComputing Euler Characteristic ...");
 
   detail::_get_euler_surface(tensor, cpx, mobiusInversion, zeroPad);
 

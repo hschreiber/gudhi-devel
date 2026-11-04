@@ -63,6 +63,7 @@ void print_progress_wo_line_break(bool verbose, const Args&... args) {
   if (verbose) {
     ((std::clog << args << " "), ...);
   }
+  std::clog  << std::flush;
 }
 
 }  // namespace multi_persistence

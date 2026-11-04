@@ -57,21 +57,14 @@ class Tensor {
   using data_handle_type = element_type*;
   using reference = element_type&;
 
-  // // TODO: remove?
-  // template <class Range = std::initializer_list<element_type>>
-  // Tensor(element_type* data, const Range& shape)
-  //     : ptr_(data), shape_(shape.begin(), shape.end()), strides_(shape.size()) {
-  //   _initialize_strides();
-  // }
-
   template <class Range = std::initializer_list<element_type>>
-  Tensor(const Container& data, const Range& shape)
+  Tensor(Container& data, const Range& shape)
       : ptr_(data.data()), shape_(shape.begin(), shape.end()), strides_(shape.size()) {
     _initialize_strides();
     GUDHI_CHECK(data.size() == size(), std::invalid_argument("Given shape does not corresponds to container size."));
   }
 
-  Tensor(const Container& data, Shape&& shape) : ptr_(data.data()), shape_(std::move(shape)), strides_(shape_.size()) {
+  Tensor(Container& data, Shape&& shape) : ptr_(data.data()), shape_(std::move(shape)), strides_(shape_.size()) {
     _initialize_strides();
     GUDHI_CHECK(data.size() == size(), std::invalid_argument("Given shape does not corresponds to container size."));
   }
@@ -162,7 +155,8 @@ class Tensor {
     auto it = indices.begin();
     GUDHI_CHECK_code(unsigned int i = 0);
     for (auto stride : strides_) {
-      GUDHI_CHECK_code(GUDHI_CHECK(*it < extent(i), std::out_of_range("Out of bound index.")));
+      GUDHI_CHECK_code(
+          GUDHI_CHECK(static_cast<std::size_t>(*it) < extent(i), std::out_of_range("Out of bound index.")));
       newIndex += (stride * (*it));
       ++it;
       GUDHI_CHECK_code(++i);
@@ -204,7 +198,7 @@ inline void _fill_data_index_coordinates(const Tensor_t& tensor, typename Tensor
 }  // namespace detail
 
 template <class Tensor_t>
-inline void differentiate(const Tensor_t& tensor, std::size_t axis) {
+inline void differentiate(const Tensor_t& tensor, std::size_t axis, [[maybe_unused]] int n_jobs = -1) {
   static_assert(!std::is_const_v<typename Tensor_t::element_type>, "differentiate: the tensor must be writable.");
   static_assert(std::is_pointer_v<typename Tensor_t::data_handle_type>,
                 "differentiate: requires a raw-pointer data handle.");
@@ -229,15 +223,18 @@ inline void differentiate(const Tensor_t& tensor, std::size_t axis) {
   constexpr std::size_t target_chunk = 1u << 12;       // ~elements of work per TBB task
 
   if (tensor.size() >= min_parallel_size) {
+    tbb::task_arena arena(n_jobs);  // limits the number of threads
     // 2D split over (outer, column): stride == 1 -> only outer is split,
     // outer == 1 -> only columns are split, otherwise both.
     const std::size_t grain_k = std::min<std::size_t>(stride, target_chunk);
     const std::size_t grain_o = std::max<std::size_t>(1, target_chunk / block);
-    tbb::parallel_for(tbb::blocked_range2d<std::size_t>(0, outer, grain_o, 0, stride, grain_k),
-                      [=](const tbb::blocked_range2d<std::size_t>& r) {
-                        detail::_differentiate_range(view, r.rows().begin(), r.rows().end(), r.cols().begin(),
-                                                     r.cols().end());
-                      });
+    arena.execute([&] {
+      tbb::parallel_for(tbb::blocked_range2d<std::size_t>(0, outer, grain_o, 0, stride, grain_k),
+                        [=](const tbb::blocked_range2d<std::size_t>& r) {
+                          detail::_differentiate_range(view, r.rows().begin(), r.rows().end(), r.cols().begin(),
+                                                       r.cols().end());
+                        });
+    });
     return;
   }
 #endif
@@ -249,7 +246,7 @@ template <typename Index, class Tensor_t>
 inline Signed_measure<Index, typename Tensor_t::element_type> sparsify(
     const Tensor_t& tensor, const std::vector<bool>& flipAxes = {}) {
   static_assert(std::is_pointer_v<typename Tensor_t::data_handle_type>,
-                "differentiate: requires a raw-pointer data handle.");
+                "sparsify: requires a raw-pointer data handle.");
   static_assert(Tensor_t::is_always_exhaustive() && Tensor_t::is_always_strided(),
                 "sparsify: requires a contiguous layout.");
 
@@ -263,8 +260,8 @@ inline Signed_measure<Index, typename Tensor_t::element_type> sparsify(
     }
   }
 #ifdef DEBUG_TRACES
-  for (std::size_t i = 0; i < (coordinates.size() / tensor.rank()); ++i) {
-    for (std::size_t j = 0; j < tensor.rank(); ++j) std::cout << coordinates[j + tensor.rank() * i] << " ";
+  for (std::size_t i = 0; i < (sm.coordinates.size() / tensor.rank()); ++i) {
+    for (std::size_t j = 0; j < tensor.rank(); ++j) std::cout << sm.coordinates[j + tensor.rank() * i] << " ";
     std::cout << "| " << values[i] << std::endl;
   }
 #endif  // DEBUG_TRACES
