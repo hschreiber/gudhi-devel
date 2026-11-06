@@ -8,7 +8,12 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
+#include <algorithm>
+#include <cstdint>
 #include <initializer_list>
+#include <numeric>
+#include <type_traits>
+#include <vector>
 
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE "multi_persistence"
@@ -17,6 +22,7 @@
 
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Multi_parameter_filtered_complex.h>
+#include <gudhi/Projective_cover_kernel.h>
 #include <gudhi/Multi_filtration/Flat_array_filtration.h>
 #include <gudhi/Multi_filtration/Nested_array_filtration.h>
 #include <gudhi/Multi_parameter_filtration_value.h>
@@ -36,6 +42,7 @@ using Gudhi::multi_persistence::build_slicer_from_scc_file;
 using Gudhi::multi_persistence::build_slicer_from_simplex_tree;
 using Gudhi::multi_persistence::Multi_parameter_filtered_complex;
 using Gudhi::multi_persistence::Persistence_interface_cohomology;
+using Gudhi::multi_persistence::Projective_cover_kernel;
 using Gudhi::multi_persistence::Simplex_tree_options_multidimensional_filtration;
 using Gudhi::multi_persistence::Slicer;
 using Gudhi::multi_persistence::write_complex_to_scc_file;
@@ -483,4 +490,122 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_simplex_tree_io, Fil, list_of_tested_varian
   BOOST_CHECK(dc == slicer2.get_dimensions());
   BOOST_CHECK_EQUAL(slicer.get_filtration_values().size(), slicer2.get_filtration_values().size());
   BOOST_CHECK_EQUAL(3, slicer2.get_max_dimension());
+}
+
+template <class Slicer_t>
+Slicer_t build_unordered_slicer() {
+  using Fil = typename Slicer_t::Filtration_value;
+  using Complex = typename Slicer_t::Complex;
+  using ini = std::initializer_list<typename Fil::value_type>;
+
+  typename Complex::Boundary_container bc = {{2, 6}, {}, {1, 3}, {}, {}, {0}, {1, 4}};
+  typename Complex::Dimension_container dc = {2, 0, 1, 0, 0, 3, 1};
+  typename Complex::Filtration_value_container fc = {ini{3, 4, 5}, ini{0, 1, 2}, ini{0, 2, 2}, ini{0, 2, 1},
+                                                     ini{1, 2, 3}, ini{6, 4, 5}, ini{1, 3, 3}};
+  return Slicer_t(Complex(bc, dc, fc));
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_build_permuted_slicer, Fil, list_of_tested_variants) {
+  using Slicer_t = Slicer<Fil, Persistence_interface_cohomology<Fil>>;
+  using Complex = typename Slicer_t::Complex;
+  using ini = std::initializer_list<typename Fil::value_type>;
+
+  Slicer_t slicer = build_unordered_slicer<Slicer_t>();
+  BOOST_CHECK(!slicer.get_filtered_complex().is_ordered_by_dimension());
+
+  typename Complex::Boundary_container bc = {{}, {}, {}, {0, 1}, {1, 2}, {3, 4}, {5}};
+  typename Complex::Dimension_container dc = {0, 0, 0, 1, 1, 2, 3};
+  typename Complex::Filtration_value_container fc = {ini{0, 2, 1}, ini{0, 1, 2}, ini{1, 2, 3}, ini{0, 2, 2},
+                                                     ini{1, 3, 3}, ini{3, 4, 5}, ini{6, 4, 5}};
+
+  // permutation computed from the dimension and the filtration values
+  auto [sorted, perm] = build_permuted_slicer(slicer);
+  BOOST_CHECK_EQUAL(perm.size(), slicer.get_number_of_cycle_generators());
+  BOOST_CHECK(sorted.get_filtered_complex().is_ordered_by_dimension());
+  BOOST_CHECK(sorted.get_filtered_complex().get_boundaries() == bc);
+  BOOST_CHECK(sorted.get_filtered_complex().get_dimensions() == dc);
+  BOOST_CHECK(sorted.get_filtered_complex().get_filtration_values() == fc);
+  BOOST_CHECK(sorted.get_number_of_parameters() == slicer.get_number_of_parameters());
+
+  // the permutation is a permutation of all the indices
+  std::vector<typename Slicer_t::Index> sortedPerm = perm;
+  std::sort(sortedPerm.begin(), sortedPerm.end());
+  std::vector<typename Slicer_t::Index> identity(perm.size());
+  std::iota(identity.begin(), identity.end(), 0);
+  BOOST_CHECK(sortedPerm == identity);
+
+  // the original slicer is not modified
+  BOOST_CHECK(!slicer.get_filtered_complex().is_ordered_by_dimension());
+  BOOST_CHECK_EQUAL(slicer.get_number_of_cycle_generators(), 7);
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_build_permuted_slicer_with_given_permutation, Fil, list_of_tested_variants) {
+  using Slicer_t = Slicer<Fil, Persistence_interface_cohomology<Fil>>;
+  using Complex = typename Slicer_t::Complex;
+  using ini = std::initializer_list<typename Fil::value_type>;
+
+  Slicer_t slicer = build_unordered_slicer<Slicer_t>();
+  auto [unused, perm] = build_permuted_slicer(slicer);
+
+  typename Complex::Boundary_container bc = {{}, {}, {}, {0, 1}, {1, 2}, {3, 4}, {5}};
+  typename Complex::Dimension_container dc = {0, 0, 0, 1, 1, 2, 3};
+  typename Complex::Filtration_value_container fc = {ini{0, 2, 1}, ini{0, 1, 2}, ini{1, 2, 3}, ini{0, 2, 2},
+                                                     ini{1, 3, 3}, ini{3, 4, 5}, ini{6, 4, 5}};
+
+  Slicer_t sorted = build_permuted_slicer(slicer, perm);
+  BOOST_CHECK(sorted.get_filtered_complex().is_ordered_by_dimension());
+  BOOST_CHECK(sorted.get_filtered_complex().get_boundaries() == bc);
+  BOOST_CHECK(sorted.get_filtered_complex().get_dimensions() == dc);
+  BOOST_CHECK(sorted.get_filtered_complex().get_filtration_values() == fc);
+  BOOST_CHECK(!slicer.get_filtered_complex().is_ordered_by_dimension());  // input untouched
+
+  // id permutation
+  std::vector<typename Slicer_t::Index> id(slicer.get_number_of_cycle_generators());
+  std::iota(id.begin(), id.end(), 0);
+  Slicer_t same = build_permuted_slicer(slicer, id);
+  BOOST_CHECK(same.get_filtered_complex().get_boundaries() == slicer.get_filtered_complex().get_boundaries());
+  BOOST_CHECK(same.get_filtered_complex().get_dimensions() == slicer.get_filtered_complex().get_dimensions());
+  BOOST_CHECK(same.get_filtered_complex().get_filtration_values() ==
+              slicer.get_filtered_complex().get_filtration_values());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_build_slicer_coarsen_on_grid, Fil, list_of_tested_variants) {
+  using Slicer_t = Slicer<Fil, Persistence_interface_cohomology<Fil>>;
+  using ini = std::initializer_list<std::int32_t>;
+
+  auto [sorted, perm] = build_permuted_slicer(build_unordered_slicer<Slicer_t>());
+  std::vector<std::vector<typename Fil::value_type>> grid = {{0, 2, 4, 8}, {0, 3, 6, 9}, {0, 4, 8, 16}};
+
+  auto coarse = build_slicer_coarsen_on_grid(sorted, grid);
+
+  using Coarse_fil = typename decltype(coarse)::Filtration_value;
+  static_assert(std::is_same_v<typename Coarse_fil::value_type, std::int32_t>);
+
+  using FC2 = typename decltype(coarse)::Complex::Filtration_value_container;
+  FC2 expected = {ini{0, 1, 0}, ini{0, 0, 1}, ini{1, 1, 1}, ini{0, 1, 1}, ini{1, 1, 1}, ini{2, 1, 1}, ini{3, 1, 1}};
+  BOOST_CHECK(coarse.get_filtered_complex().get_filtration_values() == expected);
+  BOOST_CHECK(coarse.get_filtered_complex().get_boundaries() == sorted.get_filtered_complex().get_boundaries());
+  BOOST_CHECK(coarse.get_filtered_complex().get_dimensions() == sorted.get_filtered_complex().get_dimensions());
+  BOOST_CHECK_EQUAL(coarse.get_number_of_parameters(), 3);
+  BOOST_CHECK_EQUAL(coarse.get_number_of_cycle_generators(), sorted.get_number_of_cycle_generators());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(slicer_build_slicer_from_projective_cover_kernel, Fil, list_of_tested_variants) {
+  using Slicer_t = Slicer<Fil, Persistence_interface_cohomology<Fil>>;
+  using Complex = typename Slicer_t::Complex;
+  using ini = std::initializer_list<typename Fil::value_type>;
+
+  // 2 vertices and an edge (cells of same dimension in co-lexicographic order)
+  Complex cpx({{}, {}, {0, 1}}, {0, 0, 1}, {ini{1, 0}, ini{0, 1}, ini{1, 1}});
+  Slicer_t slicer(cpx);
+
+  Slicer_t fromKernel = build_slicer_from_projective_cover_kernel(slicer, 0);
+  Complex expected = Projective_cover_kernel(cpx, 0).create_complex();
+
+  BOOST_CHECK(fromKernel.get_filtered_complex().get_boundaries() == expected.get_boundaries());
+  BOOST_CHECK(fromKernel.get_filtered_complex().get_dimensions() == expected.get_dimensions());
+  BOOST_CHECK(fromKernel.get_filtered_complex().get_filtration_values() == expected.get_filtration_values());
+  BOOST_CHECK_EQUAL(fromKernel.get_number_of_parameters(), slicer.get_number_of_parameters());
+  // the original slicer is not modified
+  BOOST_CHECK_EQUAL(slicer.get_number_of_cycle_generators(), 3);
 }

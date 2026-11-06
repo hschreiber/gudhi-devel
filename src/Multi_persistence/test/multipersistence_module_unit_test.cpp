@@ -357,3 +357,101 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(module_helpers, T, list_of_tested_variants) {
   BOOST_CHECK_EQUAL(image.size(), 50);
   BOOST_CHECK(image == rim);
 }
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(module_dimension_helpers, T, list_of_tested_variants) {
+  using S_t = typename Module<T>::Summand_t;
+  const int numParam = 2;
+  S_t s1({1, 6}, {3, 8}, numParam, 0);
+  S_t s2({2, 3}, {6, 10}, numParam, 2);
+  S_t s3({4, 6}, {8, 11}, numParam, 0);
+  S_t s4({4, 8}, {6, 9}, numParam, 2);
+
+  Module<T> m;
+  m.add_summand(s1);
+  m.add_summand(s2);
+  m.add_summand(s3);
+  m.add_summand(s4);
+  BOOST_CHECK_EQUAL(m.get_max_dimension(), 2);
+
+  // set_max_dimension
+  m.set_max_dimension(5);
+  BOOST_CHECK_EQUAL(m.get_max_dimension(), 5);
+  m.set_max_dimension(2);
+  BOOST_CHECK_EQUAL(m.get_max_dimension(), 2);
+
+  // get_summands_of_dimension_range
+  std::vector<S_t> dim0;
+  for (const auto& s : m.get_summands_of_dimension_range(0)) dim0.push_back(s);
+  BOOST_REQUIRE_EQUAL(dim0.size(), 2);
+  BOOST_CHECK(dim0[0] == s1);
+  BOOST_CHECK(dim0[1] == s3);
+
+  std::vector<S_t> dim2;
+  for (const auto& s : m.get_summands_of_dimension_range(2)) dim2.push_back(s);
+  BOOST_REQUIRE_EQUAL(dim2.size(), 2);
+  BOOST_CHECK(dim2[0] == s2);
+  BOOST_CHECK(dim2[1] == s4);
+
+  // no summand in this dimension
+  BOOST_CHECK(m.get_summands_of_dimension_range(1).empty());
+  BOOST_CHECK(m.get_summands_of_dimension_range(7).empty());
+
+  Module<T> empty;
+  BOOST_CHECK(empty.get_summands_of_dimension_range(0).empty());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(module_barcode_from_range_of_lines, T, list_of_tested_variants) {
+  using S_t = typename Module<T>::Summand_t;
+  using Line_t = Gudhi::multi_persistence::Line<T>;
+  const int numParam = 2;
+  S_t s1({1, 6}, {3, 8}, numParam, 0);
+  S_t s2({2, 3}, {6, 10}, numParam, 2);
+  S_t s3({4, 6}, {8, 11}, numParam, 0);
+  S_t s4({4, 8}, {6, 9}, numParam, 2);
+
+  Module<T> m;
+  m.add_summand(s1);
+  m.add_summand(s2);
+  m.add_summand(s3);
+  m.add_summand(s4);
+
+  Line_t l1({2, 7}, {2, 1});
+  Line_t l2({1, 3}, {1, 1});
+  std::vector<Line_t> lines = {l1, l2};
+
+  auto single1 = m.get_barcode_from_line(l1);
+  auto single2 = m.get_barcode_from_line(l2);
+
+  // all dimensions: bars are ordered line by line, then summand by summand
+  auto all = m.get_barcode_from_range_of_lines(lines);
+  BOOST_REQUIRE_EQUAL(all.size(), 3);
+  for (std::size_t d = 0; d < 3; ++d) {
+    std::vector<typename Module<T>::Bar> expected = single1[d];
+    expected.insert(expected.end(), single2[d].begin(), single2[d].end());
+    BOOST_CHECK(all[d] == expected);
+  }
+  BOOST_CHECK_EQUAL(all[0].size(), 4);
+  BOOST_CHECK_EQUAL(all[1].size(), 0);
+  BOOST_CHECK_EQUAL(all[2].size(), 4);
+
+  // known values for l1 (same as the single line version)
+  std::vector<std::vector<std::array<double, 2> > > barcode({{{-0.5, 0.5}, {1, 3}}, {}, {{0, 2}, {1, 2}}});
+  auto one = m.get_barcode_from_range_of_lines(std::vector<Line_t>{l1});
+  BOOST_CHECK(barcode == one);
+
+  // initializer list overload (default template argument)
+  auto fromInitList = m.get_barcode_from_range_of_lines({l1, l2});
+  BOOST_CHECK(fromInitList == all);
+
+  // one dimension only
+  auto dim2 = m.get_barcode_from_range_of_lines(lines, 2);
+  BOOST_REQUIRE_EQUAL(dim2.size(), 3);
+  BOOST_CHECK(dim2[0].empty());
+  BOOST_CHECK(dim2[1].empty());
+  BOOST_CHECK(dim2[2] == all[2]);
+
+  // no lines
+  auto none = m.get_barcode_from_range_of_lines(std::vector<Line_t>{});
+  BOOST_REQUIRE_EQUAL(none.size(), 3);
+  for (const auto& b : none) BOOST_CHECK(b.empty());
+}

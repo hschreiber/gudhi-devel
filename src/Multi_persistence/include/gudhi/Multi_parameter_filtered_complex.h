@@ -432,8 +432,10 @@ class Multi_parameter_filtered_complex {
    */
   friend Multi_parameter_filtered_complex build_permuted_complex(const Multi_parameter_filtered_complex& complex,
                                                                  const std::vector<Index>& permutation) {
-    if (permutation.size() > complex.get_number_of_cycle_generators())
-      throw std::invalid_argument("Invalid permutation size.");
+    GUDHI_CHECK(permutation.size() <= complex.get_number_of_cycle_generators(),
+                std::invalid_argument(
+                    "Invalid permutation size. Got perm size: " + std::to_string(permutation.size()) +
+                    " while number of cycle generators: " + std::to_string(complex.get_number_of_cycle_generators())));
 
     const Index nullIndex = -1;
     std::vector<Index> inv(complex.get_number_of_cycle_generators(), nullIndex);

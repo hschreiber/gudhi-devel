@@ -225,7 +225,6 @@ inline void _insert_simplices(const std::vector<std::vector<Index>> &simplices, 
 
 }  // namespace detail
 
-// TODO: unit test
 /**
  * @brief Constructs a multi-parameter filtered simplex tree from the given complex.
  *
@@ -266,19 +265,25 @@ inline Simplex_tree<SimplexTreeOptions> build_simplex_tree_from_complex(
         simplices, numParam, cpx,
         [&st](const std::vector<Index> &s, const typename ST::Filtration_value &f) { st.insert_simplex(s, f); });
   } else {
+    // TODO: or would it be faster to just order the complex instead?
     std::vector<std::vector<Index>> simplices =
         get_vertices_from_boundaries<Index>(cpx.get_boundaries(), cpx.get_dimensions(), maxDim);
     detail::_insert_simplices<SimplexTreeOptions>(
         simplices, numParam, cpx, [&st](const std::vector<Index> &s, const typename ST::Filtration_value &f) {
           // if out of scope of maxDim, the simplex is empty
-          if (!s.empty()) st.insert_simplex_and_subfaces(ST::Filtration_maintenance::IGNORE_VALIDITY, s, f);
+          if (!s.empty()) {
+            auto sh = st.find(s);  // should be better than a systematic unify/intersect of f (?)
+            if (sh == ST::null_simplex())
+              st.insert_simplex_and_subfaces(ST::Filtration_maintenance::IGNORE_VALIDITY, s, f);
+            else
+              st.get_filtration_value(sh) = f;
+          }
         });
   }
 
   return st;
 }
 
-// TODO: unit test
 /**
  * @brief Fills the values at given parameter of the first generator of all filtration values in the given simplex tree
  * with a lower star filtration generated from the given vertex filtration values.
@@ -312,7 +317,6 @@ inline void fill_axis_with_lowerstar(MultiDimSimplexTree &st, const RandomAccess
   }
 }
 
-// TODO: unit test
 /**
  * @brief Fills the values at given parameter of the first generator of all filtration values in the given simplex tree
  * with a lower star filtration generated from the given distance matrix.

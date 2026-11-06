@@ -186,7 +186,7 @@ class Line_family {
 template <class Slicer, class Shape, typename U, class LineSlicer, typename OnEndpoint>
 inline void _for_each_endpoint(const Slice_sweep<Slicer, Line_family<Shape>, U> &sweep, LineSlicer &lineSlicer,
                                const Shape &position, OnEndpoint &&on_endpoint) {
-  const std::size_t width = sweep.family().width();
+  const typename LineSlicer::value_type width = sweep.family().width();
   const bool zeroPad = sweep.family().zero_pad();
 
   sweep.for_each_bar(lineSlicer, position, [&](std::size_t degreeIndex, auto birth, auto death) {
@@ -197,7 +197,7 @@ inline void _for_each_endpoint(const Slice_sweep<Slicer, Line_family<Shape>, U> 
     if (death < width) {
       on_endpoint(degreeIndex, static_cast<std::size_t>(death), -1);
     } else if (zeroPad) {
-      on_endpoint(degreeIndex, width - 1, -1);
+      on_endpoint(degreeIndex, static_cast<std::size_t>(width) - 1, -1);
     }
   });
 }

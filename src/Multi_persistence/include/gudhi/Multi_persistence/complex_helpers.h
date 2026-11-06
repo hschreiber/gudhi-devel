@@ -58,6 +58,11 @@ template <class Index, class Boundaries, class Dimensions>
 inline std::vector<std::vector<Index>> get_vertices_from_ordered_boundaries(const Boundaries& boundaries,
                                                                             const Dimensions& dimensions,
                                                                             int maxDim = -1) {
+  GUDHI_CHECK(boundaries.size() == dimensions.size(),
+              std::invalid_argument("There should be as many dimensions than boundaries."));
+
+  if (dimensions.size() == 0) return {};
+
   const std::size_t numberOfCells =
       (dimensions.back() <= maxDim || maxDim < 0)
           ? boundaries.size()
@@ -100,6 +105,11 @@ inline std::vector<std::vector<Index>> get_vertices_from_ordered_boundaries(cons
 template <class Index, class Boundaries, class Dimensions>
 inline std::vector<std::vector<Index>> get_vertices_from_boundaries(const Boundaries& boundaries,
                                                                     const Dimensions& dimensions, int maxDim = -1) {
+  GUDHI_CHECK(boundaries.size() == dimensions.size(),
+              std::invalid_argument("There should be as many dimensions than boundaries."));
+
+  if (dimensions.size() == 0) return {};
+
   const std::size_t numberOfCells = boundaries.size();
   std::vector<std::vector<Index>> vertices(numberOfCells);
 

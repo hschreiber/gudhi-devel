@@ -136,7 +136,7 @@ class Tensor {
   }
 
  private:
-  Container::pointer ptr_;
+  typename Container::pointer ptr_;
   Shape shape_;
   Strides strides_;
 
@@ -205,7 +205,7 @@ inline void differentiate(const Tensor_t& tensor, std::size_t axis, [[maybe_unus
   static_assert(Tensor_t::is_always_exhaustive() && Tensor_t::is_always_strided(),
                 "differentiate: requires a contiguous layout.");
 
-  if (axis >= tensor.rank()) throw std::out_of_range("differentiate: invalid axis");
+  GUDHI_CHECK(axis < tensor.rank(), std::out_of_range("differentiate: invalid axis"));
 
   const std::size_t axis_size = static_cast<std::size_t>(tensor.extent(axis));
   if (axis_size <= 1 || tensor.empty()) return;
