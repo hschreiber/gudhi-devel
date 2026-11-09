@@ -5,6 +5,7 @@
     Copyright (C) 2019 Inria, Copyright (C) 2022 Institute of Science and Technology Austria
 
     Modification(s):
+      - 2026/10 Cherith1222: Test PersistenceImage weight coordinates
       - 2024/08 Vincent Rouvreau: Test PersistenceLengths
       - 2022/11 Wojtek Reise: Test Kernels
       - 2022/06 Wojtek Reise: Test Landscape and Silhouette
@@ -43,6 +44,7 @@ from gudhi.representations import (
     Padding,
     ProminentPoints,
     DiagramSelector,
+    DimensionSelector,
 )
 
 # Kernel
@@ -292,7 +294,8 @@ def test_bottleneck_distance_deprecated_argument():
     empty_diag = np.empty(shape = [0, 2])
     with pytest.warns(DeprecationWarning):
         bdist = BottleneckDistance(epsilon=.001)
-        assert bdist.e == .001
+        assert bdist.epsilon == .001
+        assert bdist.e is None
         assert bdist(empty_diag, empty_diag) == 0.
 
 def test_kernel_empty_diagrams():
@@ -452,3 +455,57 @@ def test_persistence_lengths():
                 assert pl[idx] == 0.0
     with pytest.raises(ValueError):
         pl = PersistenceLengths(num_lengths=0)(diag)
+
+
+def test_base_estimator():
+    # For GridSearchCV cf. https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html
+    for estimator in [
+        # kernel_methods
+        SlicedWassersteinKernel,
+        PersistenceWeightedGaussianKernel,
+        PersistenceScaleSpaceKernel,
+        PersistenceFisherKernel,
+        # metrics
+        SlicedWassersteinDistance,
+        BottleneckDistance,
+        PersistenceFisherDistance,
+        WassersteinDistance,
+        # preprocessing
+        Clamping,
+        BirthPersistenceTransform,
+        DiagramScaler,
+        Padding,
+        ProminentPoints,
+        DiagramSelector,
+        DimensionSelector,
+        # vector_methods
+        PersistenceImage,
+        Landscape,
+        Silhouette,
+        BettiCurve,
+        Entropy,
+        TopologicalVector,
+        ComplexPolynomial,
+        Atol,
+        PersistenceLengths,
+        ]:
+        estimator().get_params()
+
+
+def test_persistence_image_weight_receives_birth_persistence():
+    diagram = np.array([[1.0, 4.0]])
+    seen = []
+
+    def weight(point):
+        seen.append(np.array(point, dtype=float, copy=True))
+        return 1.0
+
+    PersistenceImage(
+        bandwidth=1.0,
+        weight=weight,
+        resolution=[2, 2],
+        im_range=[0.0, 2.0, 0.0, 4.0],
+    ).fit_transform([diagram])
+
+    assert len(seen) == 1
+    np.testing.assert_allclose(seen[0], [1.0, 3.0])

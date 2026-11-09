@@ -38,7 +38,8 @@ class RU_pairing;
  * Supports vineyards (see @cite vineyards) and the removal of maximal cells while maintaining
  * a valid barcode. Provides an access to its columns and rows.
  *
- * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
+ * @tparam Master_matrix An instantiation of @ref Gudhi::persistence_matrix::Matrix "Matrix" from which all types and
+ * options are deduced.
  */
 template <class Master_matrix>
 class RU_matrix : public Master_matrix::RU_pairing_option,
@@ -593,7 +594,7 @@ inline void RU_matrix<Master_matrix>::insert_maximal_cell(Index columnIndex,
   static_assert(Master_matrix::Option_list::has_vine_update,
                 "'insert_maximal_cell' is not implemented for the chosen options.");
 
-  GUDHI_CHECK(columnIndex >= 0, std::invalid_argument("Indices have be positive."));
+  GUDHI_CHECK(columnIndex >= 0, std::invalid_argument("Indices have to be positive."));
 
   insert_boundary(boundary, dim);
 
@@ -615,7 +616,7 @@ inline void RU_matrix<Master_matrix>::insert_maximal_cell(Index columnIndex,
   static_assert(Master_matrix::Option_list::has_vine_update,
                 "'insert_maximal_cell' is not implemented for the chosen options.");
 
-  GUDHI_CHECK(columnIndex >= 0, std::invalid_argument("Indices have be positive."));
+  GUDHI_CHECK(columnIndex >= 0, std::invalid_argument("Indices have to be positive."));
 
   insert_boundary(cellIndex, boundary, dim);
 
