@@ -123,6 +123,7 @@ class Vineyard(t.Vineyard_interface):
         dimensions: Optional[np.ndarray] = None,
         filtration_values: Optional[np.ndarray] = None,
         number_of_updates: int = 0,
+        store_max_pers_dim: bool = True,
     ) -> list[np.ndarray]:
         """Initializes the vineyard with the first persistence barcode. If another vineyard was initialized before,
         it will be completely replaced. Updates should be done with :meth:`update`.
@@ -150,6 +151,12 @@ class Vineyard(t.Vineyard_interface):
         :param number_of_updates: Optional (for optimization purposes). Will allocate memory space for
             `number_of_updates` additional steps in the vineyard after initialization. Defaults to 0.
         :type number_of_updates: int, optional
+        :param store_max_pers_dim: Optional. If `False`, the last homology dimension is not stored in the Vineyard.
+            E.g., if the maximal dimension of a cell in the filtration is 2, only bars of dimension 0 and 1 are stored.
+            This is mostly to avoid storing countless infinity bars at max dimension which can be meaningless
+            depending on the nature of the given filtration.
+            Defaults to `True`.
+        :type store_max_pers_dim: bool, optional
         :raises ValueError: If both `filtered_cpx` and (`boundaries` or `dimensions` or `filtration_values`) are
             provided or if none of both are provided.
         :return: Current state of the vineyard. See :meth:`get_current_vineyard_view`.
@@ -165,14 +172,14 @@ class Vineyard(t.Vineyard_interface):
                     "Either a filtered complex or (boundaries/dimensions/filtration values) should be given,"
                     " but not both."
                 )
-            super()._initialize_from_complex(filtered_cpx, number_of_updates)
+            super()._initialize_from_complex(filtered_cpx, number_of_updates, store_max_pers_dim)
             return self.get_current_vineyard_view()
 
         if boundaries is None or dimensions is None or filtration_values is None:
             raise ValueError(
                 "Either a filtered complex or (boundaries/dimensions/filtration values) should be not `None`."
             )
-        super()._initialize(boundaries, dimensions, filtration_values, number_of_updates)
+        super()._initialize(boundaries, dimensions, filtration_values, number_of_updates, store_max_pers_dim)
         return self.get_current_vineyard_view()
 
     def discrete_initialize(
@@ -181,6 +188,7 @@ class Vineyard(t.Vineyard_interface):
         dimensions: np.ndarray,
         is_before_in_filtration: Callable[[int, int], bool],
         number_of_updates: int = 0,
+        store_max_pers_dim: bool = True,
     ) -> list[np.ndarray]:
         """Initializes the vineyard with the first persistence barcode. If another vineyard was initialized before,
         it will be completely replaced. But contrary to :meth:`initialize`, the vineyard values do not correspond
@@ -202,10 +210,15 @@ class Vineyard(t.Vineyard_interface):
         :param number_of_updates: Optional (for optimization purposes). Will allocate memory space for
             `number_of_updates` additional steps in the vineyard after initialization. Defaults to 0.
         :type number_of_updates: int, optional
+        :param store_max_pers_dim: Optional. If `False`, the last homology dimension is not stored in the Vineyard.
+            E.g., if the maximal dimension of a cell in the filtration is 2, only bars of dimension 0 and 1 are stored.
+            This is mostly to avoid storing countless infinity bars at max dimension which can be meaningless
+            depending on the nature of the given filtration.
+            Defaults to `True`.
         :return: Current state of the vineyard. See :meth:`get_current_vineyard_view`.
         :rtype: list[read-only np.ndarray]
         """
-        super()._initialize(boundaries, dimensions, is_before_in_filtration, number_of_updates)
+        super()._initialize(boundaries, dimensions, is_before_in_filtration, number_of_updates, store_max_pers_dim)
         return self.get_current_vineyard_view()
 
     def update(
@@ -498,7 +511,7 @@ class PointCloudRipsVineyard:
             data_type=data_type,
         )
 
-        for step in range(first_index + 1, number_of_updates + 1):
+        for step in range(first_index + 1, first_index + number_of_updates + 1):
             res.update(
                 data=data[step],
                 data_type=data_type,
@@ -513,9 +526,7 @@ class PointCloudRipsVineyard:
                 self._points.append(points)
             return RipsComplex(points=points).create_simplex_tree(max_dimension=2)
         elif file_type == "distance_matrix":
-            matrix = read_lower_triangular_matrix_from_csv_file(
-                path_prefix + str(first_index) + path_suffix, separator=delimiter
-            )
+            matrix = read_lower_triangular_matrix_from_csv_file(path, separator=delimiter)
             return RipsComplex(distance_matrix=matrix).create_simplex_tree(max_dimension=2)
         else:
             raise ValueError(
@@ -525,7 +536,7 @@ class PointCloudRipsVineyard:
     def _create_simplex_tree_from_data(self, data: ArrayLike, data_type: str):
         if data_type == "point_cloud":
             if self._store_points:
-                self._points.append(data)
+                self._points.append(np.array(data, copy=True))
             return RipsComplex(points=data).create_simplex_tree(max_dimension=2)
         elif data_type == "distance_matrix":
             return RipsComplex(distance_matrix=data).create_simplex_tree(max_dimension=2)

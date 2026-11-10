@@ -77,11 +77,20 @@ inline auto _wrap_view_as_numpy_array(nanobind::handle owner, std::vector<T> &te
   return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {static_cast<std::size_t>(shapes)...}, owner);
 }
 
-// tensor has to be declared with 'new []'
+template <class T, typename... Shape>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, const std::vector<T> &tensor, Shape... shapes) {
+  return nanobind::ndarray<nanobind::numpy, const T>(tensor.data(), {static_cast<std::size_t>(shapes)...}, owner);
+}
+
 template <bool ro = true, class T, typename... Shape>
 inline auto _wrap_view_as_numpy_array(nanobind::handle owner, T *tensor, Shape... shapes) {
   using T_t = std::conditional_t<ro, const T, T>;
   return nanobind::ndarray<nanobind::numpy, T_t>(tensor, {static_cast<std::size_t>(shapes)...}, owner);
+}
+
+template <class T, typename... Shape>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, const T *tensor, Shape... shapes) {
+  return nanobind::ndarray<nanobind::numpy, const T>(tensor, {static_cast<std::size_t>(shapes)...}, owner);
 }
 
 template <bool ro = true, class T, std::size_t I>
@@ -90,11 +99,21 @@ inline auto _wrap_view_as_numpy_array(nanobind::handle owner, std::vector<std::a
   return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {tensor.size(), I}, owner);
 }
 
+template <class T, std::size_t I>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, const std::vector<std::array<T, I> > &tensor) {
+  return nanobind::ndarray<nanobind::numpy, const T>(tensor.data(), {tensor.size(), I}, owner);
+}
+
 template <bool ro = true, class T, std::size_t I, typename... Shape>
-inline auto _wrap_view_as_numpy_array(nanobind::handle owner, std::vector<std::array<T, I> > &tensor,
-                                          Shape... shapes) {
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, std::vector<std::array<T, I> > &tensor, Shape... shapes) {
   using T_t = std::conditional_t<ro, const T, T>;
   return nanobind::ndarray<nanobind::numpy, T_t>(tensor.data(), {static_cast<std::size_t>(shapes)...}, owner);
+}
+
+template <class T, std::size_t I, typename... Shape>
+inline auto _wrap_view_as_numpy_array(nanobind::handle owner, const std::vector<std::array<T, I> > &tensor,
+                                      Shape... shapes) {
+  return nanobind::ndarray<nanobind::numpy, const T>(tensor.data(), {static_cast<std::size_t>(shapes)...}, owner);
 }
 
 // For the following wrappers, be sure that the pointer out-lives the python use
