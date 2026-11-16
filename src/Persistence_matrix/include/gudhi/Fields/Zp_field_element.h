@@ -9,7 +9,7 @@
  */
 
 /**
- * @file Zp_field.h
+ * @file Zp_field_element.h
  * @author Hannah Schreiber
  * @brief Contains the @ref Gudhi::persistence_fields::Zp_field_element class.
  */
@@ -27,7 +27,7 @@ namespace Gudhi {
 namespace persistence_fields {
 
 /**
- * @class Zp_field_element Zp_field.h gudhi/Fields/Zp_field.h
+ * @class Zp_field_element Zp_field_element.h gudhi/Fields/Zp_field_element.h
  * @ingroup persistence_fields
  *
  * @brief Class representing an element of the \f$ \mathbb{F}_p \f$ field for any prime number \f$ p \f$.

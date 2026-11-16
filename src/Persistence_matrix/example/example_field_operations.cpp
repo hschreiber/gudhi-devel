@@ -10,9 +10,9 @@
 
 #include <iostream>
 
-#include <gudhi/Fields/Z2_field.h>
+#include <gudhi/Fields/Z2_field_element.h>
 #include <gudhi/Fields/Z2_field_operators.h>
-#include <gudhi/Fields/Zp_field.h>
+#include <gudhi/Fields/Zp_field_element.h>
 #include <gudhi/Fields/Zp_field_shared.h>
 #include <gudhi/Fields/Zp_field_operators.h>
 

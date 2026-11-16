@@ -9,7 +9,7 @@
  */
 
 /**
- * @file Multi_field.h
+ * @file Multi_field_element.h
  * @author Hannah Schreiber, Clément Maria
  * @brief Contains the @ref Gudhi::persistence_fields::Multi_field_element class.
  */
@@ -29,7 +29,7 @@ namespace Gudhi {
 namespace persistence_fields {
 
 /**
- * @class Multi_field_element Multi_field.h gudhi/Fields/Multi_field.h
+ * @class Multi_field_element Multi_field_element.h gudhi/Fields/Multi_field_element.h
  * @ingroup persistence_fields
  *
  * @brief Class representing an element of a multi-field.

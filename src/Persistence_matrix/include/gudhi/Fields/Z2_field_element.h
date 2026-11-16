@@ -9,7 +9,7 @@
  */
 
 /**
- * @file Z2_field.h
+ * @file Z2_field_element.h
  * @author Hannah Schreiber
  * @brief Contains the @ref Gudhi::persistence_fields::Z2_field_element class.
  */
@@ -23,7 +23,7 @@ namespace Gudhi {
 namespace persistence_fields {
 
 /**
- * @class Z2_field_element Z2_field.h gudhi/Fields/Z2_field.h
+ * @class Z2_field_element Z2_field_element.h gudhi/Fields/Z2_field_element.h
  * @ingroup persistence_fields
  *
  * @brief Class representing an element of the \f$ \mathbb{F}_2 \f$ field.

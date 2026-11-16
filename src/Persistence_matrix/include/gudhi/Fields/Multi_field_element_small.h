@@ -9,7 +9,7 @@
  */
 
 /**
- * @file Multi_field_small.h
+ * @file Multi_field_element_small.h
  * @author Hannah Schreiber, Clément Maria
  * @brief Contains the @ref Gudhi::persistence_fields::Multi_field_element_with_small_characteristics class.
  */
@@ -29,7 +29,7 @@ namespace Gudhi {
 namespace persistence_fields {
 
 /**
- * @class Multi_field_element_with_small_characteristics Multi_field_small.h gudhi/Fields/Multi_field_small.h
+ * @class Multi_field_element_with_small_characteristics Multi_field_element_small.h gudhi/Fields/Multi_field_element_small.h
  * @ingroup persistence_fields
  *
  * @brief Class representing an element of a multi-field, such that the product of all characteristics fits into
