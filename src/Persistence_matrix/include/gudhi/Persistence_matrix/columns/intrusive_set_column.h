@@ -2,7 +2,7 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Hannah Schreiber
  *
- *    Copyright (C) 2022-24 Inria
+ *    Copyright (C) 2022 Inria
  *
  *    Modification(s):
  *      - YYYY/MM Author: Description of the modification
@@ -41,7 +41,8 @@ namespace persistence_matrix {
  * Column based on a intrusive set structure. The entries are ordered by row index and only non-zero values
  * are stored uniquely in the underlying container.
  *
- * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
+ * @tparam Master_matrix An instantiation of @ref Gudhi::persistence_matrix::Matrix "Matrix" from which all types and
+ * options are deduced.
  */
 template <class Master_matrix>
 class Intrusive_set_column : public Master_matrix::Row_access_option,
@@ -595,8 +596,9 @@ Intrusive_set_column<Master_matrix>::get_pivot_value() const
     } else {
       if (Chain_opt::_get_pivot() == Master_matrix::template get_null_value<ID_index>()) return 0;
       auto it = column_.find(Entry(Chain_opt::_get_pivot()));
-      GUDHI_CHECK(it != column_.end(),
-                  "Intrusive_set_column::get_pivot_value - Pivot not found only if the column was misused.");
+      GUDHI_CHECK(
+          it != column_.end(),
+          std::logic_error("Intrusive_set_column::get_pivot_value - Pivot not found only if the column was misused."));
       return it->get_element();
     }
   }
@@ -798,7 +800,8 @@ inline void Intrusive_set_column<Master_matrix>::push_back(const Entry& entry)
 {
   static_assert(Master_matrix::Option_list::is_of_boundary_type, "`push_back` is not available for Chain matrices.");
 
-  GUDHI_CHECK(entry.get_row_index() > get_pivot(), "The new row index has to be higher than the current pivot.");
+  GUDHI_CHECK(entry.get_row_index() > get_pivot(),
+              std::invalid_argument("The new row index has to be higher than the current pivot."));
 
   _insert_entry(column_.end(), entry.get_row_index(), entry.get_element());
 }

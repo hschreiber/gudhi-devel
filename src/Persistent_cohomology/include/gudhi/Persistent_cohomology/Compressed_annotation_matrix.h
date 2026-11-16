@@ -13,10 +13,14 @@
 
 #include <stdexcept>  // for std::logic_error
 #include <utility>    // std::move, std::pair
-#include <map>
 #include <vector>
 #include <initializer_list>
 
+#if BOOST_VERSION >= 108100
+#include <boost/unordered/unordered_flat_map.hpp>
+#else
+#include <boost/unordered_map.hpp>
+#endif
 #include <boost/intrusive/set.hpp>
 #include <boost/intrusive/list.hpp>
 
@@ -286,7 +290,11 @@ class Compressed_annotation_matrix
  private:
   CoefficientField coeff_field_;
   std::vector<Column*> ds_repr_;
-  std::map<Cell_key, Row> transverse_idx_;
+#if BOOST_VERSION >= 108100
+  boost::unordered_flat_map<Cell_key, Row> transverse_idx_;
+#else
+  boost::unordered_map<Cell_key, Row> transverse_idx_;
+#endif
   Cam cam_;
   Simple_union_find<Cell_key> cell_sets_;
 

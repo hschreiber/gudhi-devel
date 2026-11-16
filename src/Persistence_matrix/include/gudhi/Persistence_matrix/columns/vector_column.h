@@ -2,7 +2,7 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Hannah Schreiber
  *
- *    Copyright (C) 2022-24 Inria
+ *    Copyright (C) 2022 Inria
  *
  *    Modification(s):
  *      - YYYY/MM Author: Description of the modification
@@ -45,7 +45,8 @@ namespace persistence_matrix {
  * so erased values can still be in the underlying container.
  * On the other hand, two entries will never have the same row index.
  *
- * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
+ * @tparam Master_matrix An instantiation of @ref Gudhi::persistence_matrix::Matrix "Matrix" from which all types and
+ * options are deduced.
  */
 template <class Master_matrix>
 class Vector_column : public Master_matrix::Row_access_option,
@@ -865,7 +866,8 @@ inline void Vector_column<Master_matrix>::push_back(const Entry& entry)
 {
   static_assert(Master_matrix::Option_list::is_of_boundary_type, "`push_back` is not available for Chain matrices.");
 
-  GUDHI_CHECK(entry.get_row_index() > get_pivot(), "The new row index has to be higher than the current pivot.");
+  GUDHI_CHECK(entry.get_row_index() > get_pivot(),
+              std::invalid_argument("The new row index has to be higher than the current pivot."));
 
   _insert_entry(column_, entry.get_row_index(), entry.get_element());
 }
@@ -1012,8 +1014,7 @@ inline bool Vector_column<Master_matrix>::_add(const Entry_range& column)
   auto pivotIsZeroed = _generic_add(
       column,
       [&](Entry* entryTarget) { newColumn.push_back(entryTarget); },
-      [&](typename Entry_range::const_iterator& itSource,
-          [[maybe_unused]] const typename Column_support::iterator& itTarget) {
+      [&](typename Entry_range::const_iterator& itSource, const typename Column_support::iterator&) {
         _insert_entry(newColumn, itSource->get_row_index(), itSource->get_element());
       },
       [&](Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
@@ -1057,7 +1058,7 @@ inline bool Vector_column<Master_matrix>::_multiply_target_and_add(const Field_e
           if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::update_entry(*entryTarget);
           newColumn.push_back(entryTarget);
         },
-        [&](typename Entry_range::const_iterator& itSource, const typename Column_support::iterator& itTarget) {
+        [&](typename Entry_range::const_iterator& itSource, const typename Column_support::iterator&) {
           _insert_entry(newColumn, itSource->get_row_index(), itSource->get_element());
         },
         [&](Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
@@ -1094,7 +1095,7 @@ inline bool Vector_column<Master_matrix>::_multiply_source_and_add(const Entry_r
     auto pivotIsZeroed = _generic_add(
         column,
         [&](Entry* entryTarget) { newColumn.push_back(entryTarget); },
-        [&](typename Entry_range::const_iterator& itSource, const typename Column_support::iterator& itTarget) {
+        [&](typename Entry_range::const_iterator& itSource, const typename Column_support::iterator&) {
           Entry* newEntry = _insert_entry(newColumn, itSource->get_row_index(), itSource->get_element());
           operators_->multiply_inplace(newEntry->get_element(), val);
           if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::update_entry(*newEntry);

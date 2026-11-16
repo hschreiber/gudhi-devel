@@ -2,7 +2,7 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Hannah Schreiber, Clément Maria
  *
- *    Copyright (C) 2022-24 Inria
+ *    Copyright (C) 2022 Inria
  *
  *    Modification(s):
  *      - YYYY/MM Author: Description of the modification
@@ -23,6 +23,7 @@
 #include <numeric>
 
 #include <gudhi/Debug_utils.h>
+#include <gudhi/arithmetic.h>
 
 namespace Gudhi {
 namespace persistence_fields {
@@ -59,7 +60,7 @@ class Multi_field_element_with_small_characteristics
   {
     static_assert(maximum >= 2, "Characteristics have to be positive.");
     static_assert(minimum <= maximum, "The given interval is not valid.");
-    static_assert(minimum != maximum || _is_prime(minimum), "The given interval does not contain a prime number.");
+    static_assert(minimum != maximum || Gudhi::is_prime(minimum), "The given interval does not contain a prime number.");
     static_assert(productOfAllCharacteristics_ != 1, "The given interval does not contain a prime number.");
   }
 
@@ -73,7 +74,7 @@ class Multi_field_element_with_small_characteristics
   {
     static_assert(maximum >= 2, "Characteristics has to be positive.");
     static_assert(minimum <= maximum, "The given interval is not valid.");
-    static_assert(minimum != maximum || _is_prime(minimum), "The given interval does not contain a prime number.");
+    static_assert(minimum != maximum || Gudhi::is_prime(minimum), "The given interval does not contain a prime number.");
     static_assert(productOfAllCharacteristics_ != 1, "The given interval does not contain a prime number.");
   }
 
@@ -361,7 +362,8 @@ class Multi_field_element_with_small_characteristics
       Characteristic productOfCharacteristics) const
   {
     GUDHI_CHECK(productOfCharacteristics >= 0 && productOfCharacteristics <= productOfAllCharacteristics_,
-                "The given product is not the product of a subset of the current Multi-field characteristics.");
+                std::invalid_argument(
+                    "The given product is not the product of a subset of the current Multi-field characteristics."));
 
     Characteristic gcd = std::gcd(element_, productOfAllCharacteristics_);
 
@@ -409,7 +411,8 @@ class Multi_field_element_with_small_characteristics
       const Characteristic& productOfCharacteristics)
   {
     GUDHI_CHECK(productOfCharacteristics >= 0 && productOfCharacteristics <= productOfAllCharacteristics_,
-                "The given product is not the product of a subset of the current Multi-field characteristics.");
+                std::invalid_argument(
+                    "The given product is not the product of a subset of the current Multi-field characteristics."));
 
     if (productOfCharacteristics == 0 || productOfCharacteristics == productOfAllCharacteristics_) {
       return get_multiplicative_identity();
@@ -438,18 +441,6 @@ class Multi_field_element_with_small_characteristics
   Element get_value() const { return element_; }
 
  private:
-  static constexpr bool _is_prime(const unsigned int p)
-  {
-    if (p <= 1) return false;
-    if (p <= 3) return true;
-    if (p % 2 == 0 || p % 3 == 0) return false;
-
-    for (unsigned long i = 5; i * i <= p; i = i + 6)
-      if (p % i == 0 || p % (i + 2) == 0) return false;
-
-    return true;
-  }
-
   static constexpr Element _multiply(Element a, Element b)
   {
     Element res = 0;
@@ -537,7 +528,7 @@ class Multi_field_element_with_small_characteristics
   static inline const std::vector<Characteristic> primes_ = []() {
     std::vector<Characteristic> res;
     for (Characteristic i = minimum; i <= maximum; ++i) {
-      if (_is_prime(i)) {
+      if (Gudhi::is_prime(i)) {
         res.push_back(i);
       }
     }
@@ -546,7 +537,7 @@ class Multi_field_element_with_small_characteristics
   static constexpr Characteristic productOfAllCharacteristics_ = []() {
     Characteristic res = 1;
     for (Characteristic i = minimum; i <= maximum; ++i) {
-      if (_is_prime(i)) {
+      if (Gudhi::is_prime(i)) {
         res *= i;
       }
     }

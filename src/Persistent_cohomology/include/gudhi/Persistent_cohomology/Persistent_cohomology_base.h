@@ -23,6 +23,12 @@
 #include <unordered_map>
 #include <vector>
 
+#if BOOST_VERSION >= 108100
+#include <boost/unordered/unordered_flat_map.hpp>
+#else
+#include <boost/unordered_map.hpp>
+#endif
+
 #include <gudhi/Debug_utils.h>
 #include <gudhi/Persistent_cohomology/Compressed_annotation_matrix.h>
 #include <gudhi/Persistent_cohomology/Simple_union_find.h>
@@ -160,10 +166,14 @@ class Persistent_cohomology_optimizations
   // maps vertex position wrt other vertices to position in the whole filtration.
   // remains empty of no optimization is used.
   std::vector<Cell_handle> vertices_;
+#if BOOST_VERSION >= 108100
   /*  Dictionary establishing the correspondence between the Cell_key of
    * the root vertex in the union-find ds and the Cell_key of the vertex which
    * created the connected component as a 0-dimension homology feature.*/
-  std::unordered_map<Cell_key, Cell_key> zero_cocycles_;
+  boost::unordered_flat_map<Cell_key, Cell_key> zero_cocycles_;
+#else
+  boost::unordered_map<Simplex_key, Simplex_key> zero_cocycles_;
+#endif
 };
 
 /** \brief Computes the persistent cohomology of a filtered complex.
@@ -225,8 +235,8 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
         coeff_field_(coeff_field),
         key_handle_map_(key_handle_map),
         current_index_(0),
-        cam_(num_cells, coeff_field),    // collection of annotation vectors
-        transverse_idx_(),  // key -> row
+        cam_(num_cells, coeff_field),  // collection of annotation vectors
+        transverse_idx_(),             // key -> row
         interval_length_policy_(interval_length_policy),
         persistent_pairs_()
   {
@@ -389,7 +399,7 @@ class Persistent_cohomology_base : std::conditional_t<with_optimizations,
       Arith_element mult_coeff = coeff_field_.get_value(mult);
       // The following test is just a heuristic, it is not required, and it is fine that is misses p == 0.
       if (mult_coeff != coeff_field_.get_additive_identity()) {  // For all columns in the boundary,
-        for (const auto& entry_ref : *col) {                // insert every entry in map_a_ds with multiplicity
+        for (const auto& entry_ref : *col) {                     // insert every entry in map_a_ds with multiplicity
           Arith_element w_y = coeff_field_.multiply(entry_ref.get_element(), mult_coeff);  // coefficient * multiplicity
 
           if (w_y != coeff_field_.get_additive_identity()) {  // if != 0

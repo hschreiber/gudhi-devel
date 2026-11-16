@@ -2,7 +2,7 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Hannah Schreiber
  *
- *    Copyright (C) 2022-24 Inria
+ *    Copyright (C) 2022 Inria
  *
  *    Modification(s):
  *      - YYYY/MM Author: Description of the modification
@@ -60,7 +60,7 @@ enum class Column_indexation_types : std::uint8_t {
  * @struct Default_options persistence_matrix_options.h gudhi/persistence_matrix_options.h
  * @ingroup persistence_matrix
  *
- * @brief Default option structure for @ref Matrix class.
+ * @brief Default option structure for @ref Gudhi::persistence_matrix::Matrix "Matrix" class.
  * See the @ref PersistenceMatrixOptions concept for a more detailed description of the fields.
  * Produces a @ref basematrix "base matrix" with no enabled option.
  *

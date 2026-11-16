@@ -2,7 +2,7 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Hannah Schreiber
  *
- *    Copyright (C) 2022-24 Inria
+ *    Copyright (C) 2022 Inria
  *
  *    Modification(s):
  *      - YYYY/MM Author: Description of the modification
@@ -39,7 +39,8 @@ namespace persistence_matrix {
  * columns, this will save a lot of space. Also, any addition made onto a column will be performed at the same time
  * on all other identical columns, which is an advantage for the cohomology algorithm for example.
  *
- * @tparam Master_matrix An instantiation of @ref Matrix from which all types and options are deduced.
+ * @tparam Master_matrix An instantiation of @ref Gudhi::persistence_matrix::Matrix "Matrix" from which all types and
+ * options are deduced.
  */
 template <class Master_matrix>
 class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_access_option
