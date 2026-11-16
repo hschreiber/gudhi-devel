@@ -55,14 +55,14 @@ void field_element_example(int ini){
 template<class Field_operator>
 void field_operator_example(const Field_operator& op){
   std::cout << "Characteristic: " << op.get_characteristic() << "\n";
-  std::cout << "2 + 3: " << op.add(2u, 3u) << "\n";
-  std::cout << "3 + 2: " << op.add(3u, 2u) << "\n";
-  std::cout << "10 - 4: " << op.subtract(10u, 4u) << "\n";
-  std::cout << "4 - 10: " << op.subtract(4u, 10u) << "\n";
-  std::cout << "3 * 6: " << op.multiply(3u, 6u) << "\n";
-  std::cout << "6 * 3: " << op.multiply(6u, 3u) << "\n";
-  std::cout << "Value of 7: " << op.get_value(7u) << "\n";
-  std::cout << "Inverse of 7: " << op.get_inverse(7u) << "\n";
+  std::cout << "2 + 3: " << op.add(2U, 3U) << "\n";
+  std::cout << "3 + 2: " << op.add(3U, 2U) << "\n";
+  std::cout << "10 - 4: " << op.subtract(10U, 4U) << "\n";
+  std::cout << "4 - 10: " << op.subtract(4U, 10U) << "\n";
+  std::cout << "3 * 6: " << op.multiply(3U, 6U) << "\n";
+  std::cout << "6 * 3: " << op.multiply(6U, 3U) << "\n";
+  std::cout << "Value of 7: " << op.get_value(7U) << "\n";
+  std::cout << "Inverse of 7: " << op.get_inverse(7U) << "\n";
 }
 
 int main() {
@@ -70,11 +70,11 @@ int main() {
   field_element_example<Z2_field_element>(2);
 
   std::cout << "\n=== Example for Z3 field elements ===\n\n";
-  field_element_example<Zp_field_element<3> >(5);
+  field_element_example<Zp_field_element<unsigned int, 3> >(5);
 
   std::cout << "\n=== Example for Z5 field elements ===\n\n";
   Shared_Zp_field_element<>::initialize(5);
-  field_element_example<Shared_Zp_field_element<> >(4);
+  field_element_example<Shared_Zp_field_element<unsigned int> >(4);
 
   std::cout << "\n+++ Example for Z2 field operator +++\n\n";
   Z2_field_operators z2op;

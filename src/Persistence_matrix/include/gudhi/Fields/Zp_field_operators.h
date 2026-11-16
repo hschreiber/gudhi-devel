@@ -1,6 +1,6 @@
 /*    This file is part of the Gudhi Library - https://gudhi.inria.fr/ - which is released under MIT.
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
- *    Author(s):       Hannah Schreiber
+ *    Author(s):       Hannah Schreiber, Clément Maria
  *
  *    Copyright (C) 2024 Inria
  *
@@ -10,17 +10,17 @@
 
 /**
  * @file Zp_field_operators.h
- * @author Hannah Schreiber
+ * @author Hannah Schreiber, Clément Maria
  * @brief Contains the @ref Gudhi::persistence_fields::Zp_field_operators class.
  */
 
-#ifndef MATRIX_FIELD_ZP_OPERATOR_H_
-#define MATRIX_FIELD_ZP_OPERATOR_H_
+#ifndef GUDHI_MATRIX_FIELD_ZP_OPERATOR_H_
+#define GUDHI_MATRIX_FIELD_ZP_OPERATOR_H_
 
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <vector>
-#include <limits.h>
 
 namespace Gudhi {
 /// Field namespace
@@ -37,8 +37,7 @@ namespace persistence_fields {
  */
 template <typename Unsigned_integer_type = unsigned int,
           class = std::enable_if_t<std::is_unsigned_v<Unsigned_integer_type> > >
-class Zp_field_operators
-{
+class Zp_field_operators {
  public:
   using Element = Unsigned_integer_type; /**< Type for the elements in the field. */
   using Characteristic = Element;        /**< Type for the field characteristic. */
@@ -56,8 +55,7 @@ class Zp_field_operators
    *
    * @param characteristic Prime number corresponding to the desired characteristic of the field.
    */
-  Zp_field_operators(Characteristic characteristic = nullCharacteristic) : characteristic_(nullCharacteristic)
-  {
+  Zp_field_operators(Characteristic characteristic = nullCharacteristic) : characteristic_(nullCharacteristic) {
     if (characteristic != nullCharacteristic) set_characteristic(characteristic);
   }
 
@@ -66,12 +64,11 @@ class Zp_field_operators
    *
    * @param characteristic Prime number corresponding to the desired characteristic of the field.
    */
-  void set_characteristic(Characteristic characteristic)
-  {
+  void set_characteristic(Characteristic characteristic) {
     if (characteristic <= 1) throw std::invalid_argument("Characteristic must be a strictly positive prime number.");
 
-    inverse_.resize(characteristic);
-    inverse_[0] = 0;
+    std::vector<Element> tmp(characteristic);  // in case of throw
+    tmp[0] = 0;
     for (unsigned int i = 1; i < characteristic; ++i) {
       unsigned int inv = 1;
       unsigned int mult = inv * i;
@@ -80,8 +77,9 @@ class Zp_field_operators
         if (mult == characteristic) throw std::invalid_argument("Characteristic must be a prime number.");
         mult = inv * i;
       }
-      inverse_[i] = inv;
+      tmp[i] = inv;
     }
+    inverse_.swap(tmp);
 
     characteristic_ = characteristic;
   }
@@ -111,11 +109,13 @@ class Zp_field_operators
    * @return @p e modulo the current characteristic, such that the result is positive.
    */
   template <typename Signed_integer_type, class = isSignedInteger<Signed_integer_type> >
-  Element get_value(Signed_integer_type e) const
-  {
-    if (e < -static_cast<Signed_integer_type>(characteristic_)) e = e % characteristic_;
+  Element get_value(Signed_integer_type e) const {
+    if (e < -static_cast<Signed_integer_type>(characteristic_))
+      e = e % static_cast<Signed_integer_type>(characteristic_);
     if (e < 0) return e += characteristic_;
-    return e < static_cast<Signed_integer_type>(characteristic_) ? e : e % characteristic_;
+    return e < static_cast<Signed_integer_type>(characteristic_)
+               ? e
+               : e % static_cast<Signed_integer_type>(characteristic_);
   }
 
   /**
@@ -152,8 +152,7 @@ class Zp_field_operators
    * @param e1 First element.
    * @param e2 Second element.
    */
-  void subtract_inplace_front(Element& e1, Element e2) const
-  {
+  void subtract_inplace_front(Element& e1, Element e2) const {
     e1 = _subtract(get_value(e1), get_value(e2), characteristic_);
   }
 
@@ -164,8 +163,7 @@ class Zp_field_operators
    * @param e1 First element.
    * @param e2 Second element.
    */
-  void subtract_inplace_back(Element e1, Element& e2) const
-  {
+  void subtract_inplace_back(Element e1, Element& e2) const {
     e2 = _subtract(get_value(e1), get_value(e2), characteristic_);
   }
 
@@ -185,8 +183,7 @@ class Zp_field_operators
    * @param e1 First element.
    * @param e2 Second element.
    */
-  void multiply_inplace(Element& e1, Element e2) const
-  {
+  void multiply_inplace(Element& e1, Element e2) const {
     e1 = _multiply(get_value(e1), get_value(e2), characteristic_);
   }
 
@@ -274,6 +271,17 @@ class Zp_field_operators
   bool are_equal(Element e1, Element e2) const { return get_value(e1) == get_value(e2); }
 
   /**
+   * @brief Returns the opposite of the given element in the field.
+   *
+   * @param e Element to get the opposite from.
+   * @return Opposite in the current field of `e % characteristic`.
+   */
+  Element get_opposite(Element e) const {
+    auto v = get_value(e);
+    return v == 0 ? 0 : characteristic_ - v;
+  }
+
+  /**
    * @brief Returns the inverse of the given element in the field.
    *
    * @param e Element to get the inverse from.
@@ -288,8 +296,7 @@ class Zp_field_operators
    * @param productOfCharacteristics Some value.
    * @return Pair whose first element is the inverse of @p e and the second element is @p productOfCharacteristics.
    */
-  std::pair<Element, Characteristic> get_partial_inverse(Element e, Characteristic productOfCharacteristics) const
-  {
+  std::pair<Element, Characteristic> get_partial_inverse(Element e, Characteristic productOfCharacteristics) const {
     return {get_inverse(e), productOfCharacteristics};
   }
 
@@ -313,16 +320,15 @@ class Zp_field_operators
    * @param productOfCharacteristics Some value.
    * @return 1.
    */
-  static constexpr Element get_partial_multiplicative_identity([[maybe_unused]] Characteristic productOfCharacteristics)
-  {
+  static constexpr Element get_partial_multiplicative_identity(
+      [[maybe_unused]] Characteristic productOfCharacteristics) {
     return 1;
   }
 
   /**
    * @brief Swap operator.
    */
-  friend void swap(Zp_field_operators& f1, Zp_field_operators& f2) noexcept
-  {
+  friend void swap(Zp_field_operators& f1, Zp_field_operators& f2) noexcept {
     std::swap(f1.characteristic_, f2.characteristic_);
     f1.inverse_.swap(f2.inverse_);
   }
@@ -331,9 +337,8 @@ class Zp_field_operators
   Characteristic characteristic_; /**< Current characteristic of the field. */
   std::vector<Element> inverse_;  /**< All inverse elements. */
 
-  static Element _add(Element e1, Element e2, Characteristic characteristic)
-  {
-    if (UINT_MAX - e1 < e2) {
+  static Element _add(Element e1, Element e2, Characteristic characteristic) {
+    if (std::numeric_limits<Element>::max() - e1 < e2) {
       // automatic unsigned integer overflow behaviour will make it work
       e1 += e2;
       e1 -= characteristic;
@@ -346,8 +351,7 @@ class Zp_field_operators
     return e1;
   }
 
-  static Element _subtract(Element e1, Element e2, Characteristic characteristic)
-  {
+  static Element _subtract(Element e1, Element e2, Characteristic characteristic) {
     if (e1 < e2) {
       e1 += characteristic;
     }
@@ -356,11 +360,10 @@ class Zp_field_operators
     return e1;
   }
 
-  static Element _multiply(Element e1, Element e2, Characteristic characteristic)
-  {
-    unsigned int a = e1;
+  static Element _multiply(Element e1, Element e2, Characteristic characteristic) {
+    Element a = e1;
     e1 = 0;
-    unsigned int temp_b;
+    Element temp_b;
 
     while (a != 0) {
       if (a & 1) {
@@ -381,4 +384,4 @@ class Zp_field_operators
 }  // namespace persistence_fields
 }  // namespace Gudhi
 
-#endif  // MATRIX_FIELD_ZP_OPERATOR_H_
+#endif  // GUDHI_MATRIX_FIELD_ZP_OPERATOR_H_

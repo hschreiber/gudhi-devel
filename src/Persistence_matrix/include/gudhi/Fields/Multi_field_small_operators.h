@@ -14,8 +14,8 @@
  * @brief Contains the @ref Gudhi::persistence_fields::Multi_field_operators_with_small_characteristics class.
  */
 
-#ifndef MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_
-#define MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_
+#ifndef GUDHI_MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_
+#define GUDHI_MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_
 
 #include <utility>
 #include <vector>
@@ -37,8 +37,7 @@ namespace persistence_fields {
  * @brief Class defining operators for a multi-field with "consecutive" characteristic range, such that
  * `productOfAllCharacteristics ^ 2` fits into an unsigned int.
  */
-class Multi_field_operators_with_small_characteristics
-{
+class Multi_field_operators_with_small_characteristics {
  public:
   using Element = unsigned int;   /**< Type for the elements in the field. */
   using Characteristic = Element; /**< Type for the field characteristic. */
@@ -73,8 +72,7 @@ class Multi_field_operators_with_small_characteristics
    * @param minimum Smallest value of a prime.
    * @param maximum Highest value of a prime.
    */
-  void set_characteristic(int minimum, int maximum)
-  {
+  void set_characteristic(int minimum, int maximum) {
     if (maximum < 2) throw std::invalid_argument("Characteristic must be strictly positive");
     if (minimum > maximum) throw std::invalid_argument("The given interval is not valid.");
     if (minimum == maximum && !Gudhi::is_prime(minimum))
@@ -128,8 +126,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e Integer to return the value from.
    * @return @p e modulo the current characteristic, such that the result is positive.
    */
-  [[nodiscard]] Element get_value(Element e) const
-  {
+  [[nodiscard]] Element get_value(Element e) const {
     return e < productOfAllCharacteristics_ ? e : e % productOfAllCharacteristics_;
   }
 
@@ -140,8 +137,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e2 Second element.
    * @return `(e1 + e2) % productOfAllCharacteristics`, such that the result is positive.
    */
-  [[nodiscard]] Element add(Element e1, Element e2) const
-  {
+  [[nodiscard]] Element add(Element e1, Element e2) const {
     return _add(get_value(e1), get_value(e2), productOfAllCharacteristics_);
   }
 
@@ -152,8 +148,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e1 First element.
    * @param e2 Second element.
    */
-  void add_inplace(Element& e1, Element e2) const
-  {
+  void add_inplace(Element& e1, Element e2) const {
     e1 = _add(get_value(e1), get_value(e2), productOfAllCharacteristics_);
   }
 
@@ -164,8 +159,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e2 Second element.
    * @return `(e1 - e2) % productOfAllCharacteristics`, such that the result is positive.
    */
-  [[nodiscard]] Element subtract(Element e1, Element e2) const
-  {
+  [[nodiscard]] Element subtract(Element e1, Element e2) const {
     return _subtract(get_value(e1), get_value(e2), productOfAllCharacteristics_);
   }
 
@@ -176,8 +170,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e1 First element.
    * @param e2 Second element.
    */
-  void subtract_inplace_front(Element& e1, Element e2) const
-  {
+  void subtract_inplace_front(Element& e1, Element e2) const {
     e1 = _subtract(get_value(e1), get_value(e2), productOfAllCharacteristics_);
   }
 
@@ -188,8 +181,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e1 First element.
    * @param e2 Second element.
    */
-  void subtract_inplace_back(Element e1, Element& e2) const
-  {
+  void subtract_inplace_back(Element e1, Element& e2) const {
     e2 = _subtract(get_value(e1), get_value(e2), productOfAllCharacteristics_);
   }
 
@@ -200,8 +192,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e2 Second element.
    * @return `(e1 * e2) % productOfAllCharacteristics`, such that the result is positive.
    */
-  [[nodiscard]] Element multiply(Element e1, Element e2) const
-  {
+  [[nodiscard]] Element multiply(Element e1, Element e2) const {
     return _multiply(get_value(e1), get_value(e2), productOfAllCharacteristics_);
   }
 
@@ -212,8 +203,7 @@ class Multi_field_operators_with_small_characteristics
    * @param e1 First element.
    * @param e2 Second element.
    */
-  void multiply_inplace(Element& e1, Element e2) const
-  {
+  void multiply_inplace(Element& e1, Element e2) const {
     e1 = _multiply(get_value(e1), get_value(e2), productOfAllCharacteristics_);
   }
 
@@ -305,14 +295,24 @@ class Multi_field_operators_with_small_characteristics
   [[nodiscard]] bool are_equal(Element e1, Element e2) const { return get_value(e1) == get_value(e2); }
 
   /**
+   * @brief Returns the opposite of the given element.
+   *
+   * @param e Element to get the opposite from.
+   * @return Opposite in the current product of all field.
+   */
+  [[nodiscard]] Element get_opposite(const Element& e) const {
+    auto v = get_value(e);
+    return v == 0 ? v : productOfAllCharacteristics_ - v;
+  }
+
+  /**
    * @brief Returns the inverse of the given element in the sense of @cite boissonnat:hal-00922572 with respect
    * to the product of all characteristics.
    *
    * @param e Element to get the inverse from.
    * @return Inverse in the current field.
    */
-  [[nodiscard]] Element get_inverse(const Element& e) const
-  {
+  [[nodiscard]] Element get_inverse(const Element& e) const {
     return get_partial_inverse(e, productOfAllCharacteristics_).first;
   }
 
@@ -324,14 +324,13 @@ class Multi_field_operators_with_small_characteristics
    * @param productOfCharacteristics Product of the different characteristics to take into account in the multi-field.
    * @return Pair of the inverse of @p e and the characteristic the inverse is coming from.
    */
-  std::pair<Element, Characteristic> get_partial_inverse(const Element& e,
-                                                         const Characteristic& productOfCharacteristics) const
-  {
+  [[nodiscard]] std::pair<Element, Characteristic> get_partial_inverse(
+      const Element& e, const Characteristic& productOfCharacteristics) const {
     GUDHI_CHECK(productOfCharacteristics >= 0 && productOfCharacteristics <= productOfAllCharacteristics_,
                 std::invalid_argument(
                     "The given product is not the product of a subset of the current Multi-field characteristics."));
 
-    Characteristic gcd = std::gcd(e, productOfAllCharacteristics_);
+    Characteristic gcd = std::gcd(e, productOfCharacteristics);
 
     if (gcd == productOfCharacteristics) return {0, get_multiplicative_identity()};  // partial inverse is 0
 
@@ -367,8 +366,7 @@ class Multi_field_operators_with_small_characteristics
    * @param productOfCharacteristics Product of the different characteristics to take into account in the multi-field.
    * @return The partial multiplicative identity of the multi-field.
    */
-  [[nodiscard]] Element get_partial_multiplicative_identity(const Characteristic& productOfCharacteristics) const
-  {
+  [[nodiscard]] Element get_partial_multiplicative_identity(const Characteristic& productOfCharacteristics) const {
     GUDHI_CHECK(productOfCharacteristics >= 0 && productOfCharacteristics <= productOfAllCharacteristics_,
                 std::invalid_argument(
                     "The given product is not the product of a subset of the current Multi-field characteristics."));
@@ -389,8 +387,7 @@ class Multi_field_operators_with_small_characteristics
    * @brief Swap operator.
    */
   friend void swap(Multi_field_operators_with_small_characteristics& f1,
-                   Multi_field_operators_with_small_characteristics& f2) noexcept
-  {
+                   Multi_field_operators_with_small_characteristics& f2) noexcept {
     f1.primes_.swap(f2.primes_);
     std::swap(f1.productOfAllCharacteristics_, f2.productOfAllCharacteristics_);
     f1.partials_.swap(f2.partials_);
@@ -401,10 +398,11 @@ class Multi_field_operators_with_small_characteristics
   Characteristic productOfAllCharacteristics_; /**< Product of all characteristics. */
   std::vector<Characteristic> partials_;       /**< Partial products of the characteristics. */
 
+  // If I understood the paper well, multiplicativeID_ always equals to 1. But in Clement's code,
+  // multiplicativeID_ is computed. TODO: verify with Clement.
   // static inline constexpr unsigned int multiplicativeID_ = 1;
 
-  static Element _add(Element element, Element v, Characteristic characteristic)
-  {
+  static Element _add(Element element, Element v, Characteristic characteristic) {
     if (UINT_MAX - element < v) {
       // automatic unsigned integer overflow behaviour will make it work
       element += v;
@@ -418,8 +416,7 @@ class Multi_field_operators_with_small_characteristics
     return element;
   }
 
-  static Element _subtract(Element element, Element v, Characteristic characteristic)
-  {
+  static Element _subtract(Element element, Element v, Characteristic characteristic) {
     if (element < v) {
       element += characteristic;
     }
@@ -428,8 +425,7 @@ class Multi_field_operators_with_small_characteristics
     return element;
   }
 
-  static Element _multiply(Element a, Element b, Characteristic characteristic)
-  {
+  static Element _multiply(Element a, Element b, Characteristic characteristic) {
     Element res = 0;
     Element temp_b = 0;
 
@@ -451,8 +447,7 @@ class Multi_field_operators_with_small_characteristics
     return res;
   }
 
-  static constexpr long int _get_inverse(Element element, Characteristic mod)
-  {
+  static constexpr long int _get_inverse(Element element, Characteristic mod) {
     // to solve: Ax + My = 1
     Element M = mod;
     Element A = element;
@@ -478,4 +473,4 @@ class Multi_field_operators_with_small_characteristics
 }  // namespace persistence_fields
 }  // namespace Gudhi
 
-#endif  // MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_
+#endif  // GUDHI_MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_

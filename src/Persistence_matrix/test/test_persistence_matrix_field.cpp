@@ -30,6 +30,9 @@ using Gudhi::persistence_fields::Shared_Zp_field_element;
 using Gudhi::persistence_fields::Z2_field_element;
 using Gudhi::persistence_fields::Zp_field_element;
 
+template <unsigned int characteristic>
+using Zp_field = Zp_field_element<unsigned int, characteristic>;
+
 template <class Z2>
 void test_z2_standard_field_constructors() {
   // default constructor
@@ -305,22 +308,22 @@ void test_z7_standard_field_properties() {
 
 BOOST_AUTO_TEST_CASE(Field_constructors) {
   test_z2_standard_field_constructors<Z2_field_element>();
-  test_z2_standard_field_constructors<Zp_field_element<2> >();
-  test_z5_standard_field_constructors<Zp_field_element<5> >();
-  test_z13_standard_field_constructors<Zp_field_element<13> >();
+  test_z2_standard_field_constructors<Zp_field<2> >();
+  test_z5_standard_field_constructors<Zp_field<5> >();
+  test_z13_standard_field_constructors<Zp_field<13> >();
 }
 
 BOOST_AUTO_TEST_CASE(Field_operators) {
   test_z2_standard_field_operators<Z2_field_element>();
-  test_z2_standard_field_operators<Zp_field_element<2> >();
-  test_z5_standard_field_operators<Zp_field_element<5> >();
+  test_z2_standard_field_operators<Zp_field<2> >();
+  test_z5_standard_field_operators<Zp_field<5> >();
 }
 
 BOOST_AUTO_TEST_CASE(Field_properties) {
   test_z2_standard_field_properties<Z2_field_element>();
-  test_z2_standard_field_properties<Zp_field_element<2> >();
-  test_z5_standard_field_properties<Zp_field_element<5> >();
-  test_z7_standard_field_properties<Zp_field_element<7> >();
+  test_z2_standard_field_properties<Zp_field<2> >();
+  test_z5_standard_field_properties<Zp_field<5> >();
+  test_z7_standard_field_properties<Zp_field<7> >();
 }
 
 BOOST_AUTO_TEST_CASE(Shared_Field_constructors) {
