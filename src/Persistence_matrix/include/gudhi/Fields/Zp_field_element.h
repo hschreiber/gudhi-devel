@@ -83,7 +83,7 @@ class Zp_field_element {
    * @brief operator+=
    */
   friend void operator+=(Zp_field_element& f1, Zp_field_element const& f2) {
-    op_.add_inplace(f1.element_, f2.element_);
+    op_.add_inplace_reduced(f1.element_, f2.element_);
   }
 
   /**
@@ -101,7 +101,7 @@ class Zp_field_element {
    */
   template <typename Integer_type, class = isInteger<Integer_type> >
   friend void operator+=(Zp_field_element& f, const Integer_type& v) {
-    op_.add_inplace(f.element_, op_.get_value(v));
+    op_.add_inplace_reduced(f.element_, op_.get_value(v));
   }
 
   /**
@@ -130,7 +130,7 @@ class Zp_field_element {
    * @brief operator-=
    */
   friend void operator-=(Zp_field_element& f1, Zp_field_element const& f2) {
-    op_.subtract_inplace_front(f1.element_, f2.element_);
+    op_.subtract_inplace_front_reduced(f1.element_, f2.element_);
   }
 
   /**
@@ -148,7 +148,7 @@ class Zp_field_element {
    */
   template <typename Integer_type, class = isInteger<Integer_type> >
   friend void operator-=(Zp_field_element& f, const Integer_type& v) {
-    op_.subtract_inplace_front(f.element_, op_.get_value(v));
+    op_.subtract_inplace_front_reduced(f.element_, op_.get_value(v));
   }
 
   /**
@@ -169,14 +169,14 @@ class Zp_field_element {
    */
   template <typename Integer_type, class = isInteger<Integer_type> >
   friend Integer_type operator-(const Integer_type& v, const Zp_field_element& f) {
-    return op_.subtract(op_.get_value(v), f.element_);
+    return op_.subtract_reduced(op_.get_value(v), f.element_);
   }
 
   /**
    * @brief operator*=
    */
   friend void operator*=(Zp_field_element& f1, Zp_field_element const& f2) {
-    op_.multiply_inplace(f1.element_, f2.element_);
+    op_.multiply_inplace_reduced(f1.element_, f2.element_);
   }
 
   /**
@@ -194,7 +194,7 @@ class Zp_field_element {
    */
   template <typename Integer_type, class = isInteger<Integer_type> >
   friend void operator*=(Zp_field_element& f, const Integer_type& v) {
-    op_.multiply_inplace(f.element_, op_.get_value(v));
+    op_.multiply_inplace_reduced(f.element_, op_.get_value(v));
   }
 
   /**
@@ -311,12 +311,12 @@ class Zp_field_element {
   /**
    * @brief Returns the opposite of the element.
    */
-  [[nodiscard]] Zp_field_element get_opposite() const { return op_.get_opposite(element_); }
+  [[nodiscard]] Zp_field_element get_opposite() const { return op_.get_opposite_reduced(element_); }
 
   /**
    * @brief Returns the inverse of the element.
    */
-  [[nodiscard]] Zp_field_element get_inverse() const { return op_.get_inverse(element_); }
+  [[nodiscard]] Zp_field_element get_inverse() const { return op_.get_inverse_reduced(element_); }
 
   /**
    * @brief For interface purposes with multi-fields. Returns the inverse together with the second argument.
@@ -326,7 +326,7 @@ class Zp_field_element {
    */
   [[nodiscard]] std::pair<Zp_field_element, Characteristic> get_partial_inverse(
       Characteristic productOfCharacteristics) const {
-    return op_.get_partial_inverse(element_, productOfCharacteristics);
+    return op_.get_partial_inverse_reduced(element_, productOfCharacteristics);
   }
 
   /**

@@ -68,7 +68,7 @@ class Multi_field_element {
    * @brief operator+=
    */
   friend void operator+=(Multi_field_element& f1, Multi_field_element const& f2) {
-    op_.add_inplace(f1.element_, f2.element_);
+    op_.add_inplace_reduced(f1.element_, f2.element_);
   }
 
   /**
@@ -82,7 +82,9 @@ class Multi_field_element {
   /**
    * @brief operator+=
    */
-  friend void operator+=(Multi_field_element& f, const Element& v) { op_.add_inplace(f.element_, v); }
+  friend void operator+=(Multi_field_element& f, const Element& v) {
+    op_.add_inplace_reduced(f.element_, op_.get_value(v));
+  }
 
   /**
    * @brief operator+
@@ -104,7 +106,7 @@ class Multi_field_element {
    * @brief operator-=
    */
   friend void operator-=(Multi_field_element& f1, Multi_field_element const& f2) {
-    op_.subtract_inplace_front(f1.element_, f2.element_);
+    op_.subtract_inplace_front_reduced(f1.element_, f2.element_);
   }
 
   /**
@@ -118,7 +120,9 @@ class Multi_field_element {
   /**
    * @brief operator-=
    */
-  friend void operator-=(Multi_field_element& f, const Element& v) { op_.subtract_inplace_front(f.element_, v); }
+  friend void operator-=(Multi_field_element& f, const Element& v) {
+    op_.subtract_inplace_front_reduced(f.element_, op_.get_value(v));
+  }
 
   /**
    * @brief operator-
@@ -131,13 +135,15 @@ class Multi_field_element {
   /**
    * @brief operator-
    */
-  friend Element operator-(const Element& v, Multi_field_element const& f) { return op_.subtract(v, f.element_); }
+  friend Element operator-(const Element& v, Multi_field_element const& f) {
+    return op_.subtract_reduced(op_.get_value(v), f.element_);
+  }
 
   /**
    * @brief operator*=
    */
   friend void operator*=(Multi_field_element& f1, Multi_field_element const& f2) {
-    op_.multiply_inplace(f1.element_, f2.element_);
+    op_.multiply_inplace_reduced(f1.element_, f2.element_);
   }
 
   /**
@@ -151,7 +157,9 @@ class Multi_field_element {
   /**
    * @brief operator*=
    */
-  friend void operator*=(Multi_field_element& f, const Element& v) { op_.multiply_inplace(f.element_, v); }
+  friend void operator*=(Multi_field_element& f, const Element& v) {
+    op_.multiply_inplace_reduced(f.element_, op_.get_value(v));
+  }
 
   /**
    * @brief operator*
