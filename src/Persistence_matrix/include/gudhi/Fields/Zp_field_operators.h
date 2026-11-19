@@ -18,12 +18,13 @@
 #define GUDHI_MATRIX_FIELD_ZP_OPERATOR_H_
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include <gudhi/arithmetic.h>
 
 // Hint for the (very common) case of already reduced arguments, so that the compiler keeps a predictable branch
 // instead of speculatively computing the reduction.
@@ -37,23 +38,6 @@ namespace Gudhi {
 /// Field namespace
 namespace persistence_fields {
 
-namespace detail {
-// Unsigned integer type with twice the width of the field element type. Used for the intermediate results.
-template <std::size_t N>
-struct Zp_wide;
-template <>
-struct Zp_wide<4> {
-  using type = std::uint64_t;
-};
-#ifdef __SIZEOF_INT128__
-__extension__ typedef unsigned __int128 Zp_uint128;
-template <>
-struct Zp_wide<8> {
-  using type = Zp_uint128;
-};
-#endif
-}  // namespace detail
-
 /**
  * @class Zp_field_operators Zp_field_operators.h gudhi/Fields/Zp_field_operators.h
  * @ingroup persistence_fields
@@ -61,12 +45,15 @@ struct Zp_wide<8> {
  * @brief Class defining operators for the \f$ \mathbb{F}_p \f$ field for any prime number \f$ p \f$.
  *
  * Design notes:
- * - Elements are always stored fully reduced, that is in \f$ [0, p-1] \f$. Methods without suffix accept any value
- *   and reduce their arguments first. Methods with the suffix `_reduced` require all their arguments to already be
- *   in \f$ [0, p-1] \f$ (not checked) and skip the reduction: use them in hot loops where this is an invariant.
- * - All intermediate results are computed in a type of twice the width of @ref Element, so that nothing overflows.
- * - No hardware division is used for 32 bits elements: reductions use a precomputed Barrett constant.
- *   (64 bits elements use `unsigned __int128` and the compiler's division.)
+ * - Elements are always stored fully reduced, that is in \f$ [0, p-1] \f$. Methods without suffix accept any native
+ *   integer type (signed or not, up to 64 bits, a different type for each argument) and any value, also negative
+ *   ones, and reduce their arguments first. They return an @ref Element. The "in place" versions store the result in
+ *   an @ref Element reference (the value it contains before the call can be any @ref Element, reduced or not).
+ *   Methods with the suffix `_reduced` only accept @ref Element arguments which are already in
+ *   \f$ [0, p-1] \f$ (no check) and skip the reduction: use them in hot loops where this is an invariant.
+ * - Nothing overflows: products are computed on the full width (see @ref Gudhi::numbers::mul_wide) and reduced with
+ *   @ref Gudhi::numbers::Modular_reducer, which uses neither hardware division nor compiler support for 128 bits
+ *   integers: Barrett reduction for 32 bits elements and division by an invariant integer for 64 bits elements.
  * - For repeated multiplications by the same element, see @ref prepare_multiplier.
  *
  * @tparam Unsigned_integer_type Either a 32 bits or a 64 bits native unsigned integer type (`bool` excluded).
@@ -78,13 +65,12 @@ class Zp_field_operators {
   static_assert(std::is_unsigned_v<Unsigned_integer_type> && !std::is_same_v<Unsigned_integer_type, bool> &&
                     (sizeof(Unsigned_integer_type) == 4 || sizeof(Unsigned_integer_type) == 8),
                 "Zp_field_operators supports only 32 bits and 64 bits unsigned integer types.");
-#ifndef __SIZEOF_INT128__
-  static_assert(sizeof(Unsigned_integer_type) == 4, "64 bits elements need compiler support for __int128.");
-#endif
 
  public:
   using Element = Unsigned_integer_type; /**< Type for the elements in the field. */
   using Characteristic = Element;        /**< Type for the field characteristic. */
+  template <typename... Ts>
+  using isIntegers = std::enable_if_t<(std::is_integral_v<Ts> && ...)>;
 
   /**
    * @brief Value of a non initialized characteristic.
@@ -97,8 +83,7 @@ class Zp_field_operators {
    *
    * @param characteristic Prime number corresponding to the desired characteristic of the field.
    */
-  Zp_field_operators(Characteristic characteristic = nullCharacteristic)
-      : characteristic_(nullCharacteristic), barrett_(0) {
+  Zp_field_operators(Characteristic characteristic = nullCharacteristic) : characteristic_(nullCharacteristic) {
     if (characteristic != nullCharacteristic) set_characteristic(characteristic);
   }
 
@@ -113,7 +98,7 @@ class Zp_field_operators {
     if (characteristic <= 1) throw std::invalid_argument("Characteristic must be a strictly positive prime number.");
     if (characteristic >= (Element(1) << (kBits - 1)))
       throw std::invalid_argument("Characteristic must be smaller than 2^(number of bits of the element type - 1).");
-    if (!_is_prime(characteristic)) throw std::invalid_argument("Characteristic must be a prime number.");
+    if (!Gudhi::is_prime(characteristic)) throw std::invalid_argument("Characteristic must be a prime number.");
 
     std::vector<Element> inverse;
     if (characteristic <= kMaxTableCharacteristic) {
@@ -130,7 +115,7 @@ class Zp_field_operators {
 
     // nothing can throw anymore
     characteristic_ = characteristic;
-    barrett_ = sizeof(Element) == 4 ? UINT64_MAX / characteristic : 0;
+    reducer_ = Reducer(characteristic);
     inverse_.swap(inverse);
   }
 
@@ -163,62 +148,93 @@ class Zp_field_operators {
   // Operations accepting arbitrary arguments.
 
   /** @brief Returns `(e1 + e2) % characteristic`, such that the result is positive. */
-  [[nodiscard]] Element add(Element e1, Element e2) const { return add_reduced(_reduce(e1), _reduce(e2)); }
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  [[nodiscard]] Element add(I1 e1, I2 e2) const {
+    return add_reduced(get_value(e1), get_value(e2));
+  }
 
   /** @brief Stores in the first element `(e1 + e2) % characteristic`, such that the result is positive. */
-  void add_inplace(Element& e1, Element e2) const { e1 = add_reduced(_reduce(e1), _reduce(e2)); }
+  template <typename I, class = isIntegers<I> >
+  void add_inplace(Element& e1, I e2) const {
+    e1 = add_reduced(get_value(e1), get_value(e2));
+  }
 
   /** @brief Returns `(e1 - e2) % characteristic`, such that the result is positive. */
-  [[nodiscard]] Element subtract(Element e1, Element e2) const { return subtract_reduced(_reduce(e1), _reduce(e2)); }
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  [[nodiscard]] Element subtract(I1 e1, I2 e2) const {
+    return subtract_reduced(get_value(e1), get_value(e2));
+  }
 
   /** @brief Stores in the first element `(e1 - e2) % characteristic`, such that the result is positive. */
-  void subtract_inplace_front(Element& e1, Element e2) const { e1 = subtract_reduced(_reduce(e1), _reduce(e2)); }
+  template <typename I, class = isIntegers<I> >
+  void subtract_inplace_front(Element& e1, I e2) const {
+    e1 = subtract_reduced(get_value(e1), get_value(e2));
+  }
 
   /** @brief Stores in the second element `(e1 - e2) % characteristic`, such that the result is positive. */
-  void subtract_inplace_back(Element e1, Element& e2) const { e2 = subtract_reduced(_reduce(e1), _reduce(e2)); }
+  template <typename I, class = isIntegers<I> >
+  void subtract_inplace_back(I e1, Element& e2) const {
+    e2 = subtract_reduced(get_value(e1), get_value(e2));
+  }
 
   /** @brief Returns `(e1 * e2) % characteristic`, such that the result is positive. */
-  [[nodiscard]] Element multiply(Element e1, Element e2) const { return multiply_reduced(_reduce(e1), _reduce(e2)); }
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  [[nodiscard]] Element multiply(I1 e1, I2 e2) const {
+    return multiply_reduced(get_value(e1), get_value(e2));
+  }
 
   /** @brief Stores in the first element `(e1 * e2) % characteristic`, such that the result is positive. */
-  void multiply_inplace(Element& e1, Element e2) const { e1 = multiply_reduced(_reduce(e1), _reduce(e2)); }
+  template <typename I, class = isIntegers<I> >
+  void multiply_inplace(Element& e1, I e2) const {
+    e1 = multiply_reduced(get_value(e1), get_value(e2));
+  }
 
   /** @brief Returns `(e * m + a) % characteristic`, such that the result is positive. */
-  [[nodiscard]] Element multiply_and_add(Element e, Element m, Element a) const {
-    return multiply_and_add_reduced(_reduce(e), _reduce(m), _reduce(a));
+  template <typename I1, typename I2, typename I3, class = isIntegers<I1, I2, I3> >
+  [[nodiscard]] Element multiply_and_add(I1 e, I2 m, I3 a) const {
+    return multiply_and_add_reduced(get_value(e), get_value(m), get_value(a));
   }
 
   /** @brief Stores `(e * m + a) % characteristic` in @p e. */
-  void multiply_and_add_inplace_front(Element& e, Element m, Element a) const {
-    e = multiply_and_add_reduced(_reduce(e), _reduce(m), _reduce(a));
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  void multiply_and_add_inplace_front(Element& e, I1 m, I2 a) const {
+    e = multiply_and_add_reduced(get_value(e), get_value(m), get_value(a));
   }
 
   /** @brief Stores `(e * m + a) % characteristic` in @p a. */
-  void multiply_and_add_inplace_back(Element e, Element m, Element& a) const {
-    a = multiply_and_add_reduced(_reduce(e), _reduce(m), _reduce(a));
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  void multiply_and_add_inplace_back(I1 e, I2 m, Element& a) const {
+    a = multiply_and_add_reduced(get_value(e), get_value(m), get_value(a));
   }
 
   /** @brief Returns `((e + a) * m) % characteristic`, such that the result is positive. */
-  [[nodiscard]] Element add_and_multiply(Element e, Element a, Element m) const {
-    return multiply_reduced(add_reduced(_reduce(e), _reduce(a)), _reduce(m));
+  template <typename I1, typename I2, typename I3, class = isIntegers<I1, I2, I3> >
+  [[nodiscard]] Element add_and_multiply(I1 e, I2 a, I3 m) const {
+    return multiply_reduced(add_reduced(get_value(e), get_value(a)), get_value(m));
   }
 
   /** @brief Stores `((e + a) * m) % characteristic` in @p e. */
-  void add_and_multiply_inplace_front(Element& e, Element a, Element m) const {
-    e = multiply_reduced(add_reduced(_reduce(e), _reduce(a)), _reduce(m));
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  void add_and_multiply_inplace_front(Element& e, I1 a, I2 m) const {
+    e = multiply_reduced(add_reduced(get_value(e), get_value(a)), get_value(m));
   }
 
   /** @brief Stores `((e + a) * m) % characteristic` in @p m. */
-  void add_and_multiply_inplace_back(Element e, Element a, Element& m) const {
-    m = multiply_reduced(add_reduced(_reduce(e), _reduce(a)), _reduce(m));
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  void add_and_multiply_inplace_back(I1 e, I2 a, Element& m) const {
+    m = multiply_reduced(add_reduced(get_value(e), get_value(a)), get_value(m));
   }
 
   /** @brief Returns true if `e1 % characteristic == e2 % characteristic`. */
-  [[nodiscard]] bool are_equal(Element e1, Element e2) const { return _reduce(e1) == _reduce(e2); }
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  [[nodiscard]] bool are_equal(I1 e1, I2 e2) const {
+    return get_value(e1) == get_value(e2);
+  }
 
   /** @brief Returns the opposite of `e % characteristic` in the field. */
-  [[nodiscard]] Element get_opposite(Element e) const {
-    const Element v = _reduce(e);
+  template <typename I, class = isIntegers<I> >
+  [[nodiscard]] Element get_opposite(I e) const {
+    const Element v = get_value(e);
     return v == 0 ? Element(0) : characteristic_ - v;
   }
 
@@ -226,10 +242,14 @@ class Zp_field_operators {
   void get_opposite_inplace(Element& e) const { e = get_opposite(e); }
 
   /** @brief Returns the inverse of `e % characteristic` in the field. The inverse of 0 is 0 by convention. */
-  [[nodiscard]] Element get_inverse(Element e) const { return get_inverse_reduced(_reduce(e)); }
+  template <typename I, class = isIntegers<I> >
+  [[nodiscard]] Element get_inverse(I e) const {
+    return get_inverse_reduced(get_value(e));
+  }
 
   /** @brief For interface purposes with multi-fields. Returns the inverse together with the second argument. */
-  [[nodiscard]] std::pair<Element, Characteristic> get_partial_inverse(Element e,
+  template <typename I, class = isIntegers<I> >
+  [[nodiscard]] std::pair<Element, Characteristic> get_partial_inverse(I e,
                                                                        Characteristic productOfCharacteristics) const {
     return {get_inverse(e), productOfCharacteristics};
   }
@@ -237,7 +257,7 @@ class Zp_field_operators {
   // ----------------------------------------------------------------------------------------------------------
   // Operations requiring arguments already in [0, characteristic - 1]. Not checked.
 
-  /** @brief Same as @ref add, but requires `e1, e2 < characteristic`. Branchless and overflow free. */
+  /** @brief Same as @ref add, but requires `e1, e2 < characteristic`. */
   [[nodiscard]] Element add_reduced(Element e1, Element e2) const {
     // e1 + e2 < 2p < 2^bits. For unsigned integers, min(s, s - p) is s - p if s >= p and s otherwise (s - p wraps
     // around): branchless, and compilers turn it into a conditional move.
@@ -258,14 +278,14 @@ class Zp_field_operators {
   void subtract_inplace_front_reduced(Element& e1, Element e2) const { e1 = subtract_reduced(e1, e2); }
 
   /** @brief Same as @ref multiply, but requires `e1, e2 < characteristic`. */
-  [[nodiscard]] Element multiply_reduced(Element e1, Element e2) const { return _mod_wide(static_cast<Wide>(e1) * e2); }
+  [[nodiscard]] Element multiply_reduced(Element e1, Element e2) const { return reducer_.mul(e1, e2); }
 
   /** @brief Same as @ref multiply_inplace, but requires `e1, e2 < characteristic`. */
   void multiply_inplace_reduced(Element& e1, Element e2) const { e1 = multiply_reduced(e1, e2); }
 
   /** @brief Same as @ref multiply_and_add, but requires `e, m, a < characteristic`. */
   [[nodiscard]] Element multiply_and_add_reduced(Element e, Element m, Element a) const {
-    return _mod_wide(static_cast<Wide>(e) * m + a);
+    return reducer_.mul_add(e, m, a);
   }
 
   /** @brief Same as @ref multiply_and_add_inplace_front, but requires `e, m, a < characteristic`. */
@@ -280,7 +300,8 @@ class Zp_field_operators {
 
   /** @brief Same as @ref get_inverse, but requires `e < characteristic`. */
   [[nodiscard]] Element get_inverse_reduced(Element e) const {
-    return inverse_.empty() ? _inverse_euclid(e, characteristic_) : inverse_[e];
+    return inverse_.empty() ? Gudhi::numbers::mod_inverse<Element, std::make_signed_t<Element> >(e, characteristic_)
+                            : inverse_[e];
   }
 
   /** @brief Same as @ref get_partial_inverse, but requires `e < characteristic`. */
@@ -305,21 +326,26 @@ class Zp_field_operators {
    * typically useful in loops like `column_i += w * column_j`: a multiplication then costs two integer
    * multiplications and one conditional subtraction.
    */
-  [[nodiscard]] Prepared_multiplier prepare_multiplier(Element w) const {
-    w = _reduce(w);
-    return {w, static_cast<Element>((static_cast<Wide>(w) << kBits) / characteristic_)};
+  template <typename I, class = isIntegers<I> >
+  [[nodiscard]] Prepared_multiplier prepare_multiplier(I w) const {
+    const Element v = get_value(w);
+    return {v, reducer_.shoup_quotient(v)};
   }
 
-  /** @brief Returns `(x * w.value) % characteristic`. @p x can be any element, reduced or not. */
-  [[nodiscard]] Element multiply_prepared(Element x, const Prepared_multiplier& w) const {
-    const Element q = static_cast<Element>((static_cast<Wide>(x) * w.quotient) >> kBits);
-    const Element r = static_cast<Element>(x * w.value - q * characteristic_);  // exact value is in [0, 2p)
-    return std::min<Element>(r, r - characteristic_);
+  /** @brief Returns `(x * w.value) % characteristic`. @p x can be any integer, reduced or not. */
+  template <typename I, class = isIntegers<I> >
+  [[nodiscard]] Element multiply_prepared(I x, const Prepared_multiplier& w) const {
+    if constexpr (std::is_unsigned_v<I> && sizeof(I) <= sizeof(Element)) {
+      return reducer_.mul_shoup(static_cast<Element>(x), w.value, w.quotient);  // works for any element
+    } else {
+      return reducer_.mul_shoup(get_value(x), w.value, w.quotient);
+    }
   }
 
-  /** @brief Returns `(x * w.value + a) % characteristic`. @p x can be any element, @p a has to be reduced. */
-  [[nodiscard]] Element multiply_and_add_prepared(Element x, const Prepared_multiplier& w, Element a) const {
-    return add_reduced(multiply_prepared(x, w), a);
+  /** @brief Returns `(x * w.value + a) % characteristic`. @p x and @p a can be any integers. */
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  [[nodiscard]] Element multiply_and_add_prepared(I1 x, const Prepared_multiplier& w, I2 a) const {
+    return add_reduced(multiply_prepared(x, w), get_value(a));
   }
 
   // ----------------------------------------------------------------------------------------------------------
@@ -346,120 +372,24 @@ class Zp_field_operators {
    */
   friend void swap(Zp_field_operators& f1, Zp_field_operators& f2) noexcept {
     std::swap(f1.characteristic_, f2.characteristic_);
-    std::swap(f1.barrett_, f2.barrett_);
+    std::swap(f1.reducer_, f2.reducer_);
     f1.inverse_.swap(f2.inverse_);
   }
 
  private:
-  using Wide = typename detail::Zp_wide<sizeof(Unsigned_integer_type)>::type;
+  using Reducer = Gudhi::numbers::Modular_reducer<Element>;
   static constexpr unsigned int kBits = sizeof(Element) * 8;
   // Above this characteristic, inverses are computed on demand instead of being stored.
-  static constexpr Element kMaxTableCharacteristic = 1u << 16;
+  static constexpr Element kMaxTableCharacteristic = 1U << 16;
 
   Characteristic characteristic_; /**< Current characteristic of the field. */
-  std::uint64_t barrett_;         /**< floor((2^64 - 1) / characteristic), only used for 32 bits elements. */
+  Reducer reducer_;               /**< Fast reductions modulo the characteristic. */
   std::vector<Element> inverse_;  /**< All inverse elements, empty if the characteristic is too large. */
-
-  // Barrett reduction of any 64 bits value, 32 bits elements only. At most one correction is needed.
-  [[nodiscard]] Element _barrett32(std::uint64_t x) const {
-#ifdef __SIZEOF_INT128__
-    const std::uint64_t q = static_cast<std::uint64_t>((static_cast<detail::Zp_uint128>(x) * barrett_) >> 64);
-    const std::uint64_t r = x - q * characteristic_;  // in [0, 2p)
-    return static_cast<Element>(std::min<std::uint64_t>(r, r - characteristic_));
-#else
-    return static_cast<Element>(x % characteristic_);
-#endif
-  }
-
-  // Reduces a value of twice the element width, in particular any value < characteristic^2.
-  [[nodiscard]] Element _mod_wide(Wide x) const {
-    if constexpr (sizeof(Element) == 4) {
-      return _barrett32(x);
-    } else {
-      return static_cast<Element>(x % characteristic_);
-    }
-  }
-
-  [[nodiscard]] Element _reduce(Element e) const {
-    if (GUDHI_ZP_LIKELY(e < characteristic_)) return e;
-    if constexpr (sizeof(Element) == 4) {
-      return _barrett32(e);
-    } else {
-      return e % characteristic_;
-    }
-  }
 
   template <typename U>
   [[nodiscard]] Element _reduce_unsigned(U u) const {
-    if constexpr (sizeof(U) <= sizeof(Element)) {
-      return _reduce(static_cast<Element>(u));
-    } else if constexpr (sizeof(Element) == 4 && sizeof(U) == 8) {
-      return GUDHI_ZP_LIKELY(u < characteristic_) ? static_cast<Element>(u) : _barrett32(u);
-    } else {
-      return static_cast<Element>(u % characteristic_);
-    }
-  }
-
-  // Inverse by extended Euclid, a in [0, p). Returns 0 for a == 0. Needs p < 2^(bits-1) for the signed coefficients.
-  static Element _inverse_euclid(Element a, Element p) {
-    using Signed = std::make_signed_t<Element>;
-    Signed t0 = 0, t1 = 1;
-    Element r0 = p, r1 = a;
-    while (r1 != 0) {
-      const Element q = r0 / r1;
-      const Element r2 = r0 - q * r1;
-      r0 = r1;
-      r1 = r2;
-      const Signed t2 = t0 - static_cast<Signed>(q) * t1;
-      t0 = t1;
-      t1 = t2;
-    }
-    return t0 < 0 ? static_cast<Element>(t0 + static_cast<Signed>(p)) : static_cast<Element>(t0);
-  }
-
-  static Element _mulmod_slow(Element a, Element b, Element m) {
-    return static_cast<Element>((static_cast<Wide>(a) * b) % m);
-  }
-
-  static Element _powmod_slow(Element base, Element exp, Element m) {
-    Element res = 1;
-    base %= m;
-    while (exp > 0) {
-      if (exp & 1) res = _mulmod_slow(res, base, m);
-      base = _mulmod_slow(base, base, m);
-      exp >>= 1;
-    }
-    return res;
-  }
-
-  // Deterministic Miller-Rabin, correct for all n < 3.3 * 10^24, so in particular for all 64 bits integers.
-  static bool _is_prime(Element n) {
-    constexpr Element smallPrimes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
-    if (n < 2) return false;
-    for (Element q : smallPrimes) {
-      if (n == q) return true;
-      if (n % q == 0) return false;
-    }
-    Element d = n - 1;
-    unsigned int s = 0;
-    while ((d & 1) == 0) {
-      d >>= 1;
-      ++s;
-    }
-    for (Element a : smallPrimes) {
-      Element x = _powmod_slow(a, d, n);
-      if (x == 1 || x == n - 1) continue;
-      bool composite = true;
-      for (unsigned int r = 1; r < s; ++r) {
-        x = _mulmod_slow(x, x, n);
-        if (x == n - 1) {
-          composite = false;
-          break;
-        }
-      }
-      if (composite) return false;
-    }
-    return true;
+    static_assert(sizeof(U) <= 8, "Integers of more than 64 bits are not supported.");
+    return GUDHI_ZP_LIKELY(u < characteristic_) ? static_cast<Element>(u) : reducer_.reduce(u);
   }
 };
 

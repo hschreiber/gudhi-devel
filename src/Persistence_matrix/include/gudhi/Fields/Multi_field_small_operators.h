@@ -56,7 +56,7 @@ class Multi_field_operators_with_small_characteristics {
   /**
    * @brief Default constructor. The characteristics have to be set with @ref set_characteristic before use.
    */
-  Multi_field_operators_with_small_characteristics() : productOfAllCharacteristics_(nullCharacteristic), barrett_(0) {}
+  Multi_field_operators_with_small_characteristics() : productOfAllCharacteristics_(nullCharacteristic) {}
 
   /**
    * @brief Constructor setting the characteristics.
@@ -65,7 +65,7 @@ class Multi_field_operators_with_small_characteristics {
    * @param maxCharacteristic Upper bound of the interval of primes (included).
    */
   Multi_field_operators_with_small_characteristics(int minCharacteristic, int maxCharacteristic)
-      : productOfAllCharacteristics_(nullCharacteristic), barrett_(0) {
+      : productOfAllCharacteristics_(nullCharacteristic) {
     set_characteristic(minCharacteristic, maxCharacteristic);
   }
 
@@ -103,7 +103,8 @@ class Multi_field_operators_with_small_characteristics {
     for (std::size_t i = 0; i < primes.size(); ++i) {
       const Element p = primes[i];
       const Element R = P / p;
-      partials[i] = static_cast<Element>(static_cast<std::uint64_t>(R) * _inverse_euclid(R % p, p));
+      partials[i] =
+          static_cast<Element>(static_cast<std::uint64_t>(R) * Gudhi::numbers::mod_inverse<Element>(R % p, p));
     }
 
     // Identities of all sub-products, in an open addressing hash table (at most 2^9 entries for 32 bits).
@@ -116,7 +117,7 @@ class Multi_field_operators_with_small_characteristics {
       std::uint64_t q = 1;
       std::uint64_t id = 0;
       for (std::size_t i = 0; i < primes.size(); ++i) {
-        if (mask & (std::size_t(1) << i)) {
+        if ((mask & (std::size_t(1) << i)) != 0U) {
           q *= primes[i];
           id += partials[i];
         }
@@ -128,7 +129,7 @@ class Multi_field_operators_with_small_characteristics {
 
     primes_.swap(primes);
     productOfAllCharacteristics_ = P;
-    barrett_ = UINT64_MAX / P;
+    reducer_ = Gudhi::numbers::Modular_reducer_32(P);
     partials_.swap(partials);
     identities_.swap(table);
     identitiesBits_ = bits;
@@ -231,12 +232,12 @@ class Multi_field_operators_with_small_characteristics {
     // One extended Euclid gives both g = gcd(e, Q) and, when g == 1, the inverse of e modulo Q.
     const Element a = Q == productOfAllCharacteristics_ ? _reduce(e) : e % Q;
     Element g;
-    Element inv = _extended_euclid(a, Q, g);
+    auto inv = Gudhi::numbers::extended_euclid<Element>(a, Q, g);
     if (g == Q) return {0, get_multiplicative_identity()};  // a == 0: partial inverse is 0
     Characteristic QT = Q;
     if (g != 1) {
       QT = Q / g;
-      inv = _extended_euclid(a % QT, QT, g);  // a is invertible modulo QT, as Q is squarefree
+      inv = Gudhi::numbers::extended_euclid<Element>(a % QT, QT, g);  // a is invertible modulo QT, as Q is squarefree
     }
     if (QT == productOfAllCharacteristics_) return {inv, QT};
     return {multiply_reduced(_identity_of_subproduct(QT), inv), QT};  // inv < QT <= P
@@ -265,16 +266,14 @@ class Multi_field_operators_with_small_characteristics {
   void subtract_inplace_front_reduced(Element& e1, Element e2) const { e1 = subtract_reduced(e1, e2); }
 
   /** @brief Same as @ref multiply, but requires `e1, e2 < characteristic`. */
-  [[nodiscard]] Element multiply_reduced(Element e1, Element e2) const {
-    return _barrett(static_cast<std::uint64_t>(e1) * e2);
-  }
-
+  [[nodiscard]] Element multiply_reduced(Element e1, Element e2) const { return reducer_.mul(e1, e2); }
+  
   /** @brief Same as @ref multiply_inplace, but requires `e1, e2 < characteristic`. */
   void multiply_inplace_reduced(Element& e1, Element e2) const { e1 = multiply_reduced(e1, e2); }
 
   /** @brief Same as @ref multiply_and_add, but requires `e, m, a < characteristic`. */
   [[nodiscard]] Element multiply_and_add_reduced(Element e, Element m, Element a) const {
-    return _barrett((static_cast<std::uint64_t>(e) * m) + a);
+    return reducer_.mul_add(e, m, a);
   }
 
   /** @brief Same as @ref multiply_and_add_inplace_front, but requires `e, m, a < characteristic`. */
@@ -311,7 +310,7 @@ class Multi_field_operators_with_small_characteristics {
                    Multi_field_operators_with_small_characteristics& f2) noexcept {
     f1.primes_.swap(f2.primes_);
     std::swap(f1.productOfAllCharacteristics_, f2.productOfAllCharacteristics_);
-    std::swap(f1.barrett_, f2.barrett_);
+    std::swap(f1.reducer_, f2.reducer_);
     f1.partials_.swap(f2.partials_);
     f1.identities_.swap(f2.identities_);
     std::swap(f1.identitiesBits_, f2.identitiesBits_);
@@ -320,13 +319,13 @@ class Multi_field_operators_with_small_characteristics {
  private:
   std::vector<Element> primes_;                          /**< All characteristics. */
   Characteristic productOfAllCharacteristics_;           /**< Product of all characteristics. */
-  std::uint64_t barrett_;                                /**< floor((2^64 - 1) / productOfAllCharacteristics_). */
+  Gudhi::numbers::Modular_reducer_32 reducer_;           /**< Fast reductions modulo the product. */
   std::vector<Element> partials_;                        /**< Identity of each single characteristic. */
   std::vector<std::pair<Element, Element> > identities_; /**< Hash table: sub-product -> partial identity. */
   unsigned int identitiesBits_ = 0;
 
   static std::size_t _hash(Element q, unsigned int bits) {
-    return static_cast<std::size_t>((static_cast<std::uint32_t>(q) * 2654435769u) >> (32 - bits));
+    return static_cast<std::size_t>((static_cast<std::uint32_t>(q) * 2654435769U) >> (32 - bits));
   }
 
   [[nodiscard]] Element _identity_of_subproduct(Element q) const {
@@ -340,43 +339,8 @@ class Multi_field_operators_with_small_characteristics {
     return identities_[h].second;
   }
 
-  // Barrett reduction of any 64 bits value. At most one correction is needed.
-  [[nodiscard]] Element _barrett(std::uint64_t x) const {
-#ifdef __SIZEOF_INT128__
-    __extension__ using uint128 = unsigned __int128;
-    const auto q = static_cast<std::uint64_t>((static_cast<uint128>(x) * barrett_) >> 64);
-    const std::uint64_t r = x - (q * productOfAllCharacteristics_);  // in [0, 2P)
-    return static_cast<Element>(std::min<std::uint64_t>(r, r - productOfAllCharacteristics_));
-#else
-    return static_cast<Element>(x % productOfAllCharacteristics_);
-#endif
-  }
-
   [[nodiscard]] Element _reduce(Element e) const {
-    return GUDHI_MFS_LIKELY(e < productOfAllCharacteristics_) ? e : _barrett(e);
-  }
-
-  // Extended Euclid on (a, m), with a < m, m >= 2: sets g = gcd(a, m) (g = m if a == 0) and returns t in [0, m) such
-  // that t * a = g modulo m. In particular, t is the inverse of a modulo m if g == 1 (and is 0 if a == 0).
-  static Element _extended_euclid(Element a, Element m, Element& g) {
-    std::int64_t t0 = 0, t1 = 1;
-    Element r0 = m, r1 = a;
-    while (r1 != 0) {
-      const Element q = r0 / r1;
-      const Element r2 = r0 - (q * r1);
-      r0 = r1;
-      r1 = r2;
-      const std::int64_t t2 = t0 - (static_cast<std::int64_t>(q) * t1);
-      t0 = t1;
-      t1 = t2;
-    }
-    g = r0;
-    return static_cast<Element>(t0 < 0 ? t0 + static_cast<std::int64_t>(m) : t0);
-  }
-
-  static Element _inverse_euclid(Element a, Element m) {
-    Element g;
-    return _extended_euclid(a, m, g);
+    return GUDHI_MFS_LIKELY(e < productOfAllCharacteristics_) ? e : reducer_.reduce(e);
   }
 };
 
@@ -385,4 +349,4 @@ class Multi_field_operators_with_small_characteristics {
 
 #undef GUDHI_MFS_LIKELY
 
-#endif  // GUDHI_MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_
+#endif  // MATRIX_FIELD_MULTI_SMALL_OPERATORS_H_

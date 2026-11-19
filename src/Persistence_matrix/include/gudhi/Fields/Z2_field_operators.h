@@ -37,6 +37,8 @@ class Z2_field_operators {
   using isUnsignedInteger = std::enable_if_t<std::is_unsigned_v<T> >;
   template <class T>
   using isInteger = std::enable_if_t<std::is_integral_v<T> >;
+  template <typename... Ts>
+  using isIntegers = std::enable_if_t<(std::is_integral_v<Ts> && ...)>;
 
   constexpr static const Characteristic nullCharacteristic = 2;
 
@@ -57,124 +59,115 @@ class Z2_field_operators {
     } else if constexpr (std::is_signed_v<Integer_type>) {
       return e % 2 != 0;
     } else {
-      return (e & 1u) != 0;
+      return (e & 1U) != 0;
     }
   }
 
   /** @brief Returns `(e1 + e2) % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr Element add(Unsigned_integer_type e1, Unsigned_integer_type e2) noexcept {
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr Element add(I1 e1, I2 e2) noexcept {
     return get_value(e1) != get_value(e2);
   }
 
   /** @brief Stores `(e1 + e2) % 2` in @p e1. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void add_inplace(Unsigned_integer_type& e1, Unsigned_integer_type e2) noexcept {
-    e1 = get_value(e1) != get_value(e2);
+  template <typename I, class = isIntegers<I> >
+  static constexpr void add_inplace(Element& e1, I e2) noexcept {
+    e1 = e1 != get_value(e2);
   }
 
   /** @brief Returns `(e1 - e2) % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr Element subtract(Unsigned_integer_type e1, Unsigned_integer_type e2) noexcept {
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr Element subtract(I1 e1, I2 e2) noexcept {
     return get_value(e1) != get_value(e2);
   }
 
   /** @brief Stores `(e1 - e2) % 2` in @p e1. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void subtract_inplace_front(Unsigned_integer_type& e1, Unsigned_integer_type e2) noexcept {
-    e1 = get_value(e1) != get_value(e2);
+  template <typename I, class = isIntegers<I> >
+  static constexpr void subtract_inplace_front(Element& e1, I e2) noexcept {
+    e1 = e1 != get_value(e2);
   }
 
   /** @brief Stores `(e1 - e2) % 2` in @p e2. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void subtract_inplace_back(Unsigned_integer_type e1, Unsigned_integer_type& e2) noexcept {
-    e2 = get_value(e1) != get_value(e2);
+  template <typename I, class = isIntegers<I> >
+  static constexpr void subtract_inplace_back(I e1, Element& e2) noexcept {
+    e2 = get_value(e1) != e2;
   }
 
   /** @brief Returns `(e1 * e2) % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr Element multiply(Unsigned_integer_type e1, Unsigned_integer_type e2) noexcept {
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr Element multiply(I1 e1, I2 e2) noexcept {
     return get_value(e1) && get_value(e2);
   }
 
   /** @brief Stores `(e1 * e2) % 2` in @p e1. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void multiply_inplace(Unsigned_integer_type& e1, Unsigned_integer_type e2) noexcept {
-    e1 = get_value(e1) && get_value(e2);
+  template <typename I, class = isIntegers<I> >
+  static constexpr void multiply_inplace(Element& e1, I e2) noexcept {
+    e1 = e1 && get_value(e2);
   }
 
   /** @brief Returns `(e * m + a) % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr Element multiply_and_add(Unsigned_integer_type e, Unsigned_integer_type m,
-                                            Unsigned_integer_type a) noexcept {
+  template <typename I1, typename I2, typename I3, class = isIntegers<I1, I2, I3> >
+  static constexpr Element multiply_and_add(I1 e, I2 m, I3 a) noexcept {
     return (get_value(e) && get_value(m)) != get_value(a);
   }
 
   /** @brief Stores `(e * m + a) % 2` in @p e. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void multiply_and_add_inplace_front(Unsigned_integer_type& e, Unsigned_integer_type m,
-                                                       Unsigned_integer_type a) noexcept {
-    e = (get_value(e) && get_value(m)) != get_value(a);
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr void multiply_and_add_inplace_front(Element& e, I1 m, I2 a) noexcept {
+    e = (e && get_value(m)) != get_value(a);
   }
 
   /** @brief Stores `(e * m + a) % 2` in @p a. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void multiply_and_add_inplace_back(Unsigned_integer_type e, Unsigned_integer_type m,
-                                                      Unsigned_integer_type& a) noexcept {
-    a = (get_value(e) && get_value(m)) != get_value(a);
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr void multiply_and_add_inplace_back(I1 e, I2 m, Element& a) noexcept {
+    a = (get_value(e) && get_value(m)) != a;
   }
 
   /** @brief Returns `((e + a) * m) % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr Element add_and_multiply(Unsigned_integer_type e, Unsigned_integer_type a,
-                                            Unsigned_integer_type m) noexcept {
+  template <typename I1, typename I2, typename I3, class = isIntegers<I1, I2, I3> >
+  static constexpr Element add_and_multiply(I1 e, I2 a, I3 m) noexcept {
     return (get_value(e) != get_value(a)) && get_value(m);
   }
 
   /** @brief Stores `((e + a) * m) % 2` in @p e. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void add_and_multiply_inplace_front(Unsigned_integer_type& e, Unsigned_integer_type a,
-                                                       Unsigned_integer_type m) noexcept {
-    e = (get_value(e) != get_value(a)) && get_value(m);
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr void add_and_multiply_inplace_front(Element& e, I1 a, I2 m) noexcept {
+    e = (e != get_value(a)) && get_value(m);
   }
 
   /** @brief Stores `((e + a) * m) % 2` in @p m. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void add_and_multiply_inplace_back(Unsigned_integer_type e, Unsigned_integer_type a,
-                                                      Unsigned_integer_type& m) noexcept {
-    m = (get_value(e) != get_value(a)) && get_value(m);
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr void add_and_multiply_inplace_back(I1 e, I2 a, Element& m) noexcept {
+    m = (get_value(e) != get_value(a)) && m;
   }
 
   /** @brief Returns true if `e1 % 2 == e2 % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr bool are_equal(Unsigned_integer_type e1, Unsigned_integer_type e2) noexcept {
+  template <typename I1, typename I2, class = isIntegers<I1, I2> >
+  static constexpr bool are_equal(I1 e1, I2 e2) noexcept {
     return get_value(e1) == get_value(e2);
   }
 
   /** @brief Returns the opposite of `e % 2`, that is `e % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr Element get_opposite(Unsigned_integer_type e) noexcept {
+  template <typename I, class = isIntegers<I> >
+  static constexpr Element get_opposite(I e) noexcept {
     return get_value(e);
   }
 
-  /** @brief Replaces @p e by its opposite, that is `e % 2`. */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr void get_opposite_inplace(Unsigned_integer_type& e) noexcept {
-    e = get_value(e);
-  }
+  /** @brief Replaces @p e by its opposite, that is itself. */
+  static constexpr void get_opposite_inplace([[maybe_unused]] Element& e) noexcept {}
 
   /** @brief Returns the inverse of `e % 2`, that is `e % 2`. (The inverse of 0 is 0 by convention.) */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
-  static constexpr Element get_inverse(Unsigned_integer_type e) noexcept {
+  template <typename I, class = isIntegers<I> >
+  static constexpr Element get_inverse(I e) noexcept {
     return get_value(e);
   }
 
   /**
    * @brief For interface purposes with multi-fields. Returns the inverse together with the second argument.
    */
-  template <typename Unsigned_integer_type, class = isUnsignedInteger<Unsigned_integer_type> >
+  template <typename I, class = isIntegers<I> >
   static constexpr std::pair<Element, Characteristic> get_partial_inverse(
-      Unsigned_integer_type e, Characteristic productOfCharacteristics) noexcept {
+      I e, Characteristic productOfCharacteristics) noexcept {
     return {get_inverse(e), productOfCharacteristics};
   }
 
@@ -193,15 +186,35 @@ class Z2_field_operators {
   // "_reduced" variants: for interface uniformity with the other fields (where they skip the reduction of the
   // arguments). Here, elements are booleans and are always reduced, so they are plain aliases.
 
+  /** @brief Same as @ref add, but arguments are already of type @ref Element and reduced. */
   static constexpr Element add_reduced(Element e1, Element e2) noexcept { return e1 != e2; }
+
+  /** @brief Same as @ref add_inplace, but arguments are already of type @ref Element and reduced. */
   static constexpr void add_inplace_reduced(Element& e1, Element e2) noexcept { e1 = e1 != e2; }
+
+  /** @brief Same as @ref subtract, but arguments are already of type @ref Element and reduced. */
   static constexpr Element subtract_reduced(Element e1, Element e2) noexcept { return e1 != e2; }
+
+  /** @brief Same as @ref subtract_inplace, but arguments are already of type @ref Element and reduced. */
   static constexpr void subtract_inplace_front_reduced(Element& e1, Element e2) noexcept { e1 = e1 != e2; }
+
+  /** @brief Same as @ref multiply, but arguments are already of type @ref Element and reduced. */
   static constexpr Element multiply_reduced(Element e1, Element e2) noexcept { return e1 && e2; }
+
+  /** @brief Same as @ref multiply_inplace, but arguments are already of type @ref Element and reduced. */
   static constexpr void multiply_inplace_reduced(Element& e1, Element e2) noexcept { e1 = e1 && e2; }
+
+  /** @brief Same as @ref multiply_and_add, but arguments are already of type @ref Element and reduced. */
   static constexpr Element multiply_and_add_reduced(Element e, Element m, Element a) noexcept { return (e && m) != a; }
+
+  /** @brief Same as @ref multiply_and_add_inplace_front, but arguments are already of type @ref Element and reduced. */
   static constexpr void multiply_and_add_inplace_front_reduced(Element& e, Element m, Element a) noexcept {
     e = (e && m) != a;
+  }
+
+  /** @brief Same as @ref multiply_and_add_inplace_front, but arguments are already of type @ref Element and reduced. */
+  static constexpr void multiply_and_add_inplace_back_reduced(Element e, Element m, Element& a) noexcept {
+    a = (e && m) != a;
   }
 };
 
