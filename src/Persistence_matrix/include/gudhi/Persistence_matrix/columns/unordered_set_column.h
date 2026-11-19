@@ -681,11 +681,10 @@ inline Unordered_set_column<Master_matrix>& Unordered_set_column<Master_matrix>:
 
   if (val == Field_operators::get_multiplicative_identity()) return *this;
 
-  // multiply_inplace needs a non-const reference to element, so even if Z2 never reaches here, it won't compile
-  // without the constexpr, as we are not storing a dummy value just for this purpose.
   if constexpr (!Master_matrix::Option_list::is_z2) {
+    auto prep = operators_->prepare_multiplier(val);
     for (Entry* entry : column_) {
-      operators_->multiply_inplace(entry->get_element(), val);
+      entry->get_element() = operators_->multiply_prepared(entry->get_element(), prep);
       if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::update_entry(*entry);
     }
   }
@@ -871,7 +870,7 @@ inline bool Unordered_set_column<Master_matrix>::_add(const Entry_range& column)
       },
       [&](Entry* targetEntry, const Entry& sourceEntry) {
         if constexpr (!Master_matrix::Option_list::is_z2)
-          operators_->add_inplace(targetEntry->get_element(), sourceEntry.get_element());
+          operators_->add_inplace_reduced(targetEntry->get_element(), sourceEntry.get_element());
       });
 }
 
@@ -899,17 +898,17 @@ inline bool Unordered_set_column<Master_matrix>::_multiply_source_and_add(const 
     return _add(column);
   }
 
-  // multiply_inplace needs a non-const reference to element, so even if Z2 never reaches here, it won't compile
-  // without the constexpr, as we are not storing a dummy value just for this purpose.
   if constexpr (!Master_matrix::Option_list::is_z2) {
+    auto prep = operators_->prepare_multiplier(val);
     return _generic_add(
         column,
         [&](const Entry& oldEntry, Entry* newEntry) {
           newEntry->set_element(oldEntry.get_element());
-          operators_->multiply_inplace(newEntry->get_element(), val);
+          newEntry->get_element() = operators_->multiply_prepared(newEntry->get_element(), prep);
         },
         [&](Entry* targetEntry, const Entry& sourceEntry) {
-          operators_->multiply_and_add_inplace_back(sourceEntry.get_element(), val, targetEntry->get_element());
+          targetEntry->get_element() =
+              operators_->multiply_and_add_prepared(sourceEntry.get_element(), prep, targetEntry->get_element());
         });
   } else {
     return false;  // we should never arrive here, just to suppress the warning

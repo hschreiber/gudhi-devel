@@ -211,8 +211,8 @@ inline void Base_pairing<Master_matrix>::_reduce_column_with(Column& toReduce, C
   } else {
     typename Master_matrix::Element coeff = toAdd.get_pivot_value();
     auto& operators = _matrix()->colSettings_->operators;
-    coeff = operators.get_inverse(coeff);
-    operators.multiply_inplace(coeff, operators.get_characteristic() - toReduce.get_pivot_value());
+    coeff = operators.get_inverse_reduced(coeff);
+    operators.multiply_inplace_reduced(coeff, operators.get_characteristic() - toReduce.get_pivot_value());
     toReduce.multiply_source_and_add(toAdd, coeff);
   }
 }

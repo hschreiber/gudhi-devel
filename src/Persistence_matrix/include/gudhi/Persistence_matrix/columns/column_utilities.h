@@ -127,7 +127,7 @@ bool _add_to_column(const Entry_range& source, Column& targetColumn)
       },
       [&](typename Column::Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
         if constexpr (!Column::Master::Option_list::is_z2)
-          targetColumn.operators_->add_inplace(targetElement, itSource->get_element());
+          targetColumn.operators_->add_inplace_reduced(targetElement, itSource->get_element());
       },
       [&]([[maybe_unused]] typename Column::Entry* entryTarget) {},
       [&]([[maybe_unused]] typename Column::Column_support::iterator& itTarget) {});
@@ -153,11 +153,12 @@ bool _multiply_target_and_add_to_column(const typename Column::Field_element& va
   }
 
   if constexpr (!Column::Master::Option_list::is_z2) {
+    auto prep = targetColumn.operators_->prepare_multiplier(val);
     return _generic_add_to_column(
         source,
         targetColumn,
         [&](typename Column::Entry* entryTarget) {
-          targetColumn.operators_->multiply_inplace(entryTarget->get_element(), val);
+          entryTarget->get_element() = targetColumn.operators_->multiply_prepared(entryTarget->get_element(), prep);
           // targetColumn.RA_opt::update_entry(*itTarget) produces an internal compiler error
           // even though it works in _generic_add_to_column... Probably because of the lambda.
           if constexpr (Column::Master::Option_list::has_row_access) targetColumn.update_entry(*entryTarget);
@@ -166,13 +167,13 @@ bool _multiply_target_and_add_to_column(const typename Column::Field_element& va
           targetColumn._insert_entry(itTarget, itSource->get_row_index(), itSource->get_element());
         },
         [&](typename Column::Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
-          targetColumn.operators_->multiply_and_add_inplace_front(targetElement, val, itSource->get_element());
+          targetElement = targetColumn.operators_->multiply_and_add_prepared(targetElement, prep, itSource->get_element());
         },
         [&]([[maybe_unused]] typename Column::Entry* entryTarget) {},
         [&](typename Column::Column_support::iterator& itTarget) {
           while (itTarget != targetColumn.column_.end()) {
             typename Column::Entry* targetEntry = _get_entry<typename Column::Entry>(itTarget);
-            targetColumn.operators_->multiply_inplace(targetEntry->get_element(), val);
+            targetEntry->get_element() = targetColumn.operators_->multiply_prepared(targetEntry->get_element(), prep);
             if constexpr (Column::Master::Option_list::has_row_access) targetColumn.update_entry(*targetEntry);
             itTarget++;
           }
@@ -196,6 +197,7 @@ bool _multiply_source_and_add_to_column(const typename Column::Field_element& va
   }
 
   if constexpr (!Column::Master::Option_list::is_z2) {
+    auto prep = targetColumn.operators_->prepare_multiplier(val);
     return _generic_add_to_column(
         source,
         targetColumn,
@@ -203,11 +205,11 @@ bool _multiply_source_and_add_to_column(const typename Column::Field_element& va
         [&](typename Entry_range::const_iterator& itSource, const typename Column::Column_support::iterator& itTarget) {
           typename Column::Entry* entry =
               targetColumn._insert_entry(itTarget, itSource->get_row_index(), itSource->get_element());
-          targetColumn.operators_->multiply_inplace(entry->get_element(), val);
+          entry->get_element() = targetColumn.operators_->multiply_prepared(entry->get_element(), prep);
           if constexpr (Column::Master::Option_list::has_row_access) targetColumn.update_entry(*entry);
         },
         [&](typename Column::Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
-          targetColumn.operators_->multiply_and_add_inplace_back(itSource->get_element(), val, targetElement);
+          targetElement = targetColumn.operators_->multiply_and_add_prepared(itSource->get_element(), prep, targetElement);
         },
         [&]([[maybe_unused]] typename Column::Entry* entryTarget) {},
         []([[maybe_unused]] typename Column::Column_support::iterator& itTarget) {});

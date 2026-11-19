@@ -268,7 +268,8 @@ class Heap_column : public Master_matrix::Column_dimension_option, public Master
   template <class Entry_range>
   bool _multiply_source_and_add(const Entry_range& column, const Field_element& val);
   void _add_coefficient(Field_element& e, const Field_element& a) const;
-  Field_element _multiply_coefficient(const Field_element& e, const Field_element& a) const;
+  template<class Prep>
+  Field_element _multiply_coefficient(const Field_element& e, const Prep& a) const;
 };
 
 template <class Master_matrix>
@@ -457,7 +458,7 @@ inline std::vector<typename Heap_column<Master_matrix>::Field_element> Heap_colu
       if constexpr (Master_matrix::Option_list::is_z2) {
         container[idx] = !container[idx];
       } else {
-        operators_->add_inplace(container[idx], (*it)->get_element());
+        operators_->add_inplace_reduced(container[idx], (*it)->get_element());
       }
     }
   }
@@ -594,7 +595,8 @@ inline typename Heap_column<Master_matrix>::Field_element Heap_column<Master_mat
       Field_element sum(0);
       if (Chain_opt::_get_pivot() == Master_matrix::template get_null_value<ID_index>()) return sum;
       for (const Entry* entry : column_) {
-        if (entry->get_row_index() == Chain_opt::_get_pivot()) operators_->add_inplace(sum, entry->get_element());
+        if (entry->get_row_index() == Chain_opt::_get_pivot())
+          operators_->add_inplace_reduced(sum, entry->get_element());
       }
       return sum;  // should not be 0 if properly used.
     }
@@ -887,7 +889,7 @@ inline typename Heap_column<Master_matrix>::Entry* Heap_column<Master_matrix>::_
     }
   } else {
     while (!column_.empty() && column_.front()->get_row_index() == pivot->get_row_index()) {
-      operators_->add_inplace(pivot->get_element(), column_.front()->get_element());
+      operators_->add_inplace_reduced(pivot->get_element(), column_.front()->get_element());
       std::pop_heap(column_.begin(), column_.end(), entryPointerComp_);
       entryPool_->destroy(column_.back());
       column_.pop_back();
@@ -965,15 +967,14 @@ Heap_column<Master_matrix>::_multiply(const Field_element& val)
       return;
   }
 
-  // multiply_inplace needs a non-const reference to element, so even if Z2 never reaches here, it won't compile
-  // without the constexpr, as we are not storing a dummy value just for this purpose.
   if constexpr (!Master_matrix::Option_list::is_z2) {
+    auto prep = operators_->prepare_multiplier(val);
     for (Entry* entry : column_) {
-      operators_->multiply_inplace(entry->get_element(), val);
+      entry->get_element() = operators_->multiply_prepared(entry->get_element(), prep);
       if constexpr (computePivotVal) {
         // computePivotVal is only true for chain columns, so Chain_opt is not a dummy for sure
         if (entry->get_row_index() == Chain_opt::_get_pivot()) {
-          operators_->add_inplace(pivotVal, entry->get_element());
+          operators_->add_inplace_reduced(pivotVal, entry->get_element());
         }
       }
     }
@@ -1011,12 +1012,22 @@ inline bool Heap_column<Master_matrix>::_multiply_source_and_add(const Entry_ran
     return false;
   }
 
+  auto get_multiplier_prep = [&](const Field_element& a) {
+    if constexpr (Master_matrix::Option_list::is_z2) {
+      return 0;
+    } else {
+      return operators_->prepare_multiplier(a);
+    }
+  };
+
+  auto prep = get_multiplier_prep(val);
+
   if (column_.empty()) {  // chain should never enter here.
     column_.resize(column.size());
     Index i = 0;
     for (const Entry& entry : column) {
       column_[i] = entryPool_->construct(entry.get_row_index());
-      column_[i]->set_element(_multiply_coefficient(entry.get_element(), val));
+      column_[i]->set_element(_multiply_coefficient(entry.get_element(), prep));
       ++i;
     }
     insertsSinceLastPrune_ = column_.size();
@@ -1032,7 +1043,7 @@ inline bool Heap_column<Master_matrix>::_multiply_source_and_add(const Entry_ran
     ++insertsSinceLastPrune_;
 
     column_.push_back(entryPool_->construct(entry.get_row_index()));
-    column_.back()->set_element(_multiply_coefficient(entry.get_element(), val));
+    column_.back()->set_element(_multiply_coefficient(entry.get_element(), prep));
 
     if constexpr (Master_matrix::isNonBasic && !Master_matrix::Option_list::is_of_boundary_type) {
       if (entry.get_row_index() == Chain_opt::_get_pivot()) {
@@ -1056,19 +1067,20 @@ inline void Heap_column<Master_matrix>::_add_coefficient(Field_element& e,
     // a has to be 1
     e = !e;
   } else {
-    operators_->add_inplace(e, a);
+    operators_->add_inplace_reduced(e, a);
   }
 }
 
 template <class Master_matrix>
+template <class Prep>
 inline typename Heap_column<Master_matrix>::Field_element Heap_column<Master_matrix>::_multiply_coefficient(
     const Field_element& e,
-    [[maybe_unused]] const Field_element& a) const
+    [[maybe_unused]] const Prep& a) const
 {
   if constexpr (Master_matrix::Option_list::is_z2) {
     return e;  // a has to be 1
   } else {
-    return operators_->multiply(e, a);
+    return operators_->multiply_prepared(e, a);
   }
 }
 

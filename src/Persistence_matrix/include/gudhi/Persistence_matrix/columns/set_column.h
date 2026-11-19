@@ -682,11 +682,10 @@ inline Set_column<Master_matrix>& Set_column<Master_matrix>::operator*=(const Fi
 
   if (val == Field_operators::get_multiplicative_identity()) return *this;
 
-  // multiply_inplace needs a non-const reference to element, so even if Z2 never reaches here, it won't compile
-  // without the constexpr, as we are not storing a dummy value just for this purpose.
   if constexpr (!Master_matrix::Option_list::is_z2) {
+    auto prep = operators_->prepare_multiplier(val);
     for (Entry* entry : column_) {
-      operators_->multiply_inplace(entry->get_element(), val);
+      entry->get_element() = operators_->multiply_prepared(entry->get_element(), prep);
       if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::update_entry(*entry);
     }
   }

@@ -783,11 +783,10 @@ inline Vector_column<Master_matrix>& Vector_column<Master_matrix>::operator*=(co
 
   if (val == Field_operators::get_multiplicative_identity()) return *this;
 
-  // multiply_inplace needs a non-const reference to element, so even if Z2 never reaches here, it won't compile
-  // without the constexpr, as we are not storing a dummy value just for this purpose.
   if constexpr (!Master_matrix::Option_list::is_z2) {
+    auto prep = operators_->prepare_multiplier(val);
     for (Entry* entry : column_) {
-      operators_->multiply_inplace(entry->get_element(), val);
+      entry->get_element() = operators_->multiply_prepared(entry->get_element(), prep);
       if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::update_entry(*entry);
     }
   }
@@ -1019,7 +1018,7 @@ inline bool Vector_column<Master_matrix>::_add(const Entry_range& column)
       },
       [&](Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
         if constexpr (!Master_matrix::Option_list::is_z2)
-          operators_->add_inplace(targetElement, itSource->get_element());
+          operators_->add_inplace_reduced(targetElement, itSource->get_element());
       },
       [&](Entry* entryTarget) { newColumn.push_back(entryTarget); });
 
@@ -1051,10 +1050,11 @@ inline bool Vector_column<Master_matrix>::_multiply_target_and_add(const Field_e
     Column_support newColumn;
     newColumn.reserve(column_.size() + column.size());  // safe upper bound
 
+    auto prep = operators_->prepare_multiplier(val);
     auto pivotIsZeroed = _generic_add(
         column,
         [&](Entry* entryTarget) {
-          operators_->multiply_inplace(entryTarget->get_element(), val);
+          entryTarget->get_element() = operators_->multiply_prepared(entryTarget->get_element(), prep);
           if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::update_entry(*entryTarget);
           newColumn.push_back(entryTarget);
         },
@@ -1062,7 +1062,7 @@ inline bool Vector_column<Master_matrix>::_multiply_target_and_add(const Field_e
           _insert_entry(newColumn, itSource->get_row_index(), itSource->get_element());
         },
         [&](Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
-          operators_->multiply_and_add_inplace_front(targetElement, val, itSource->get_element());
+          targetElement = operators_->multiply_and_add_prepared(targetElement, prep, itSource->get_element());
         },
         [&](Entry* entryTarget) { newColumn.push_back(entryTarget); });
 
@@ -1092,16 +1092,17 @@ inline bool Vector_column<Master_matrix>::_multiply_source_and_add(const Entry_r
     Column_support newColumn;
     newColumn.reserve(column_.size() + column.size());  // safe upper bound
 
+    auto prep = operators_->prepare_multiplier(val);
     auto pivotIsZeroed = _generic_add(
         column,
         [&](Entry* entryTarget) { newColumn.push_back(entryTarget); },
         [&](typename Entry_range::const_iterator& itSource, const typename Column_support::iterator&) {
           Entry* newEntry = _insert_entry(newColumn, itSource->get_row_index(), itSource->get_element());
-          operators_->multiply_inplace(newEntry->get_element(), val);
+          newEntry->get_element() = operators_->multiply_prepared(newEntry->get_element(), prep);
           if constexpr (Master_matrix::Option_list::has_row_access) RA_opt::update_entry(*newEntry);
         },
         [&](Field_element& targetElement, typename Entry_range::const_iterator& itSource) {
-          operators_->multiply_and_add_inplace_back(itSource->get_element(), val, targetElement);
+          targetElement = operators_->multiply_and_add_prepared(itSource->get_element(), prep, targetElement);
         },
         [&](Entry* entryTarget) { newColumn.push_back(entryTarget); });
 

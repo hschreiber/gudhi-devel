@@ -1212,8 +1212,8 @@ inline void Chain_matrix<Master_matrix>::_reduce_by_G(Tmp_column& column,
   } else {
     Field_element coef = col.get_pivot_value();
     auto& operators = colSettings_->operators;
-    coef = operators.get_inverse(coef);
-    operators.multiply_inplace(coef, operators.get_characteristic() - column.rbegin()->second);
+    coef = operators.get_inverse_reduced(coef);
+    operators.multiply_inplace_reduced(coef, operators.get_characteristic() - column.rbegin()->second);
 
     _add_to(col, column, coef);                                  // Reduce with the column col_g
     chainsInH.emplace_back(col.get_paired_chain_index(), coef);  // keep the col_h with which col_g is paired
@@ -1232,8 +1232,8 @@ inline void Chain_matrix<Master_matrix>::_reduce_by_F(Tmp_column& column,
   } else {
     Field_element coef = col.get_pivot_value();
     auto& operators = colSettings_->operators;
-    coef = operators.get_inverse(coef);
-    operators.multiply_inplace(coef, operators.get_characteristic() - column.rbegin()->second);
+    coef = operators.get_inverse_reduced(coef);
+    operators.multiply_inplace_reduced(coef, operators.get_characteristic() - column.rbegin()->second);
 
     _add_to(col, column, coef);  // Reduce with the column col_g
     chainsInF.emplace_back(currentIndex, operators.get_characteristic() - coef);
@@ -1315,12 +1315,13 @@ inline void Chain_matrix<Master_matrix>::_add_to(const Column& column,
     }
   } else {
     auto& operators = colSettings_->operators;
+    auto prep = operators.prepare_multiplier(coef);
     for (const Entry& entry : column) {
       auto res = set.emplace(entry.get_row_index(), entry.get_element());
       if (res.second) {
-        operators.multiply_inplace(res.first->second, coef);
+        res.first->second = operators.multiply_prepared(res.first->second, prep);
       } else {
-        operators.multiply_and_add_inplace_back(entry.get_element(), coef, res.first->second);
+        res.first->second = operators.multiply_and_add_prepared(entry.get_element(), prep, res.first->second);
         if (res.first->second == Field_operators::get_additive_identity()) {
           set.erase(res.first);
         }

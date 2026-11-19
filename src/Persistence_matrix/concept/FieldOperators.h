@@ -32,6 +32,7 @@ class FieldOperators
  public:
   using Element = unspecified;         /**< Type for the elements in the field. */
   using Characteristic = unspecified;  /**< Type for the field characteristic. */
+  using Prepared_multiplier = unspecified; /**< For multiplication optimization, see @ref prepare_multiplier. */
 
   /**
    * @brief Indicates the value of the characteristic when not initialized.
@@ -109,6 +110,27 @@ class FieldOperators
    * @param a Third element.
    */
   void multiply_and_add_inplace_back(const Element& e, const Element& m, Element& a) const;
+
+  /**
+   * @brief Only necessary when @ref Gudhi::persistence_matrix::Matrix "Matrix" is used with `is_z2` option at false.
+   * Returns an object containing some preprocessing for a sequence of multiplications of several elements by a same
+   * value to simplify the operation. Usually used when a whole column has to be multiplied by a scalar.
+   * 
+   * @param w Common value to multiply.
+   */
+  Prepared_multiplier prepare_multiplier(const Element& w) const;
+
+  /**
+   * @brief Only necessary when @ref Gudhi::persistence_matrix::Matrix "Matrix" is used with `is_z2` option at false.
+   * Multiplies the element @p x with the argument @p w of @ref prepare_multiplier.
+   */
+  Element multiply_prepared(const Element& x, const Prepared_multiplier& prep) const;
+
+  /**
+   * @brief Only necessary when @ref Gudhi::persistence_matrix::Matrix "Matrix" is used with `is_z2` option at false.
+   * Multiplies the element @p x with the argument @p w of @ref prepare_multiplier and then adds @p a.
+   */
+  Element multiply_and_add_prepared(Element x, const Prepared_multiplier& prep, Element a) const;
 
   /**
    * @brief Returns the inverse of the given element in the field.

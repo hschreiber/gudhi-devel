@@ -244,7 +244,7 @@ RU_representative_cycles<Master_matrix>::_get_inverse(Index c)
     if constexpr (Master_matrix::Option_list::is_z2) {
       return 1;
     } else {
-      return op->get_inverse(matrix.get_column(size - 1).get_pivot_value());
+      return op->get_inverse_reduced(matrix.get_column(size - 1).get_pivot_value());
     }
   };
 
@@ -270,7 +270,7 @@ RU_representative_cycles<Master_matrix>::_get_inverse(Index c)
     if constexpr (Master_matrix::Option_list::is_z2) {
       e = m && e;  // just in case, but m is only possibly 0 if the user multiplied by 0 a column in R
     } else {
-      op->multiply_inplace(e, op->get_inverse(m));
+      op->multiply_inplace_reduced(e, op->get_inverse_reduced(m));
     }
   };
 

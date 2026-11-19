@@ -940,12 +940,12 @@ inline void RU_matrix<Master_matrix>::_reduce_column_by(Index target, Index sour
   } else {
     Column& toadd = reducedMatrixR_.get_column(source);
     Field_element coef = toadd.get_pivot_value();
-    coef = operators_->get_inverse(coef);
-    operators_->multiply_inplace(coef, operators_->get_characteristic() - curr.get_pivot_value());
+    coef = operators_->get_inverse_reduced(coef);
+    operators_->multiply_inplace_reduced(coef, operators_->get_characteristic() - curr.get_pivot_value());
 
     curr.multiply_source_and_add(toadd, coef);
     auto entry = *mirrorMatrixU_.get_column(target).begin();
-    operators_->multiply_inplace(entry.get_element(), operators_->get_characteristic() - coef);
+    operators_->multiply_inplace_reduced(entry.get_element(), operators_->get_characteristic() - coef);
     // to avoid having to do line operations, U is transposed
     // TODO: explain this somewhere in the documentation...
     mirrorMatrixU_.get_column(source).push_back(entry);
