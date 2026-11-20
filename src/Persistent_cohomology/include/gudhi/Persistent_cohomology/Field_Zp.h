@@ -5,15 +5,17 @@
  *    Copyright (C) 2014 Inria
  *
  *    Modification(s):
+ *      - 2026/11 Hannah Schreiber: Factorization with Zp_field_operators
  *      - YYYY/MM Author: Description of the modification
  */
 
 #ifndef PERSISTENT_COHOMOLOGY_FIELD_ZP_H_
 #define PERSISTENT_COHOMOLOGY_FIELD_ZP_H_
 
+#include <cstdint>
 #include <utility>
-#include <vector>
-#include <stdexcept>
+
+#include <gudhi/Fields/Zp_field_operators.h>
 
 namespace Gudhi {
 
@@ -26,89 +28,43 @@ namespace persistent_cohomology {
  */
 class Field_Zp {
  public:
-  typedef int Element;
+  using Element = int;
+  using Operator = persistence_fields::Zp_field_operators<std::uint32_t>;
 
-  Field_Zp()
-      : Prime(0),
-        inverse_() {
-  }
+  Field_Zp() = default;
 
-  void init(int charac) {
-    Prime = charac;
-
-    // Check that the provided prime is less than the maximum allowed as int, calculation below, and 'plus_times_equal' function : 46337 ; i.e (max_prime-1)*max_prime <= INT_MAX
-    if(Prime > 46337)
-        throw std::invalid_argument("Maximum homology_coeff_field allowed value is 46337");
-
-    // Check for primality
-    if (Prime <= 1)
-        throw std::invalid_argument("homology_coeff_field must be a prime number");
-
-    inverse_.clear();
-    inverse_.reserve(charac);
-    inverse_.push_back(0);
-    for (int i = 1; i < Prime; ++i) {
-      int inv = 1;
-      int mult = inv * i;
-      while ( (mult % Prime) != 1) {
-        ++inv;
-        if(mult == Prime)
-            throw std::invalid_argument("homology_coeff_field must be a prime number");
-        mult = inv * i;
-      }
-      inverse_.push_back(inv);
-    }
-  }
+  void init(int charac) { op_.set_characteristic(charac); }
 
   /** Set x <- x + w * y*/
   Element plus_times_equal(const Element& x, const Element& y, const Element& w) {
-    assert(Prime > 0);  // division by zero + non negative values
-    Element result = (x + w * y) % Prime;
-    if (result < 0)
-      result += Prime;
-    return result;
+    return static_cast<Element>(op_.multiply_and_add(w, y, x));
   }
-
-// operator= defined on Element
 
   /** Returns y * w */
-  Element times(const Element& y, const Element& w) {
-    return plus_times_equal(0, y, (Element)w);
-  }
+  Element times(Element y, Element w) { return static_cast<Element>(op_.multiply(y, w)); }
 
-  Element plus_equal(const Element& x, const Element& y) {
-    return plus_times_equal(x, y, (Element)1);
-  }
+  Element plus_equal(Element x, Element y) { return static_cast<Element>(op_.add(x, y)); }
 
-  /** \brief Returns the additive idendity \f$0_{\Bbbk}\f$ of the field.*/
-  Element additive_identity() const {
-    return 0;
-  }
+  /** \brief Returns the additive identity \f$0_{\Bbbk}\f$ of the field.*/
+  static Element additive_identity() { return Operator::get_additive_identity(); }
+
   /** \brief Returns the multiplicative identity \f$1_{\Bbbk}\f$ of the field.*/
-  Element multiplicative_identity(Element = 0) const {
-    return 1;
+  static Element multiplicative_identity([[maybe_unused]] Element e = 0) {
+    return Operator::get_multiplicative_identity();
   }
+
   /** Returns the inverse in the field. Modifies P. ??? */
-  std::pair<Element, Element> inverse(Element x, Element P) {
-    return std::pair<Element, Element>(inverse_[x], P);
-  }  // <------ return the product of field characteristic for which x is invertible
+  // <------ return the product of field characteristic for which x is invertible
+  std::pair<Element, Element> inverse(Element x, Element P) { return op_.get_partial_inverse(x, P); }
 
   /** Returns -x * y.*/
-  Element times_minus(Element x, Element y) {
-    assert(Prime > 0);  // division by zero + non negative values
-    Element out = (-x * y) % Prime;
-    return (out < 0) ? out + Prime : out;
-  }
+  Element times_minus(Element x, Element y) { return static_cast<Element>(op_.multiply(op_.get_opposite(x), y)); }
 
   /** \brief Returns the characteristic \f$p\f$ of the field.*/
-  int characteristic() const {
-    return Prime;
-  }
+  [[nodiscard]] int characteristic() const { return static_cast<int>(op_.get_characteristic()); }
 
  private:
-  int Prime;
-  /** Property map Element -> Element, which associate to an element its inverse in the field.*/
-  std::vector<Element> inverse_;
+  Operator op_;
 };
 
 }  // namespace persistent_cohomology
