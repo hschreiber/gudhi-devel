@@ -125,8 +125,8 @@ class Modular_reducer_32 {
   /** @brief `(x * w) % m` for any `x`, with `w < m` and `wq = shoup_quotient(w)`. */
   [[nodiscard]] constexpr Element mul_shoup(Element x, Element w, Element wq) const noexcept {
     const std::uint64_t q = (std::uint64_t(x) * wq) >> 32;
-    const std::uint64_t r =
-        (std::uint64_t(x) * w) - (q * m_);  // exact value in [0, 2m), computed on 64 bits as m < 2^32
+    // exact value in [0, 2m), computed on 64 bits as m < 2^32
+    const std::uint64_t r = (std::uint64_t(x) * w) - (q * m_);
     return static_cast<Element>(std::min<std::uint64_t>(r, r - m_));
   }
 

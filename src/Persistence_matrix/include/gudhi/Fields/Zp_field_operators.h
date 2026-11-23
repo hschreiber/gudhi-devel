@@ -56,15 +56,17 @@ namespace persistence_fields {
  *   integers: Barrett reduction for 32 bits elements and division by an invariant integer for 64 bits elements.
  * - For repeated multiplications by the same element, see @ref prepare_multiplier.
  *
- * @tparam Unsigned_integer_type Either a 32 bits or a 64 bits native unsigned integer type (`bool` excluded).
- * Will be used as the field element type. Any other type is rejected at compile time. The characteristic has to be
- * strictly smaller than \f$ 2^{31} \f$ (resp. \f$ 2^{63} \f$) for 32 bits (resp. 64 bits) types.
+ * @tparam Unsigned_integer_type A native unsigned integer type of at most 64 bits (`bool` excluded), for example
+ * `std::uint8_t`, `std::uint32_t` or `std::uint64_t`. Will be used as the field element type. Any other type is
+ * rejected at compile time. The characteristic has to be strictly smaller than \f$ 2^{b-1} \f$ where \f$ b \f$ is
+ * the number of bits of the type (for example at most 127 for `std::uint8_t`). All computations are done on at least
+ * 32 bits, whatever the element type is.
  */
 template <typename Unsigned_integer_type = unsigned int>
 class Zp_field_operators {
   static_assert(std::is_unsigned_v<Unsigned_integer_type> && !std::is_same_v<Unsigned_integer_type, bool> &&
-                    (sizeof(Unsigned_integer_type) == 4 || sizeof(Unsigned_integer_type) == 8),
-                "Zp_field_operators supports only 32 bits and 64 bits unsigned integer types.");
+                    sizeof(Unsigned_integer_type) <= 8,
+                "Zp_field_operators supports only unsigned integer types of at most 64 bits.");
 
  public:
   using Element = Unsigned_integer_type; /**< Type for the elements in the field. */
@@ -72,6 +74,15 @@ class Zp_field_operators {
   template <typename... Ts>
   using isIntegers = std::enable_if_t<(std::is_integral_v<Ts> && ...)>;
 
+ private:
+  using Reducer = Gudhi::numbers::Modular_reducer<Element>;
+  /**
+   * Type used for the intermediate values: 32 bits for types of at most 32 bits, else the type itself.
+   * That is, Red_element will coincide with Element only when Element is std::uint32_t or std::uint64_t.
+   */
+  using Red_element = typename Reducer::Element;
+
+ public:
   /**
    * @brief Value of a non initialized characteristic.
    */
@@ -96,12 +107,12 @@ class Zp_field_operators {
    */
   void set_characteristic(Characteristic characteristic) {
     if (characteristic <= 1) throw std::invalid_argument("Characteristic must be a strictly positive prime number.");
-    if (characteristic >= (Element(1) << (kBits - 1)))
+    if (static_cast<std::uint64_t>(characteristic) >= (std::uint64_t(1) << (kBits - 1)))
       throw std::invalid_argument("Characteristic must be smaller than 2^(number of bits of the element type - 1).");
     if (!Gudhi::is_prime(characteristic)) throw std::invalid_argument("Characteristic must be a prime number.");
 
     std::vector<Element> inverse;
-    if (characteristic <= kMaxTableCharacteristic) {
+    if (static_cast<std::uint64_t>(characteristic) <= kMaxTableCharacteristic) {
       // inv[i] = -(p / i) * inv[p % i]  (mod p), valid because p is prime.
       inverse.resize(characteristic);
       inverse[0] = 0;
@@ -109,7 +120,7 @@ class Zp_field_operators {
       for (Element i = 2; i < characteristic; ++i) {
         const auto v = static_cast<Element>(
             (static_cast<std::uint64_t>(characteristic / i) * inverse[characteristic % i]) % characteristic);
-        inverse[i] = characteristic - v;
+        inverse[i] = static_cast<Element>(characteristic - v);
       }
     }
 
@@ -138,7 +149,7 @@ class Zp_field_operators {
       using U = std::make_unsigned_t<Integer_type>;
       if (e >= 0) return _reduce_unsigned(static_cast<U>(e));
       const Element r = _reduce_unsigned(static_cast<U>(U(0) - static_cast<U>(e)));  // reduces |e|
-      return r == 0 ? Element(0) : characteristic_ - r;
+      return r == 0 ? Element(0) : static_cast<Element>(characteristic_ - r);
     } else {
       return _reduce_unsigned(e);
     }
@@ -235,7 +246,7 @@ class Zp_field_operators {
   template <typename I, class = isIntegers<I> >
   [[nodiscard]] Element get_opposite(I e) const {
     const Element v = get_value(e);
-    return v == 0 ? Element(0) : characteristic_ - v;
+    return v == 0 ? Element(0) : static_cast<Element>(characteristic_ - v);
   }
 
   /** @brief Replaces @p e by its opposite in the field. */
@@ -278,14 +289,16 @@ class Zp_field_operators {
   void subtract_inplace_front_reduced(Element& e1, Element e2) const { e1 = subtract_reduced(e1, e2); }
 
   /** @brief Same as @ref multiply, but requires `e1, e2 < characteristic`. */
-  [[nodiscard]] Element multiply_reduced(Element e1, Element e2) const { return reducer_.mul(e1, e2); }
+  [[nodiscard]] Element multiply_reduced(Element e1, Element e2) const {
+    return static_cast<Element>(reducer_.mul(e1, e2));
+  }
 
   /** @brief Same as @ref multiply_inplace, but requires `e1, e2 < characteristic`. */
   void multiply_inplace_reduced(Element& e1, Element e2) const { e1 = multiply_reduced(e1, e2); }
 
   /** @brief Same as @ref multiply_and_add, but requires `e, m, a < characteristic`. */
   [[nodiscard]] Element multiply_and_add_reduced(Element e, Element m, Element a) const {
-    return reducer_.mul_add(e, m, a);
+    return static_cast<Element>(reducer_.mul_add(e, m, a));
   }
 
   /** @brief Same as @ref multiply_and_add_inplace_front, but requires `e, m, a < characteristic`. */
@@ -317,8 +330,8 @@ class Zp_field_operators {
    * @brief Pre-computed data to multiply many elements by the same element. See @ref prepare_multiplier.
    */
   struct Prepared_multiplier {
-    Element value;    /**< The multiplier, reduced. */
-    Element quotient; /**< `floor(value * 2^bits / characteristic)`. */
+    Element value;        /**< The multiplier, reduced. */
+    Red_element quotient; /**< `floor(value * 2^b / characteristic)`, with b = 32 for types of at most 32 bits. */
   };
 
   /**
@@ -335,10 +348,10 @@ class Zp_field_operators {
   /** @brief Returns `(x * w.value) % characteristic`. @p x can be any integer, reduced or not. */
   template <typename I, class = isIntegers<I> >
   [[nodiscard]] Element multiply_prepared(I x, const Prepared_multiplier& w) const {
-    if constexpr (std::is_unsigned_v<I> && sizeof(I) <= sizeof(Element)) {
-      return reducer_.mul_shoup(static_cast<Element>(x), w.value, w.quotient);  // works for any element
+    if constexpr (std::is_unsigned_v<I> && sizeof(I) <= sizeof(Red_element)) {
+      return static_cast<Element>(reducer_.mul_shoup(static_cast<Red_element>(x), w.value, w.quotient));  // any x works
     } else {
-      return reducer_.mul_shoup(get_value(x), w.value, w.quotient);
+      return static_cast<Element>(reducer_.mul_shoup(get_value(x), w.value, w.quotient));
     }
   }
 
@@ -377,10 +390,9 @@ class Zp_field_operators {
   }
 
  private:
-  using Reducer = Gudhi::numbers::Modular_reducer<Element>;
   static constexpr unsigned int kBits = sizeof(Element) * 8;
   // Above this characteristic, inverses are computed on demand instead of being stored.
-  static constexpr Element kMaxTableCharacteristic = 1U << 16;
+  static constexpr std::uint64_t kMaxTableCharacteristic = 1U << 16;
 
   Characteristic characteristic_; /**< Current characteristic of the field. */
   Reducer reducer_;               /**< Fast reductions modulo the characteristic. */
@@ -389,7 +401,7 @@ class Zp_field_operators {
   template <typename U>
   [[nodiscard]] Element _reduce_unsigned(U u) const {
     static_assert(sizeof(U) <= 8, "Integers of more than 64 bits are not supported.");
-    return GUDHI_ZP_LIKELY(u < characteristic_) ? static_cast<Element>(u) : reducer_.reduce(u);
+    return GUDHI_ZP_LIKELY(u < characteristic_) ? static_cast<Element>(u) : static_cast<Element>(reducer_.reduce(u));
   }
 };
 
