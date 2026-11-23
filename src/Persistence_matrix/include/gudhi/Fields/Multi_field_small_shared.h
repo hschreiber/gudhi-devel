@@ -26,7 +26,6 @@
 namespace Gudhi {
 namespace persistence_fields {
 
-// TODO: either remove Unsigned_integer_type template or add it to Multi_field_operators_with_small_characteristics
 /**
  * @class Shared_multi_field_element_with_small_characteristics Multi_field_small_shared.h \
  * gudhi/Fields/Multi_field_small_shared.h
@@ -41,13 +40,13 @@ namespace persistence_fields {
  * @tparam Unsigned_integer_type A native unsigned integer type: unsigned int, long unsigned int, etc.
  * Will be used as the field element type.
  */
-template <typename Unsigned_integer_type = unsigned int,
+template <typename Unsigned_integer_type = std::uint32_t,
           class = std::enable_if_t<std::is_unsigned_v<Unsigned_integer_type> > >
 class Shared_multi_field_element_with_small_characteristics {
  public:
-  using Element = Multi_field_operators_with_small_characteristics::Element; /**< Type for the elements in the field. */
-  using Characteristic =
-      Multi_field_operators_with_small_characteristics::Characteristic; /**< Type for the field characteristic. */
+  using Op = Multi_field_operators_with_small_characteristics<Unsigned_integer_type>;
+  using Element = typename Op::Element;               /**< Type for the elements in the field. */
+  using Characteristic = typename Op::Characteristic; /**< Type for the field characteristic. */
   template <class T>
   using isInteger = std::enable_if_t<std::is_integral_v<T> >;
 
@@ -324,7 +323,7 @@ class Shared_multi_field_element_with_small_characteristics {
    * @return The additive identity of a field.
    */
   static Shared_multi_field_element_with_small_characteristics get_additive_identity() {
-    return {Multi_field_operators_with_small_characteristics::get_additive_identity()};
+    return {Op::get_additive_identity()};
   }
 
   /**
@@ -333,7 +332,7 @@ class Shared_multi_field_element_with_small_characteristics {
    * @return The multiplicative identity of a field.
    */
   static Shared_multi_field_element_with_small_characteristics get_multiplicative_identity() {
-    return {Multi_field_operators_with_small_characteristics::get_multiplicative_identity()};
+    return {Op::get_multiplicative_identity()};
   }
 
   /**
@@ -364,7 +363,7 @@ class Shared_multi_field_element_with_small_characteristics {
 
  private:
   Element element_; /**< Element. */
-  static inline Multi_field_operators_with_small_characteristics op_;
+  static inline Op op_;
 };
 
 }  // namespace persistence_fields

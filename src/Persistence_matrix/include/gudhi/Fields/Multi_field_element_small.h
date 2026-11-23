@@ -26,7 +26,6 @@
 namespace Gudhi {
 namespace persistence_fields {
 
-// TODO: either remove Unsigned_integer_type template or add it to Multi_field_operators_with_small_characteristics
 /**
  * @class Multi_field_element_with_small_characteristics Multi_field_element_small.h
  * gudhi/Fields/Multi_field_element_small.h
@@ -45,9 +44,9 @@ template <unsigned int minimum, unsigned int maximum, typename Unsigned_integer_
           class = std::enable_if_t<std::is_unsigned_v<Unsigned_integer_type> > >
 class Multi_field_element_with_small_characteristics {
  public:
-  using Element = Multi_field_operators_with_small_characteristics::Element; /**< Type for the elements in the field. */
-  using Characteristic =
-      Multi_field_operators_with_small_characteristics::Characteristic; /**< Type for the field characteristic. */
+  using Op = Multi_field_operators_with_small_characteristics<Unsigned_integer_type>;
+  using Element = typename Op::Element;               /**< Type for the elements in the field. */
+  using Characteristic = typename Op::Characteristic; /**< Type for the field characteristic. */
   template <class T>
   using isInteger = std::enable_if_t<std::is_integral_v<T> >;
 
@@ -320,7 +319,7 @@ class Multi_field_element_with_small_characteristics {
    * @return The additive identity of a field.
    */
   static Multi_field_element_with_small_characteristics get_additive_identity() {
-    return {Multi_field_operators_with_small_characteristics::get_additive_identity()};
+    return {Op::get_additive_identity()};
   }
 
   /**
@@ -329,7 +328,7 @@ class Multi_field_element_with_small_characteristics {
    * @return The multiplicative identity of a field.
    */
   static Multi_field_element_with_small_characteristics get_multiplicative_identity() {
-    return {Multi_field_operators_with_small_characteristics::get_multiplicative_identity()};
+    return {Op::get_multiplicative_identity()};
   }
 
   /**
@@ -360,7 +359,7 @@ class Multi_field_element_with_small_characteristics {
 
  private:
   Element element_;
-  static inline const Multi_field_operators_with_small_characteristics op_ = {minimum, maximum};
+  static inline const Op op_ = {minimum, maximum};
 };
 
 }  // namespace persistence_fields

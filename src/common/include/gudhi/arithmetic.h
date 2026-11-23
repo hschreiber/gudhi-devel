@@ -70,8 +70,8 @@ constexpr T extended_euclid(T a, T m, T& g) noexcept {
   Signed t0 = 0, t1 = 1;
   T r0 = m, r1 = a;
   while (r1 != 0) {
-    const T q = r0 / r1;
-    const T r2 = r0 - (q * r1);
+    const T q = static_cast<T>(r0 / r1);
+    const T r2 = static_cast<T>(r0 - (q * r1));
     r0 = r1;
     r1 = r2;
     const auto t2 = static_cast<Signed>(t0 - (static_cast<Signed>(q) * t1));  // |t| never exceeds m
@@ -93,7 +93,7 @@ constexpr T mod_inverse(T a, T m) noexcept {
  * @brief Fast `x % m` and modular multiplications for a fixed modulus `2 <= m < 2^32`, without hardware division
  * (Barrett reduction: one multiplication to estimate the quotient, one conditional correction).
  *
- * Also provides multiplication by a fixed element with a precomputed quotient (Shoup), which needs `m < 2^31`.
+ * Also provides multiplication by a fixed element with a precomputed quotient (Shoup), for any such modulus.
  */
 class Modular_reducer_32 {
  public:
@@ -122,11 +122,12 @@ class Modular_reducer_32 {
   [[nodiscard]] constexpr Element shoup_quotient(Element w) const noexcept {
     return static_cast<Element>((std::uint64_t(w) << 32) / m_);
   }
-  /** @brief `(x * w) % m` for any `x`, with `w < m` and `wq = shoup_quotient(w)`. Requires `m < 2^31`. */
+  /** @brief `(x * w) % m` for any `x`, with `w < m` and `wq = shoup_quotient(w)`. */
   [[nodiscard]] constexpr Element mul_shoup(Element x, Element w, Element wq) const noexcept {
-    const auto q = static_cast<Element>((std::uint64_t(x) * wq) >> 32);
-    const auto r = ((x * w) - (q * m_));  // exact value in [0, 2m)
-    return std::min<Element>(r, r - m_);
+    const std::uint64_t q = (std::uint64_t(x) * wq) >> 32;
+    const std::uint64_t r =
+        (std::uint64_t(x) * w) - (q * m_);  // exact value in [0, 2m), computed on 64 bits as m < 2^32
+    return static_cast<Element>(std::min<std::uint64_t>(r, r - m_));
   }
 
  private:
@@ -207,9 +208,10 @@ class Modular_reducer_64 {
   std::uint64_t v_;  // floor((2^128 - 1) / d_) - 2^64
 };
 
-/** @brief The reducer fitting the given unsigned integer type (32 or 64 bits). */
+/** @brief The reducer fitting the given unsigned integer type: the 32 bits one for types of at most 32 bits. */
 template <typename Unsigned_integer_type>
-using Modular_reducer = std::conditional_t<sizeof(Unsigned_integer_type) == 4, Modular_reducer_32, Modular_reducer_64>;
+using Modular_reducer =
+    std::conditional_t<(sizeof(Unsigned_integer_type) <= 4), Modular_reducer_32, Modular_reducer_64>;
 
 /**
  * @brief Deterministic Miller-Rabin primality test, exact for every 64 bits integer. (The 12 first primes as bases

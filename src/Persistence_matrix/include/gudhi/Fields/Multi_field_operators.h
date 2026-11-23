@@ -71,8 +71,8 @@ class Multi_field_operators {
    * If the exception is thrown, the field is left unchanged.
    */
   void set_characteristic(int minimum, int maximum) {
-    if (maximum < 2) throw std::invalid_argument("Characteristic must be strictly positive");
     if (minimum > maximum) throw std::invalid_argument("The given interval is not valid.");
+    if (maximum < 2) throw std::invalid_argument("The given interval does not contain a positive prime number.");
     if (minimum == maximum && !Gudhi::is_prime(minimum))
       throw std::invalid_argument("The given interval does not contain a prime number.");
     minimum = std::max(minimum, 2);
